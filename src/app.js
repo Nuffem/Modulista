@@ -1,7 +1,10 @@
 import { initDB, getItems, addItem, getItem, updateItem, deleteItem } from './db.js';
 
-const appContent = document.getElementById('app-content');
+const appContainer = document.getElementById('app-container');
 const breadcrumbEl = document.getElementById('breadcrumb');
+
+// --- State ---
+let currentView = 'list'; // 'list' or 'text'
 
 // --- Rendering Functions ---
 
@@ -51,53 +54,203 @@ function getItemIcon(type) {
 async function renderListView(path) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
-    appContent.innerHTML = `<p class="text-gray-500">Carregando...</p>`;
+    appContainer.innerHTML = `<p class="text-gray-500">Carregando...</p>`;
     breadcrumbEl.style.display = 'block';
     renderBreadcrumb(path);
+
     try {
         const items = await getItems(path);
 
-        let listHTML = items.length === 0
-            ? ''
-            : '<div class="space-y-3">' + items.map(item => {
-                const editUrl = `#/edit/${item.id}`;
-                const listUrl = `#${path}${item.name}/`;
-                const itemUrl = item.type === 'list' ? listUrl : editUrl;
-                return `
-                    <a href="${itemUrl}" class="block p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <div class="mr-4">${getItemIcon(item.type)}</div>
-                                <span class="font-semibold">${item.name}</span>
-                            </div>
-                            ${item.type === 'boolean'
-                                ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600">`
-                                : item.type === 'list'
-                                ? `<span class="text-sm text-gray-500"></span>`
-                                : `<span class="text-gray-700">${item.value}</span>`
-                            }
-                        </div>
-                    </a>`;
-            }).join('') + '</div>';
+        const isListActive = currentView === 'list';
+        const isTextActive = currentView === 'text';
 
-        const addButtonHTML = `
-            <button onclick="location.hash = '${path}add'" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-            </button>
+        const tabsHTML = `
+            <div class="mb-4 border-b border-gray-200">
+                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
+                    <li class="mr-2">
+                        <button id="list-tab-btn" class="inline-flex items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5m3-15H5.25c-1.12 0-2.06.914-2.06 2.033v11.934c0 1.119.94 2.033 2.06 2.033h13.5c1.12 0 2.06-.914 2.06-2.033V8.783c0-1.119-.94-2.033-2.06-2.033H5.25Z" /></svg>
+                            Lista
+                        </button>
+                    </li>
+                    <li class="mr-2">
+                        <button id="text-tab-btn" class="inline-flex items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V5.75A2.25 2.25 0 0 0 18 3.5H6A2.25 2.25 0 0 0 3.75 5.75v12.5A2.25 2.25 0 0 0 6 20.25Z" /></svg>
+                            Texto
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div id="tab-content"></div>
         `;
-        appContent.innerHTML = listHTML + addButtonHTML;
+
+        appContainer.innerHTML = tabsHTML;
+        const tabContent = document.getElementById('tab-content');
+
+        if (isListActive) {
+            let listHTML = items.length === 0
+                ? ''
+                : '<div class="space-y-3">' + items.map(item => {
+                    const editUrl = `#/edit/${item.id}`;
+                    const listUrl = `#${path}${item.name}/`;
+                    const itemUrl = item.type === 'list' ? listUrl : editUrl;
+                    return `
+                        <a href="${itemUrl}" class="block p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="mr-4">${getItemIcon(item.type)}</div>
+                                    <span class="font-semibold">${item.name}</span>
+                                </div>
+                                ${item.type === 'boolean'
+                                    ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600">`
+                                    : item.type === 'list'
+                                    ? `<span class="text-sm text-gray-500"></span>`
+                                    : `<span class="text-gray-700">${item.value}</span>`
+                                }
+                            </div>
+                        </a>`;
+                }).join('') + '</div>';
+
+            const addButtonHTML = `
+                <button data-testid="add-item-button" onclick="location.hash = '${path}add'" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </button>
+            `;
+            tabContent.innerHTML = listHTML + addButtonHTML;
+        } else {
+            const itemsAsText = items.map(item => {
+                let value;
+                if (item.type === 'list') {
+                    value = `[ ... ]`;
+                } else if (typeof item.value === 'string') {
+                    value = `'${item.value.replace(/'/g, "\\'")}'`;
+                } else {
+                    value = item.value;
+                }
+                return `  ${item.name}: ${value}`;
+            }).join(',\n');
+
+            const textContentHTML = `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div id="text-display">
+                        <pre class="bg-gray-100 p-4 rounded overflow-x-auto"><code>{\n${itemsAsText}\n}</code></pre>
+                        <div class="mt-4 flex justify-end">
+                            <button id="edit-text-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                Editar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="text-edit" class="hidden">
+                        <textarea id="text-editor" class="w-full h-64 bg-gray-100 p-4 rounded border border-gray-300"></textarea>
+                        <div class="mt-4 flex justify-end space-x-2">
+                            <button id="save-text-btn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                                Salvar
+                            </button>
+                            <button id="cancel-text-btn" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            tabContent.innerHTML = textContentHTML;
+
+            const textDisplay = document.getElementById('text-display');
+            const textEdit = document.getElementById('text-edit');
+            const textEditor = document.getElementById('text-editor');
+
+            document.getElementById('edit-text-btn').addEventListener('click', () => {
+                textEditor.value = `{\n${itemsAsText}\n}`;
+                textDisplay.classList.add('hidden');
+                textEdit.classList.remove('hidden');
+            });
+
+            document.getElementById('cancel-text-btn').addEventListener('click', () => {
+                textEdit.classList.add('hidden');
+                textDisplay.classList.remove('hidden');
+            });
+
+            document.getElementById('save-text-btn').addEventListener('click', async () => {
+                const newText = textEditor.value;
+                try {
+                    // This is a simplified parser and has limitations.
+                    // It expects a format like: { key: 'value', key2: 123 }
+                    const innerText = newText.trim().slice(1, -1).trim();
+                    if (!innerText) { // Handle empty object
+                        // Delete all items in the current path
+                        for (const item of items) {
+                            await deleteItem(item.id);
+                        }
+                        renderListView(path);
+                        return;
+                    }
+
+                    const newItemsData = innerText.split(',\\n').map(line => {
+                        const parts = line.split(':');
+                        const name = parts[0].trim();
+                        const valueStr = parts.slice(1).join(':').trim();
+                        let value;
+                        if (valueStr.startsWith("'") && valueStr.endsWith("'")) {
+                            value = valueStr.slice(1, -1).replace(/\\'/g, "'");
+                        } else if (valueStr === 'true') {
+                            value = true;
+                        } else if (valueStr === 'false') {
+                            value = false;
+                        } else if (valueStr === '[ ... ]') {
+                            value = null; // Represents a list, do not update value
+                        } else {
+                            value = Number(valueStr);
+                            if (isNaN(value)) throw new Error(`Invalid value for ${name}`);
+                        }
+                        return { name, value };
+                    });
+
+                    // Basic validation and update
+                    for (const newItemData of newItemsData) {
+                        const oldItem = items.find(i => i.name === newItemData.name);
+                        if (oldItem) {
+                            if (newItemData.value !== null) { // value is null for lists
+                                await updateItem({ ...oldItem, value: newItemData.value });
+                            }
+                        } else {
+                            // Adding new items from text view is not supported in this version
+                            // to keep things simple. Could be a future feature.
+                        }
+                    }
+                    // NOTE: Deleting items by removing them from the text is not supported yet.
+
+                    renderListView(path); // Re-render to show changes
+                } catch (error) {
+                    console.error('Failed to parse and update items:', error);
+                    alert('Erro ao salvar. Verifique a sintaxe do objeto.\\n' + error.message);
+                }
+            });
+        }
+
+        document.getElementById('list-tab-btn').addEventListener('click', () => {
+            if (currentView !== 'list') {
+                currentView = 'list';
+                renderListView(path);
+            }
+        });
+        document.getElementById('text-tab-btn').addEventListener('click', () => {
+            if (currentView !== 'text') {
+                currentView = 'text';
+                renderListView(path);
+            }
+        });
 
     } catch (error) {
         console.error('Failed to render list view:', error);
-        appContent.innerHTML = `<p class="text-red-500">Erro ao carregar os itens.</p>`;
+        appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar os itens.</p>`;
     }
 }
 
 function renderAddItemView(path) {
     breadcrumbEl.style.display = 'none';
-    appContent.innerHTML = `
+    appContainer.innerHTML = `
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-xl font-bold mb-4">Adicionar Novo Item</h2>
             <form id="add-item-form">
@@ -124,10 +277,10 @@ function renderAddItemView(path) {
 
 async function renderEditItemView(itemId) {
     breadcrumbEl.style.display = 'none';
-    appContent.innerHTML = `<p class="text-gray-500">Carregando item...</p>`;
+    appContainer.innerHTML = `<p class="text-gray-500">Carregando item...</p>`;
     try {
         const item = await getItem(itemId);
-        if (!item) { appContent.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`; return; }
+        if (!item) { appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`; return; }
 
         let valueInputHTML;
         if (item.type === 'boolean') {
@@ -136,7 +289,7 @@ async function renderEditItemView(itemId) {
             valueInputHTML = `<input type="${item.type === 'number' ? 'number' : 'text'}" id="item-value" name="value" value="${item.value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">`;
         }
 
-        appContent.innerHTML = `
+        appContainer.innerHTML = `
             <div class="bg-white p-6 rounded-lg shadow-md">
                 <h2 class="text-xl font-bold mb-4">Editar Item</h2>
                 <form id="edit-item-form">
@@ -168,7 +321,7 @@ async function renderEditItemView(itemId) {
 
     } catch (error) {
         console.error('Failed to render edit view:', error);
-        appContent.innerHTML = `<p class="text-red-500">Erro ao carregar o item para edição.</p>`;
+        appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item para edição.</p>`;
     }
 }
 
@@ -194,6 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
         router();
     }).catch(err => {
         console.error('Failed to initialize database:', err);
-        appContent.innerHTML = `<p class="text-red-500">Error: Could not initialize the database.</p>`;
+        appContainer.innerHTML = `<p class="text-red-500">Error: Could not initialize the database.</p>`;
     });
 });
