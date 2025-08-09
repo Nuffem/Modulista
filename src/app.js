@@ -8,10 +8,10 @@ const breadcrumbEl = document.getElementById('breadcrumb');
 function renderBreadcrumb(path) {
     const parts = path.split('/').filter(p => p);
     let cumulativePath = '#/';
-    let html = `<button onclick="location.hash='/'" class="bg-transparent text-blue-600 hover:underline p-1 rounded">Início</button>`;
-    parts.forEach((part) => {
+    let html = `<button onclick="location.hash='/'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">Início</button>`;
+    parts.forEach((part, index) => {
         cumulativePath += `${part}/`;
-        html += ` <span class="text-gray-500 mx-1">/</span> <button onclick="location.hash='${cumulativePath}'" class="bg-transparent text-blue-600 hover:underline p-1 rounded">${decodeURIComponent(part)}</button>`;
+        html += ` <span class="text-gray-500 mx-2">/</span> <button onclick="location.hash='${cumulativePath}'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${decodeURIComponent(part)}</button>`;
     });
     breadcrumbEl.innerHTML = html;
 }
