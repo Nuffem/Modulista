@@ -25,8 +25,6 @@ async function renderListView(path) {
     try {
         const items = await getItems(path);
 
-        const headingHTML = `<h2 class="text-2xl font-bold mb-4">Itens em ${path}</h2>`;
-
         let listHTML = items.length === 0
             ? '<p class="text-gray-500">Esta lista está vazia.</p>'
             : '<div class="space-y-3">' + items.map(item => {
@@ -49,7 +47,7 @@ async function renderListView(path) {
 
         const addButtonHTML = `<div class="mt-6"><button onclick="location.hash = '${path}add'" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Adicionar Novo Item</button></div>`;
 
-        appContent.innerHTML = headingHTML + listHTML + addButtonHTML;
+        appContent.innerHTML = listHTML + addButtonHTML;
 
     } catch (error) {
         console.error('Failed to render list view:', error);
