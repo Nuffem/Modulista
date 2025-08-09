@@ -45,8 +45,26 @@ export function addItem(item) {
 
         try {
             const itemsInPath = await getItems(item.path);
-            if (itemsInPath.some(i => i.name === item.name)) {
-                return reject(new Error(`O item "${item.name}" já existe neste local.`));
+            const existingNames = new Set(itemsInPath.map(i => i.name));
+
+            let finalName = item.name;
+
+            // If the name already exists, find a new one by incrementing the index.
+            if (existingNames.has(finalName)) {
+                const match = finalName.match(/^(.*)_(\d+)$/);
+                let baseName = finalName;
+                let counter = 1;
+
+                if (match) {
+                    baseName = match[1];
+                    counter = parseInt(match[2], 10);
+                }
+
+                // Keep incrementing the counter until a unique name is found
+                do {
+                    finalName = `${baseName}_${counter}`;
+                    counter++;
+                } while (existingNames.has(finalName));
             }
 
             const transaction = db.transaction([STORE_NAME], 'readwrite');
@@ -54,6 +72,7 @@ export function addItem(item) {
 
             const newItem = {
                 ...item,
+                name: finalName, // Use the potentially modified name
                 id: crypto.randomUUID(),
                 createdAt: new Date()
             };
