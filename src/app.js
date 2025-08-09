@@ -271,7 +271,7 @@ function renderAddItemView(path) {
         e.preventDefault();
         const form = e.target, type = form.type.value, valueEl = form.querySelector('[name="value"]');
         const newItem = { path, name: form.name.value, type, value: type === 'list' ? '' : (type === 'boolean' ? valueEl.checked : valueEl.value) };
-        try { await addItem(newItem); location.hash = path; } catch (error) { console.error('Failed to add item:', error); alert('Erro ao salvar o item.'); }
+        try { await addItem(newItem); location.hash = path; } catch (error) { console.error('Failed to add item:', error); alert(`Erro ao salvar o item: ${error.message}`); }
     });
 }
 
@@ -310,7 +310,7 @@ async function renderEditItemView(itemId) {
             e.preventDefault();
             const form = e.target, valueEl = form.querySelector('[name="value"]');
             const updatedItem = { ...item, name: form.name.value, value: item.type === 'boolean' ? valueEl.checked : valueEl.value };
-            try { await updateItem(updatedItem); location.hash = item.path; } catch (error) { console.error('Failed to update item:', error); alert('Erro ao atualizar o item.'); }
+            try { await updateItem(updatedItem); location.hash = item.path; } catch (error) { console.error('Failed to update item:', error); alert(`Erro ao atualizar o item: ${error.message}`); }
         });
 
         document.getElementById('delete-item-btn').addEventListener('click', async () => {

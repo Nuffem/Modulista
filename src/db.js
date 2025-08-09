@@ -40,22 +40,30 @@ export function initDB() {
  * @returns {Promise<IDBValidKey>} The ID of the newly added item.
  */
 export function addItem(item) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         if (!db) return reject('Database not initialized.');
 
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
+        try {
+            const itemsInPath = await getItems(item.path);
+            if (itemsInPath.some(i => i.name === item.name)) {
+                return reject(new Error(`O item "${item.name}" já existe neste local.`));
+            }
 
-        const newItem = {
-            ...item,
-            id: crypto.randomUUID(),
-            createdAt: new Date()
-        };
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
 
-        const request = store.add(newItem);
+            const newItem = {
+                ...item,
+                id: crypto.randomUUID(),
+                createdAt: new Date()
+            };
 
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = (event) => reject(event.target.error);
+            const request = store.add(newItem);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(event.target.error);
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
@@ -102,15 +110,24 @@ export function getItem(id) {
  * @returns {Promise<IDBValidKey>} The ID of the updated item.
  */
 export function updateItem(item) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         if (!db) return reject('Database not initialized.');
 
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.put(item);
+        try {
+            const itemsInPath = await getItems(item.path);
+            if (itemsInPath.some(i => i.name === item.name && i.id !== item.id)) {
+                return reject(new Error(`O item "${item.name}" já existe neste local.`));
+            }
 
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = (event) => reject(event.target.error);
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put(item);
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(event.target.error);
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
