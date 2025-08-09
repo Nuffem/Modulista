@@ -248,31 +248,57 @@ async function renderListView(path) {
     }
 }
 
-function renderAddItemView(path) {
+async function renderAddItemView(path) {
     breadcrumbEl.style.display = 'none';
-    appContainer.innerHTML = `
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-bold mb-4">Adicionar Novo Item</h2>
-            <form id="add-item-form">
-                <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2">Nome</label><input type="text" id="item-name" name="name" value="Item" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required></div>
-                <div class="mb-4"><label for="item-type" class="block text-gray-700 text-sm font-bold mb-2">Tipo</label><select id="item-type" name="type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"><option value="text">Texto</option><option value="number">Número</option><option value="boolean">Lógico (Sim/Não)</option><option value="list">Pasta</option></select></div>
-                <div id="value-container" class="mb-4"><label for="item-value" id="item-value-label" class="block text-gray-700 text-sm font-bold mb-2">Valor</label><div id="item-value-input"><input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"></div></div>
-                <div class="flex items-center justify-between"><button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Salvar</button><button type="button" onclick="history.back()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancelar</button></div>
-            </form>
-        </div>`;
-    const typeSelect = document.getElementById('item-type'), valueContainer = document.getElementById('value-container'), valueInputDiv = document.getElementById('item-value-input');
-    typeSelect.addEventListener('change', (e) => {
-        const type = e.target.value;
-        if (type === 'list') valueContainer.style.display = 'none';
-        else if (type === 'boolean') { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600">`; }
-        else { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="${type === 'number' ? 'number' : 'text'}" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">`; }
-    });
-    document.getElementById('add-item-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target, type = form.type.value, valueEl = form.querySelector('[name="value"]');
-        const newItem = { path, name: form.name.value, type, value: type === 'list' ? '' : (type === 'boolean' ? valueEl.checked : valueEl.value) };
-        try { await addItem(newItem); location.hash = path; } catch (error) { console.error('Failed to add item:', error); alert(`Erro ao salvar o item: ${error.message}`); }
-    });
+    appContainer.innerHTML = `<p class="text-gray-500">Carregando...</p>`;
+
+    try {
+        const items = await getItems(path);
+        const baseName = "Item";
+        const sameNameItems = items.filter(item => item.name.startsWith(baseName + '_'));
+
+        let maxIndex = 0;
+        sameNameItems.forEach(item => {
+            const match = item.name.match(/_(\d+)$/);
+            if (match) {
+                const index = parseInt(match[1], 10);
+                if (index > maxIndex) {
+                    maxIndex = index;
+                }
+            }
+        });
+        const nextIndex = maxIndex + 1;
+        const newName = `${baseName}_${nextIndex}`;
+
+        appContainer.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-4">Adicionar Novo Item</h2>
+                <form id="add-item-form">
+                    <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2">Nome</label><input type="text" id="item-name" name="name" value="${newName}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required></div>
+                    <div class="mb-4"><label for="item-type" class="block text-gray-700 text-sm font-bold mb-2">Tipo</label><select id="item-type" name="type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"><option value="text">Texto</option><option value="number">Número</option><option value="boolean">Lógico (Sim/Não)</option><option value="list">Pasta</option></select></div>
+                    <div id="value-container" class="mb-4"><label for="item-value" id="item-value-label" class="block text-gray-700 text-sm font-bold mb-2">Valor</label><div id="item-value-input"><input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"></div></div>
+                    <div class="flex items-center justify-between"><button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Salvar</button><button type="button" onclick="history.back()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancelar</button></div>
+                </form>
+            </div>`;
+
+        const typeSelect = document.getElementById('item-type'), valueContainer = document.getElementById('value-container'), valueInputDiv = document.getElementById('item-value-input');
+        typeSelect.addEventListener('change', (e) => {
+            const type = e.target.value;
+            if (type === 'list') valueContainer.style.display = 'none';
+            else if (type === 'boolean') { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600">`; }
+            else { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="${type === 'number' ? 'number' : 'text'}" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">`; }
+        });
+
+        document.getElementById('add-item-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target, type = form.type.value, valueEl = form.querySelector('[name="value"]');
+            const newItem = { path, name: form.name.value, type, value: type === 'list' ? '' : (type === 'boolean' ? valueEl.checked : valueEl.value) };
+            try { await addItem(newItem); location.hash = path; } catch (error) { console.error('Failed to add item:', error); alert(`Erro ao salvar o item: ${error.message}`); }
+        });
+    } catch (error) {
+        console.error('Failed to render add item view:', error);
+        appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar a página de adição de item.</p>`;
+    }
 }
 
 async function renderEditItemView(itemId) {
