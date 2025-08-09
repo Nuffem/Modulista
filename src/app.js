@@ -47,8 +47,13 @@ async function renderListView(path) {
                     </a>`;
             }).join('') + '</div>';
 
-        const addButtonHTML = `<div class="mt-6"><button onclick="location.hash = '${path}add'" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Adicionar Novo Item</button></div>`;
-
+        const addButtonHTML = `
+            <button onclick="location.hash = '${path}add'" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+            </button>
+        `;
         appContent.innerHTML = listHTML + addButtonHTML;
 
     } catch (error) {
