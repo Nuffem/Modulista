@@ -28,7 +28,7 @@ async function renderListView(path) {
         const items = await getItems(path);
 
         let listHTML = items.length === 0
-            ? '<p class="text-gray-500">Esta lista está vazia.</p>'
+            ? ''
             : '<div class="space-y-3">' + items.map(item => {
                 const editUrl = `#/edit/${item.id}`;
                 const listUrl = `#${path}${item.name}/`;
