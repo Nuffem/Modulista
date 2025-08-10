@@ -347,13 +347,13 @@ async function renderAddItemView(path) {
             const type = e.target.value;
             if (type === 'list') valueContainer.style.display = 'none';
             else if (type === 'boolean') { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600">`; }
-            else { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="${type === 'number' ? 'number' : 'text'}" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">`; }
+            else { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="${type === 'number' ? 'number' : 'text'}" id="item-value" name="value" value="${type === 'number' ? '0' : ''}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">`; }
         });
 
         document.getElementById('add-item-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target, type = form.type.value, valueEl = form.querySelector('[name="value"]');
-            const newItem = { path, name: form.name.value, type, value: type === 'list' ? '' : (type === 'boolean' ? valueEl.checked : valueEl.value) };
+            const newItem = { path, name: form.name.value, type, value: type === 'list' ? '' : (type === 'boolean' ? valueEl.checked : (type === 'number' ? Number(valueEl.value) : valueEl.value)) };
             try { await addItem(newItem); location.hash = path; } catch (error) { console.error('Failed to add item:', error); alert(`Erro ao salvar o item: ${error.message}`); }
         });
     } catch (error) {
@@ -396,7 +396,7 @@ async function renderEditItemView(itemId) {
         document.getElementById('edit-item-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target, valueEl = form.querySelector('[name="value"]');
-            const updatedItem = { ...item, name: form.name.value, value: item.type === 'boolean' ? valueEl.checked : valueEl.value };
+            const updatedItem = { ...item, name: form.name.value, value: item.type === 'boolean' ? valueEl.checked : (item.type === 'number' ? Number(valueEl.value) : valueEl.value) };
             try { await updateItem(updatedItem); location.hash = item.path; } catch (error) { console.error('Failed to update item:', error); alert(`Erro ao atualizar o item: ${error.message}`); }
         });
 
