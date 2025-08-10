@@ -226,7 +226,7 @@ async function renderListView(path) {
                     })()
 
                 const addButtonHTML = `
-                    <button data-testid="add-item-button" onclick="location.hash = '${path}add'" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
+                    <button data-testid="add-item-button" onclick="handleAddItemClick('${path}')" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
@@ -440,221 +440,6 @@ async function renderListView(path) {
     }
 }
 
-async function renderAddItemView(path) {
-    breadcrumbEl.style.display = 'none';
-    appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
-
-    try {
-        const items = await getItems(path);
-        const baseName = "Item";
-        const sameNameItems = items.filter(item => item.name.startsWith(baseName + '_'));
-
-        let maxIndex = 0;
-        sameNameItems.forEach(item => {
-            const match = item.name.match(/_(\d+)$/);
-            if (match) {
-                const index = parseInt(match[1], 10);
-                if (index > maxIndex) {
-                    maxIndex = index;
-                }
-            }
-        });
-        const nextIndex = maxIndex + 1;
-        const newName = `${baseName}_${nextIndex}`;
-
-        appContainer.innerHTML = `
-            <div class="bg-white p-6 rounded-lg shadow-md dark:bg-gray-800">
-                <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Adicionar Novo Item</h2>
-                <form id="add-item-form">
-                    <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label><input type="text" id="item-name" name="name" value="${newName}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required></div>
-                    <div class="mb-4">
-                        <label for="item-type-button" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label>
-                        <input type="hidden" id="item-type" name="type" value="text">
-                        <button type="button" id="item-type-button" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-left flex justify-between items-center">
-                            <span id="selected-type-text">Texto</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" /></svg>
-                        </button>
-                        <div id="type-popup" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
-                                <div class="mt-3">
-                                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-2 text-center">Selecione um tipo</h3>
-                                    <input type="text" id="type-filter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Filtrar tipos...">
-                                    <ul id="type-list" class="mt-2 space-y-2" style="max-height: 200px; overflow-y: auto;">
-                                        <li data-value="text" class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">Texto</li>
-                                        <li data-value="number" class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">Número</li>
-                                        <li data-value="boolean" class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">Lógico (Sim/Não)</li>
-                                        <li data-value="list" class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">Lista</li>
-                                    </ul>
-                                    <div class="mt-4">
-                                        <button type="button" id="close-popup-btn" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                            Fechar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="value-container" class="mb-4"><label for="item-value" id="item-value-label" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label><div id="item-value-input"><input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></div></div>
-                    <div class="flex items-center justify-between">
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                        </button>
-                        <button type="button" onclick="history.back()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-                </form>
-            </div>`;
-
-        const valueContainer = document.getElementById('value-container');
-        const valueInputDiv = document.getElementById('item-value-input');
-
-        const itemTypeButton = document.getElementById('item-type-button');
-        const selectedTypeText = document.getElementById('selected-type-text');
-        const typePopup = document.getElementById('type-popup');
-        const closePopupBtn = document.getElementById('close-popup-btn');
-        const typeFilter = document.getElementById('type-filter');
-        const typeList = document.getElementById('type-list');
-        const itemTypeInput = document.getElementById('item-type');
-
-        itemTypeButton.addEventListener('click', () => {
-            typePopup.classList.remove('hidden');
-        });
-
-        closePopupBtn.addEventListener('click', () => {
-            typePopup.classList.add('hidden');
-        });
-
-        typePopup.addEventListener('click', (e) => {
-            if (e.target.id === 'type-popup') {
-                typePopup.classList.add('hidden');
-            }
-        });
-
-        typeFilter.addEventListener('input', (e) => {
-            const filterText = e.target.value.toLowerCase();
-            const items = typeList.getElementsByTagName('li');
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                const itemText = item.textContent.toLowerCase();
-                if (itemText.includes(filterText)) {
-                    item.style.display = '';
-                } else {
-                    item.style.display = 'none';
-                }
-            }
-        });
-
-        typeList.addEventListener('click', (e) => {
-            if (e.target.tagName === 'LI') {
-                const selectedValue = e.target.getAttribute('data-value');
-                const selectedText = e.target.textContent;
-
-                itemTypeInput.value = selectedValue;
-                selectedTypeText.textContent = selectedText;
-
-                typePopup.classList.add('hidden');
-
-                renderValueInput(selectedValue);
-            }
-        });
-
-        function renderValueInput(type) {
-            valueContainer.style.display = 'block'; // show by default, hide for list
-            if (type === 'list') {
-                valueContainer.style.display = 'none';
-                valueInputDiv.innerHTML = ''; // clear
-            } else if (type === 'boolean') {
-                valueInputDiv.innerHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600">`;
-            } else if (type === 'number') {
-                valueInputDiv.innerHTML = `
-                    <div id="number-operation-container">
-                        <select id="number-operator" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2">
-                            <option value="constant">Constante</option>
-                            <option value="sum">Soma</option>
-                            <option value="subtraction">Subtração</option>
-                            <option value="multiplication">Multiplicação</option>
-                            <option value="division">Divisão</option>
-                        </select>
-                        <div id="number-operands">
-                            <input type="number" id="item-value" name="value" value="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                        </div>
-                    </div>`;
-
-                const operatorSelect = document.getElementById('number-operator');
-                const operandsDiv = document.getElementById('number-operands');
-
-                operatorSelect.addEventListener('change', (e) => {
-                    const operator = e.target.value;
-                    if (operator === 'constant') {
-                        operandsDiv.innerHTML = `<input type="number" id="item-value" name="value" value="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-                    } else {
-                        operandsDiv.innerHTML = `
-                            <input type="number" name="operand1" value="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2" placeholder="Operando 1">
-                            <input type="number" name="operand2" value="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Operando 2">
-                        `;
-                    }
-                });
-            } else { // text
-                valueInputDiv.innerHTML = `<input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-            }
-        }
-
-        // Initial render for default selected type
-        renderValueInput(itemTypeInput.value);
-
-        document.getElementById('add-item-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const form = e.target;
-            const name = form.name.value;
-            const type = form.type.value;
-            let value;
-
-            if (type === 'list') {
-                value = '';
-            } else if (type === 'boolean') {
-                const valueEl = form.querySelector('[name="value"]');
-                value = valueEl ? valueEl.checked : false;
-            } else if (type === 'text') {
-                const valueEl = form.querySelector('[name="value"]');
-                value = valueEl ? valueEl.value : '';
-            } else if (type === 'number') {
-                const operatorSelect = document.getElementById('number-operator');
-                if (operatorSelect) {
-                    const operator = operatorSelect.value;
-                    if (operator === 'constant') {
-                        const valueEl = form.querySelector('[name="value"]');
-                        value = valueEl ? Number(valueEl.value) : 0;
-                    } else {
-                        const operand1El = form.querySelector('[name="operand1"]');
-                        const operand2El = form.querySelector('[name="operand2"]');
-                        const operand1 = operand1El ? Number(operand1El.value) : 0;
-                        const operand2 = operand2El ? Number(operand2El.value) : 0;
-                        value = {
-                            operator: operator,
-                            operands: [operand1, operand2]
-                        };
-                    }
-                } else {
-                    value = 0; // Fallback
-                }
-            }
-
-            const newItem = { path, name, type, value };
-            try {
-                await addItem(newItem);
-                location.hash = path;
-            } catch (error) {
-                console.error('Failed to add item:', error);
-                alert(`Erro ao salvar o item: ${error.message}`);
-            }
-        });
-    } catch (error) {
-        console.error('Failed to render add item view:', error);
-        appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar a página de adição de item.</p>`;
-    }
-}
-
 async function renderEditItemView(itemId) {
     breadcrumbEl.style.display = 'none';
     appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando item...</p>`;
@@ -796,13 +581,48 @@ function router() {
     if (hash.startsWith('/edit/')) {
         const itemId = hash.substring('/edit/'.length);
         renderEditItemView(itemId);
-    } else if (hash.endsWith('/add')) {
-        const path = hash.substring(0, hash.length - 'add'.length) || '/';
-        renderAddItemView(path);
     } else {
         renderListView(hash);
     }
 }
+
+async function handleAddItemClick(path) {
+    try {
+        const items = await getItems(path);
+        const baseName = "Item";
+
+        // Filter items that match the pattern "Item" or "Item_number"
+        const sameNameItems = items.filter(item => {
+            return item.name === baseName || item.name.startsWith(baseName + '_');
+        });
+
+        let maxIndex = 0;
+        if (sameNameItems.length > 0) {
+            const indices = sameNameItems.map(item => {
+                if (item.name === baseName) return 1; // "Item" counts as Item_1
+                const match = item.name.match(/_(\d+)$/);
+                return match ? parseInt(match[1], 10) : 0;
+            });
+            maxIndex = Math.max(...indices);
+        }
+
+        const newName = maxIndex === 0 ? baseName : `${baseName}_${maxIndex + 1}`;
+
+        const newItem = {
+            path,
+            name: newName,
+            type: 'text',
+            value: `Valor do ${newName}`
+        };
+
+        await addItem(newItem);
+        renderListView(path);
+    } catch (error) {
+        console.error('Failed to add item:', error);
+        alert(`Erro ao adicionar o item: ${error.message}`);
+    }
+}
+window.handleAddItemClick = handleAddItemClick;
 
 // --- App Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
