@@ -16,8 +16,8 @@ export function initDB() {
             const db = event.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                // Index to query items by their parent path
                 store.createIndex('path', 'path', { unique: false });
+                store.createIndex('order', 'order', { unique: false });
             }
         };
 
@@ -49,7 +49,6 @@ export function addItem(item) {
 
             let finalName = item.name;
 
-            // If the name already exists, find a new one by incrementing the index.
             if (existingNames.has(finalName)) {
                 const match = finalName.match(/^(.*)_(\d+)$/);
                 let baseName = finalName;
@@ -60,7 +59,6 @@ export function addItem(item) {
                     counter = parseInt(match[2], 10);
                 }
 
-                // Keep incrementing the counter until a unique name is found
                 do {
                     finalName = `${baseName}_${counter}`;
                     counter++;
@@ -72,9 +70,10 @@ export function addItem(item) {
 
             const newItem = {
                 ...item,
-                name: finalName, // Use the potentially modified name
+                name: finalName,
                 id: crypto.randomUUID(),
-                createdAt: new Date()
+                createdAt: new Date(),
+                order: itemsInPath.length
             };
 
             const request = store.add(newItem);
@@ -87,7 +86,7 @@ export function addItem(item) {
 }
 
 /**
- * Retrieves all items for a given path.
+ * Retrieves all items for a given path, sorted by the 'order' property.
  * @param {string} path - The path to fetch items from.
  * @returns {Promise<Array<object>>} A list of items.
  */
@@ -100,7 +99,9 @@ export function getItems(path) {
         const index = store.index('path');
         const request = index.getAll(path);
 
-        request.onsuccess = () => resolve(request.result.sort((a, b) => a.createdAt - b.createdAt));
+        request.onsuccess = () => {
+            resolve(request.result.sort((a, b) => a.order - b.order));
+        };
         request.onerror = (event) => reject(event.target.error);
     });
 }
@@ -165,5 +166,41 @@ export function deleteItem(id) {
 
         request.onsuccess = () => resolve();
         request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+/**
+ * Updates the order of multiple items in a single transaction.
+ * @param {Array<object>} items - An array of item objects with their 'id' and new 'order'.
+ * @returns {Promise<void>}
+ */
+export function updateItemsOrder(items) {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject('Database not initialized.');
+        if (!items || items.length === 0) return resolve();
+
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+
+        transaction.oncomplete = () => {
+            resolve();
+        };
+        transaction.onerror = (event) => {
+            reject(event.target.error);
+        };
+        transaction.onabort = () => {
+            reject(new Error('Transaction was aborted.'));
+        };
+
+        items.forEach(itemToUpdate => {
+            const request = store.get(itemToUpdate.id);
+            request.onsuccess = () => {
+                const item = request.result;
+                if (item) {
+                    item.order = itemToUpdate.order;
+                    store.put(item);
+                }
+            };
+        });
     });
 }
