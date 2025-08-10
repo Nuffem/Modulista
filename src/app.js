@@ -597,7 +597,10 @@ async function renderEditView(path) {
         const fullPath = path.substring('/edit'.length);
         const parts = fullPath.split('/').filter(p => p);
         const itemName = parts.pop();
-        const itemPath = `/${parts.join('/')}/`;
+        let itemPath = `/${parts.join('/')}/`;
+        if (itemPath === '//') {
+            itemPath = '/';
+        }
 
         const item = await getItemByPathAndName(itemPath, itemName);
 
