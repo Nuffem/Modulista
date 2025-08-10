@@ -134,7 +134,7 @@ function getItemIcon(type) {
     }
 }
 
-async function renderListView(path) {
+export async function renderListView(path) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
     appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
@@ -586,35 +586,38 @@ function router() {
     }
 }
 
-async function handleAddItemClick(path) {
+export function createNewItem(path, items) {
+    const baseName = "Item";
+
+    // Filter items that match the pattern "Item" or "Item_number"
+    const sameNameItems = items.filter(item => {
+        return item.name === baseName || item.name.startsWith(baseName + '_');
+    });
+
+    let maxIndex = 0;
+    if (sameNameItems.length > 0) {
+        const indices = sameNameItems.map(item => {
+            if (item.name === baseName) return 1; // "Item" counts as Item_1
+            const match = item.name.match(/_(\d+)$/);
+            return match ? parseInt(match[1], 10) : 0;
+        });
+        maxIndex = Math.max(...indices);
+    }
+
+    const newName = maxIndex === 0 ? baseName : `${baseName}_${maxIndex + 1}`;
+
+    return {
+        path,
+        name: newName,
+        type: 'text',
+        value: ''
+    };
+}
+
+export async function handleAddItemClick(path) {
     try {
         const items = await getItems(path);
-        const baseName = "Item";
-
-        // Filter items that match the pattern "Item" or "Item_number"
-        const sameNameItems = items.filter(item => {
-            return item.name === baseName || item.name.startsWith(baseName + '_');
-        });
-
-        let maxIndex = 0;
-        if (sameNameItems.length > 0) {
-            const indices = sameNameItems.map(item => {
-                if (item.name === baseName) return 1; // "Item" counts as Item_1
-                const match = item.name.match(/_(\d+)$/);
-                return match ? parseInt(match[1], 10) : 0;
-            });
-            maxIndex = Math.max(...indices);
-        }
-
-        const newName = maxIndex === 0 ? baseName : `${baseName}_${maxIndex + 1}`;
-
-        const newItem = {
-            path,
-            name: newName,
-            type: 'text',
-            value: `Valor do ${newName}`
-        };
-
+        const newItem = createNewItem(path, items);
         await addItem(newItem);
         renderListView(path);
     } catch (error) {
