@@ -134,7 +134,7 @@ function getItemIcon(type) {
     }
 }
 
-export async function renderListView(path) {
+export async function renderListView(path, activeItemId = null) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
     appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
@@ -175,55 +175,12 @@ export async function renderListView(path) {
             const renderList = () => {
                 const listHTML = items.length === 0
                     ? '<p class="text-gray-500 dark:text-gray-400">Nenhum item encontrado.</p>'
-                    : (() => {
-                        const formatItemValueForDisplay = (item) => {
-                            if (item.type === 'number' && typeof item.value === 'object' && item.value !== null) {
-                                const { operator, operands } = item.value;
-                                if (!operands || operands.length !== 2) return 'Invalid operands';
-
-                                const opMap = { sum: '+', subtraction: '-', multiplication: '*', division: '/' };
-                                const opSymbol = opMap[operator];
-                                if (!opSymbol) return 'Invalid operator';
-
-                                const [op1, op2] = operands;
-                                let result;
-                                switch (operator) {
-                                    case 'sum': result = op1 + op2; break;
-                                    case 'subtraction': result = op1 - op2; break;
-                                    case 'multiplication': result = op1 * op2; break;
-                                    case 'division': result = op2 !== 0 ? op1 / op2 : 'Infinity'; break;
-                                    default: result = NaN;
-                                }
-                                const formattedResult = (typeof result === 'number' && !Number.isInteger(result)) ? result.toFixed(2) : result;
-                                return `${op1} ${opSymbol} ${op2} = ${formattedResult}`;
-                            }
-                            return item.value;
-                        };
-
-                        return '<ul id="item-list" class="space-y-3">' + items.map(item => {
-                            const editUrl = `#/edit/${item.id}`;
-                            const listUrl = `#${path}${item.name}/`;
-                            const itemUrl = item.type === 'list' ? listUrl : editUrl;
-                            return `
-                                <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
-                                    <a href="${itemUrl}" class="flex items-center grow">
-                                        <div class="mr-4">${getItemIcon(item.type)}</div>
-                                        <span class="font-semibold">${item.name}</span>
-                                    </a>
-                                    <div class="flex items-center">
-                                        ${item.type === 'boolean'
-                                            ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
-                                            : item.type === 'list'
-                                            ? `<span class="text-sm text-gray-500 mr-4"></span>`
-                                            : `<span class="text-gray-700 mr-4 dark:text-gray-300">${formatItemValueForDisplay(item)}</span>`
-                                        }
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 dark:text-gray-500 cursor-grab handle">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                                        </svg>
-                                    </div>
-                                </li>`;
-                        }).join('') + '</ul>';
-                    })()
+                    : '<ul id="item-list" class="space-y-3">' + items.map(item => {
+                        if (item.id === activeItemId) {
+                            return renderEditFormForItem(item);
+                        }
+                        return renderItemRow(item);
+                    }).join('') + '</ul>';
 
                 const addButtonHTML = `
                     <button data-testid="add-item-button" onclick="handleAddItemClick('${path}')" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
@@ -234,16 +191,24 @@ export async function renderListView(path) {
                 `;
                 tabContent.innerHTML = listHTML + addButtonHTML;
                 listContainer = document.getElementById('item-list');
-                addDragAndDropHandlers(listContainer);
-            }
+
+                if (activeItemId) {
+                    const form = document.getElementById(`edit-item-form-${activeItemId}`);
+                    if (form) {
+                        setupEditFormHandlers(items.find(i => i.id === activeItemId), form);
+                    }
+                } else {
+                    addDragAndDropHandlers(listContainer);
+                }
+            };
 
             const addDragAndDropHandlers = (container) => {
                 if (!container) return;
                 let draggedItemId = null;
 
                 container.addEventListener('dragstart', e => {
-                    const target = e.target.closest('li');
-                    if (target) {
+                    const target = e.target.closest('li[data-id]');
+                    if (target && target.draggable) {
                         draggedItemId = target.dataset.id;
                         e.dataTransfer.effectAllowed = 'move';
                         e.dataTransfer.setData('text/plain', draggedItemId);
@@ -254,7 +219,7 @@ export async function renderListView(path) {
                 });
 
                 container.addEventListener('dragend', e => {
-                    const target = e.target.closest('li');
+                    const target = e.target.closest('li[data-id]');
                     if(target) {
                         target.classList.remove('opacity-50');
                     }
@@ -263,21 +228,24 @@ export async function renderListView(path) {
                 container.addEventListener('dragover', e => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
-                    const target = e.target.closest('li');
+                    const target = e.target.closest('li[data-id]');
                     if (target && target.dataset.id !== draggedItemId) {
                         const rect = target.getBoundingClientRect();
                         const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > .5;
-                        if (next) {
-                            target.parentNode.insertBefore(document.querySelector(`[data-id='${draggedItemId}']`), target.nextSibling);
-                        } else {
-                             target.parentNode.insertBefore(document.querySelector(`[data-id='${draggedItemId}']`), target);
+                        const draggedElement = document.querySelector(`[data-id='${draggedItemId}']`);
+                        if(draggedElement) {
+                            if (next) {
+                                target.parentNode.insertBefore(draggedElement, target.nextSibling);
+                            } else {
+                                target.parentNode.insertBefore(draggedElement, target);
+                            }
                         }
                     }
                 });
 
                 container.addEventListener('drop', async e => {
                     e.preventDefault();
-                    const liElements = Array.from(container.querySelectorAll('li'));
+                    const liElements = Array.from(container.querySelectorAll('li[data-id]'));
                     const newOrderedIds = liElements.map(li => li.dataset.id);
 
                     const updatedItems = items.map(item => {
@@ -291,7 +259,6 @@ export async function renderListView(path) {
                         renderList(); // Re-render the list with fresh, sorted data
                     } catch (error) {
                         console.error("Failed to update item order:", error);
-                        // Optionally, revert the list to its original state if DB update fails
                         renderListView(path);
                     }
                 });
@@ -299,7 +266,7 @@ export async function renderListView(path) {
 
             renderList();
 
-        } else {
+        } else { // Text View is Active
             const textContentHTML = `
                 <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
                     <div id="text-display">
@@ -425,13 +392,13 @@ export async function renderListView(path) {
         document.getElementById('list-tab-btn').addEventListener('click', () => {
             if (currentView !== 'list') {
                 currentView = 'list';
-                renderListView(path);
+                renderListView(path); // Reset active item when switching tabs
             }
         });
         document.getElementById('text-tab-btn').addEventListener('click', () => {
             if (currentView !== 'text') {
                 currentView = 'text';
-                renderListView(path);
+                renderListView(path, activeItemId); // Keep active item context
             }
         });
 
@@ -441,47 +408,64 @@ export async function renderListView(path) {
     }
 }
 
-async function renderEditItemView(itemId) {
-    breadcrumbEl.style.display = 'none';
-    appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando item...</p>`;
-    try {
-        const item = await getItem(itemId);
-        if (!item) {
-            appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`;
-            return;
+function renderItemRow(item) {
+    const formatItemValueForDisplay = (item) => {
+        if (item.type === 'number' && typeof item.value === 'object' && item.value !== null) {
+            const { operator, operands } = item.value;
+            if (!operands || operands.length !== 2) return 'Invalid operands';
+
+            const opMap = { sum: '+', subtraction: '-', multiplication: '*', division: '/' };
+            const opSymbol = opMap[operator];
+            if (!opSymbol) return 'Invalid operator';
+
+            const [op1, op2] = operands;
+            let result;
+            switch (operator) {
+                case 'sum': result = op1 + op2; break;
+                case 'subtraction': result = op1 - op2; break;
+                case 'multiplication': result = op1 * op2; break;
+                case 'division': result = op2 !== 0 ? op1 / op2 : 'Infinity'; break;
+                default: result = NaN;
+            }
+            const formattedResult = (typeof result === 'number' && !Number.isInteger(result)) ? result.toFixed(2) : result;
+            return `${op1} ${opSymbol} ${op2} = ${formattedResult}`;
         }
+        return item.value;
+    };
 
-        appContainer.innerHTML = `
-            <div class="bg-white p-6 rounded-lg shadow-md dark:bg-gray-800">
-                <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Editar Item</h2>
-                <form id="edit-item-form">
-                    <div class="mb-4"><label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label><p class="text-gray-800 dark:text-gray-200">${item.type}</p></div>
-                    <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label><input type="text" id="item-name" name="name" value="${item.name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required></div>
-                    <div id="value-container" class="mb-4">
-                        <label for="item-value" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
-                        <div id="item-value-input"></div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                        </button>
-                        <button type="button" onclick="history.back()" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-                </form>
-                <div class="mt-6 border-t pt-4 dark:border-gray-700">
-                    <button id="delete-item-btn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full">Excluir Item</button>
-                </div>
-            </div>`;
+    const editUrl = `#/edit/${item.id}`;
+    const listUrl = `#${item.path}${item.name}/`;
+    const itemUrl = item.type === 'list' ? listUrl : editUrl;
 
-        const valueInputDiv = document.getElementById('item-value-input');
+    return `
+        <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
+            <a href="${itemUrl}" class="flex items-center grow">
+                <div class="mr-4">${getItemIcon(item.type)}</div>
+                <span class="font-semibold">${item.name}</span>
+            </a>
+            <div class="flex items-center">
+                ${item.type === 'boolean'
+                    ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
+                    : item.type === 'list'
+                    ? `<span class="text-sm text-gray-500 mr-4"></span>`
+                    : `<span class="text-gray-700 mr-4 dark:text-gray-300">${formatItemValueForDisplay(item)}</span>`
+                }
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 dark:text-gray-500 cursor-grab handle">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </div>
+        </li>`;
+}
 
+function renderEditFormForItem(item) {
+    const valueInputHTML = (() => {
         if (item.type === 'boolean') {
-            valueInputDiv.innerHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600" ${item.value ? 'checked' : ''}>`;
-        } else if (item.type === 'text') {
-            valueInputDiv.innerHTML = `<input type="text" id="item-value" name="value" value="${item.value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-        } else if (item.type === 'number') {
+            return `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600" ${item.value ? 'checked' : ''}>`;
+        }
+        if (item.type === 'text') {
+            return `<input type="text" id="item-value" name="value" value="${item.value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
+        }
+        if (item.type === 'number') {
             const isOperation = typeof item.value === 'object' && item.value !== null;
             const operator = isOperation ? item.value.operator : 'constant';
             const operands = isOperation ? item.value.operands : [item.value, 0];
@@ -494,85 +478,134 @@ async function renderEditItemView(itemId) {
                 .map(([value, label]) => `<option value="${value}" ${value === operator ? 'selected' : ''}>${label}</option>`)
                 .join('');
 
-            valueInputDiv.innerHTML = `
+            return `
                 <div id="number-operation-container">
                     <select id="number-operator" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2">
                         ${operatorOptionsHTML}
                     </select>
                     <div id="number-operands"></div>
                 </div>`;
+        }
+        return '<p class="text-gray-500">Este tipo de item não possui um valor editável.</p>';
+    })();
 
-            const operatorSelect = document.getElementById('number-operator');
-            const operandsDiv = document.getElementById('number-operands');
+    return `
+        <li data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
+            <form id="edit-item-form-${item.id}">
+                <div class="mb-4">
+                    <label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label>
+                    <input type="text" id="item-name" name="name" value="${item.name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
+                    <div id="item-value-input-${item.id}">${valueInputHTML}</div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded dark:bg-blue-600 dark:hover:bg-blue-700" title="Salvar">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                        </button>
+                        <button type="button" onclick="location.hash='${item.path}'" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded dark:bg-gray-600 dark:hover:bg-gray-700" title="Cancelar">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                    <button type="button" id="delete-item-btn-${item.id}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-3 rounded" title="Excluir Item">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                    </button>
+                </div>
+            </form>
+        </li>`;
+}
 
-            const renderOperands = (op) => {
-                if (op === 'constant') {
-                    operandsDiv.innerHTML = `<input type="number" id="item-value" name="value" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-                } else {
-                    operandsDiv.innerHTML = `
-                        <input type="number" name="operand1" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2" placeholder="Operando 1">
-                        <input type="number" name="operand2" value="${operands[1]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Operando 2">
-                    `;
-                }
-            };
+function setupEditFormHandlers(item, formElement) {
+    if (item.type === 'number') {
+        const operatorSelect = formElement.querySelector('#number-operator');
+        const operandsDiv = formElement.querySelector('#number-operands');
+        const isOperation = typeof item.value === 'object' && item.value !== null;
+        let operands = isOperation ? item.value.operands : [item.value, 0];
 
-            renderOperands(operator);
+        const renderOperands = (op) => {
+            if (op === 'constant') {
+                operandsDiv.innerHTML = `<input type="number" id="item-value" name="value" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
+            } else {
+                operandsDiv.innerHTML = `
+                    <input type="number" name="operand1" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2" placeholder="Operando 1">
+                    <input type="number" name="operand2" value="${operands[1]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Operando 2">
+                `;
+            }
+        };
 
-            operatorSelect.addEventListener('change', (e) => {
-                // Reset operands when changing operator type
-                operands[0] = 0;
-                operands[1] = 0;
-                renderOperands(e.target.value);
-            });
+        renderOperands(operatorSelect.value);
+
+        operatorSelect.addEventListener('change', (e) => {
+            operands = [0, 0]; // Reset operands on change
+            renderOperands(e.target.value);
+        });
+    }
+
+    formElement.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        let value;
+
+        if (item.type === 'boolean') {
+            value = form.querySelector('[name="value"]').checked;
+        } else if (item.type === 'text') {
+            value = form.querySelector('[name="value"]').value;
+        } else if (item.type === 'number') {
+            const operator = form.querySelector('#number-operator').value;
+            if (operator === 'constant') {
+                value = Number(form.querySelector('[name="value"]').value);
+            } else {
+                const operand1 = Number(form.querySelector('[name="operand1"]').value);
+                const operand2 = Number(form.querySelector('[name="operand2"]').value);
+                value = { operator, operands: [operand1, operand2] };
+            }
+        } else {
+            value = item.value;
         }
 
-        document.getElementById('edit-item-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const form = e.target;
-            let value;
+        const updatedItem = { ...item, name: form.name.value, value };
+        try {
+            await updateItem(updatedItem);
+            location.hash = item.path;
+        } catch (error) {
+            console.error('Failed to update item:', error);
+            alert(`Erro ao atualizar o item: ${error.message}`);
+        }
+    });
 
-            if (item.type === 'boolean') {
-                value = form.querySelector('[name="value"]').checked;
-            } else if (item.type === 'text') {
-                value = form.querySelector('[name="value"]').value;
-            } else if (item.type === 'number') {
-                const operator = document.getElementById('number-operator').value;
-                if (operator === 'constant') {
-                    value = Number(form.querySelector('[name="value"]').value);
-                } else {
-                    const operand1 = Number(form.querySelector('[name="operand1"]').value);
-                    const operand2 = Number(form.querySelector('[name="operand2"]').value);
-                    value = { operator, operands: [operand1, operand2] };
-                }
-            } else {
-                value = item.value; // Keep original value if type has no input
-            }
-
-            const updatedItem = { ...item, name: form.name.value, value };
+    formElement.querySelector(`#delete-item-btn-${item.id}`).addEventListener('click', async () => {
+        if (confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) {
             try {
-                await updateItem(updatedItem);
+                await deleteItem(item.id);
                 location.hash = item.path;
             } catch (error) {
-                console.error('Failed to update item:', error);
-                alert(`Erro ao atualizar o item: ${error.message}`);
+                console.error('Failed to delete item:', error);
+                alert('Erro ao excluir o item.');
             }
-        });
+        }
+    });
+}
 
-        document.getElementById('delete-item-btn').addEventListener('click', async () => {
-            if (confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) {
-                try {
-                    await deleteItem(itemId);
-                    location.hash = item.path;
-                } catch (error) {
-                    console.error('Failed to delete item:', error);
-                    alert('Erro ao excluir o item.');
-                }
-            }
-        });
 
+async function renderItemView(itemId) {
+    try {
+        const item = await getItem(itemId);
+        if (!item) {
+            appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`;
+            return;
+        }
+        // If the item is a list, just navigate to its list view
+        if (item.type === 'list') {
+            location.hash = `${item.path}${item.name}/`;
+            return;
+        }
+        currentView = 'list'; // Default to list view when showing an item
+        renderListView(item.path, itemId);
     } catch (error) {
-        console.error('Failed to render edit view:', error);
-        appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item para edição.</p>`;
+        console.error('Failed to render item view:', error);
+        appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
     }
 }
 
@@ -581,7 +614,7 @@ function router() {
     const hash = window.location.hash.substring(1) || '/';
     if (hash.startsWith('/edit/')) {
         const itemId = hash.substring('/edit/'.length);
-        renderEditItemView(itemId);
+        renderItemView(itemId);
     } else {
         renderListView(hash);
     }
@@ -620,6 +653,7 @@ export async function handleAddItemClick(path) {
         const items = await getItems(path);
         const newItem = createNewItem(path, items);
         const newItemId = await addItem(newItem);
+        // Navigate to the new item's view, which will be an editable form within the list
         location.hash = `#/edit/${newItemId}`;
     } catch (error) {
         console.error('Failed to add item:', error);
