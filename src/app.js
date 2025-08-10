@@ -1,4 +1,4 @@
-import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder } from './db.js';
+import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder, getItemByPathAndName } from './db.js';
 import { parse, stringify, executePlan } from './custom-parser.js';
 
 const appContainer = document.getElementById('app-container');
@@ -9,7 +9,7 @@ let currentView = 'list'; // 'list' or 'text'
 
 // --- Rendering Functions ---
 
-function renderBreadcrumb(path) {
+function renderBreadcrumb(path, itemName = null) {
     const parts = path.split('/').filter(p => p);
     let cumulativePath = '#/';
     let html = '<div class="flex items-center">';
@@ -18,6 +18,9 @@ function renderBreadcrumb(path) {
         cumulativePath += `${part}/`;
         html += ` <span class="text-gray-500 mx-2">/</span> <button onclick="location.hash='${cumulativePath}'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${decodeURIComponent(part)}</button>`;
     });
+    if (itemName) {
+        html += ` <span class="text-gray-500 mx-2">/</span> <span class="font-semibold">${itemName}</span>`;
+    }
     html += '</div>';
     breadcrumbEl.innerHTML = html;
 }
@@ -134,7 +137,7 @@ function getItemIcon(type) {
     }
 }
 
-export async function renderListView(path, activeItemId = null) {
+export async function renderListView(path) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
     appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
@@ -175,12 +178,7 @@ export async function renderListView(path, activeItemId = null) {
             const renderList = () => {
                 const listHTML = items.length === 0
                     ? '<p class="text-gray-500 dark:text-gray-400">Nenhum item encontrado.</p>'
-                    : '<ul id="item-list" class="space-y-3">' + items.map(item => {
-                        if (item.id === activeItemId) {
-                            return renderEditFormForItem(item);
-                        }
-                        return renderItemRow(item);
-                    }).join('') + '</ul>';
+                    : '<ul id="item-list" class="space-y-3">' + items.map(item => renderItemRow(item)).join('') + '</ul>';
 
                 const addButtonHTML = `
                     <button data-testid="add-item-button" onclick="handleAddItemClick('${path}')" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
@@ -191,15 +189,7 @@ export async function renderListView(path, activeItemId = null) {
                 `;
                 tabContent.innerHTML = listHTML + addButtonHTML;
                 listContainer = document.getElementById('item-list');
-
-                if (activeItemId) {
-                    const form = document.getElementById(`edit-item-form-${activeItemId}`);
-                    if (form) {
-                        setupEditFormHandlers(items.find(i => i.id === activeItemId), form);
-                    }
-                } else {
-                    addDragAndDropHandlers(listContainer);
-                }
+                addDragAndDropHandlers(listContainer);
             };
 
             const addDragAndDropHandlers = (container) => {
@@ -398,7 +388,7 @@ export async function renderListView(path, activeItemId = null) {
         document.getElementById('text-tab-btn').addEventListener('click', () => {
             if (currentView !== 'text') {
                 currentView = 'text';
-                renderListView(path, activeItemId); // Keep active item context
+                renderListView(path);
             }
         });
 
@@ -433,9 +423,7 @@ function renderItemRow(item) {
         return item.value;
     };
 
-    const editUrl = `#/edit/${item.id}`;
-    const listUrl = `#${item.path}${item.name}/`;
-    const itemUrl = item.type === 'list' ? listUrl : editUrl;
+    const itemUrl = `#${item.path}${item.name}${item.type === 'list' ? '/' : ''}`;
 
     return `
         <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
@@ -589,34 +577,49 @@ function setupEditFormHandlers(item, formElement) {
 }
 
 
-async function renderItemView(itemId) {
+async function renderItemDetailView(path) {
     try {
-        const item = await getItem(itemId);
+        const fullPath = path;
+        const parts = fullPath.split('/').filter(p => p);
+        const itemName = parts.pop();
+        let itemPath = `/${parts.join('/')}/`;
+        if (itemPath === '//') {
+            itemPath = '/';
+        }
+
+        const item = await getItemByPathAndName(itemPath, itemName);
+
         if (!item) {
             appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`;
+            breadcrumbEl.innerHTML = '';
             return;
         }
-        // If the item is a list, just navigate to its list view
-        if (item.type === 'list') {
-            location.hash = `${item.path}${item.name}/`;
-            return;
+
+        breadcrumbEl.style.display = 'block';
+        renderBreadcrumb(item.path, item.name);
+
+        const formHTML = renderEditFormForItem(item);
+        appContainer.innerHTML = `<div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">${formHTML}</div>`;
+
+        const form = document.getElementById(`edit-item-form-${item.id}`);
+        if (form) {
+            setupEditFormHandlers(item, form);
         }
-        currentView = 'list'; // Default to list view when showing an item
-        renderListView(item.path, itemId);
+
     } catch (error) {
-        console.error('Failed to render item view:', error);
+        console.error('Failed to render item detail view:', error);
         appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
     }
 }
 
 // --- Router ---
 function router() {
-    const hash = window.location.hash.substring(1) || '/';
-    if (hash.startsWith('/edit/')) {
-        const itemId = hash.substring('/edit/'.length);
-        renderItemView(itemId);
+    const path = window.location.hash.substring(1) || '/';
+
+    if (path.endsWith('/')) {
+        renderListView(path);
     } else {
-        renderListView(hash);
+        renderItemDetailView(path);
     }
 }
 
@@ -651,10 +654,9 @@ export function createNewItem(path, items) {
 export async function handleAddItemClick(path) {
     try {
         const items = await getItems(path);
-        const newItem = createNewItem(path, items);
-        const newItemId = await addItem(newItem);
-        // Navigate to the new item's view, which will be an editable form within the list
-        location.hash = `#/edit/${newItemId}`;
+        const newItemData = createNewItem(path, items);
+        const newItem = await addItem(newItemData);
+        location.hash = `#${newItem.path}${newItem.name}`;
     } catch (error) {
         console.error('Failed to add item:', error);
         alert(`Erro ao adicionar o item: ${error.message}`);
