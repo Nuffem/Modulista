@@ -1,4 +1,5 @@
 import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder } from './db.js';
+import { parse, stringify } from './custom-parser.js';
 
 const appContainer = document.getElementById('app-container');
 const breadcrumbEl = document.getElementById('breadcrumb');
@@ -19,6 +20,88 @@ function renderBreadcrumb(path) {
     });
     html += '</div>';
     breadcrumbEl.innerHTML = html;
+}
+
+async function syncItems(path, parsedObject) {
+    const existingItems = await getItems(path);
+    const existingItemsMap = new Map(existingItems.map(i => [i.name, i]));
+    const parsedKeys = new Set(Object.keys(parsedObject));
+
+    const promises = [];
+
+    // Updates and additions
+    for (const name of parsedKeys) {
+        const value = parsedObject[name];
+        const existingItem = existingItemsMap.get(name);
+        const valueType = typeof value;
+
+        let type;
+        if (valueType === 'string') type = 'text';
+        else if (valueType === 'number') type = 'number';
+        else if (valueType === 'boolean') type = 'boolean';
+        else if (valueType === 'object' && value !== null) type = 'list';
+        else {
+            console.warn(`Unsupported value type for ${name}: ${valueType}`);
+            continue;
+        }
+
+        if (existingItem) {
+            // Item exists, check for updates
+            if (existingItem.type === 'list' && type === 'list') {
+                // Recurse for lists
+                promises.push(syncItems(`${path}${name}/`, value));
+            } else if (existingItem.type !== 'list' && type !== 'list' && existingItem.value !== value) {
+                // Value changed, update it
+                const updatedItem = { ...existingItem, value, type };
+                promises.push(updateItem(updatedItem));
+            } else if (existingItem.type !== type) {
+                // Type changed. This is more complex. For now, let's delete and re-add.
+                promises.push(deleteItem(existingItem.id).then(() => {
+                    const newItem = { path, name, type, value: type === 'list' ? '' : value };
+                    return addItem(newItem);
+                }));
+            }
+        } else {
+            // New item
+            const newItem = {
+                path,
+                name,
+                type,
+                value: type === 'list' ? '' : value,
+            };
+            promises.push(addItem(newItem).then((id) => {
+                if (type === 'list') {
+                    return syncItems(`${path}${name}/`, value);
+                }
+            }));
+        }
+    }
+
+    // Deletions
+    for (const [name, item] of existingItemsMap.entries()) {
+        if (!parsedKeys.has(name)) {
+            // Before deleting a list, we must delete all its children
+            if (item.type === 'list') {
+                promises.push(deleteListRecursive(`${path}${name}/`).then(() => deleteItem(item.id)));
+            } else {
+                promises.push(deleteItem(item.id));
+            }
+        }
+    }
+
+    await Promise.all(promises);
+}
+
+async function deleteListRecursive(path) {
+    const items = await getItems(path);
+    const promises = [];
+    for (const item of items) {
+        if (item.type === 'list') {
+            promises.push(deleteListRecursive(`${path}${item.name}/`));
+        }
+        promises.push(deleteItem(item.id));
+    }
+    await Promise.all(promises);
 }
 
 function getItemIcon(type) {
@@ -191,21 +274,10 @@ async function renderListView(path) {
             renderList();
 
         } else {
-            const itemsAsText = items.map(item => {
-                const key = JSON.stringify(item.name);
-                let value;
-                if (item.type === 'list') {
-                    value = '"[ ... ]"';
-                } else {
-                    value = JSON.stringify(item.value);
-                }
-                return `  ${key}: ${value}`;
-            }).join(',\n');
-
             const textContentHTML = `
                 <div class="bg-white p-4 rounded-lg shadow">
                     <div id="text-display">
-                        <pre class="bg-gray-100 p-4 rounded overflow-x-auto"><code>{\n${itemsAsText}\n}</code></pre>
+                        <pre class="bg-gray-100 p-4 rounded overflow-x-auto"><code>Carregando...</code></pre>
                         <div class="mt-4 flex justify-end">
                             <button id="edit-text-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                                 Editar
@@ -230,9 +302,20 @@ async function renderListView(path) {
             const textDisplay = document.getElementById('text-display');
             const textEdit = document.getElementById('text-edit');
             const textEditor = document.getElementById('text-editor');
+            const codeBlock = textDisplay.querySelector('code');
+
+            let textContent = '';
+
+            stringify(items, path).then(str => {
+                textContent = str;
+                codeBlock.textContent = textContent;
+            }).catch(error => {
+                codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
+                console.error("Stringify error:", error);
+            });
 
             document.getElementById('edit-text-btn').addEventListener('click', () => {
-                textEditor.value = `{\n${itemsAsText}\n}`;
+                textEditor.value = textContent;
                 textDisplay.classList.add('hidden');
                 textEdit.classList.remove('hidden');
             });
@@ -245,29 +328,13 @@ async function renderListView(path) {
             document.getElementById('save-text-btn').addEventListener('click', async () => {
                 const newText = textEditor.value;
                 try {
-                    const newItemsObject = JSON.parse(newText);
-                    const updatedItems = [];
-
-                    for (const name in newItemsObject) {
-                        if (Object.hasOwnProperty.call(newItemsObject, name)) {
-                            const value = newItemsObject[name];
-                            const oldItem = items.find(i => i.name === name);
-
-                            if (oldItem) {
-                                if (oldItem.type !== 'list' && oldItem.value !== value) {
-                                    const updatedItem = { ...oldItem, value: value };
-                                    updatedItems.push(updateItem(updatedItem));
-                                }
-                            }
-                        }
-                    }
-
-                    await Promise.all(updatedItems);
+                    const newItemsObject = parse(newText);
+                    await syncItems(path, newItemsObject);
                     currentView = 'list';
                     renderListView(path);
                 } catch (error) {
                     console.error('Failed to parse and update items:', error);
-                    alert('Erro ao salvar. Verifique a sintaxe do JSON.\\n' + error.message);
+                    alert('Erro ao salvar. Verifique a sintaxe.\n' + error.message);
                 }
             });
         }
