@@ -134,6 +134,102 @@ function getItemIcon(type) {
     }
 }
 
+const operatorLabels = {
+    'constant': 'Constante',
+    'sum': 'Soma',
+    'subtraction': 'Subtração',
+    'multiplication': 'Multiplicação',
+    'division': 'Divisão'
+};
+
+function createOperandInput(container, value, level = 0) {
+    const isOperation = typeof value === 'object' && value !== null;
+    const initialType = isOperation ? 'operator' : 'constant';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = `operand-wrapper space-y-2 p-2 rounded-lg ${level > 0 ? 'ml-4 bg-gray-50 dark:bg-gray-800' : ''}`;
+    wrapper.dataset.level = level;
+
+    const typeSelect = document.createElement('select');
+    typeSelect.className = 'operand-type-select shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2';
+    typeSelect.innerHTML = `
+        <option value="constant" ${initialType === 'constant' ? 'selected' : ''}>Constante</option>
+        <option value="operator" ${initialType === 'operator' ? 'selected' : ''}>Operador</option>
+    `;
+    wrapper.appendChild(typeSelect);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'operand-content';
+    wrapper.appendChild(contentDiv);
+
+    function renderOperandContent(type, currentValue) {
+        contentDiv.innerHTML = ''; // Clear previous content
+
+        if (type === 'constant') {
+            const numberInput = document.createElement('input');
+            numberInput.type = 'number';
+            numberInput.name = 'value';
+            numberInput.className = 'shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+            numberInput.value = typeof currentValue === 'number' ? currentValue : 0;
+            contentDiv.appendChild(numberInput);
+        } else { // type === 'operator'
+            const opValue = (typeof currentValue === 'object' && currentValue !== null) ? currentValue : { operator: 'sum', operands: [0, 0] };
+
+            const operatorContainer = document.createElement('div');
+            operatorContainer.className = 'operator-container space-y-2';
+
+            const operatorSelect = document.createElement('select');
+            operatorSelect.className = 'operator-select shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+            const operatorOptionsHTML = Object.entries(operatorLabels)
+                .filter(([key]) => key !== 'constant')
+                .map(([op, label]) => `<option value="${op}" ${op === opValue.operator ? 'selected' : ''}>${label}</option>`)
+                .join('');
+            operatorSelect.innerHTML = operatorOptionsHTML;
+            operatorContainer.appendChild(operatorSelect);
+
+            const operandsDiv = document.createElement('div');
+            operandsDiv.className = 'operands-container space-y-2';
+            operatorContainer.appendChild(operandsDiv);
+
+            createOperandInput(operandsDiv, opValue.operands[0], level + 1);
+            createOperandInput(operandsDiv, opValue.operands[1], level + 1);
+
+            contentDiv.appendChild(operatorContainer);
+        }
+    }
+
+    typeSelect.addEventListener('change', (e) => {
+        const selectedType = e.target.value;
+        const currentValue = selectedType === 'constant' ? 0 : { operator: 'sum', operands: [0, 0] };
+        renderOperandContent(selectedType, currentValue);
+    });
+
+    container.appendChild(wrapper);
+    renderOperandContent(initialType, value); // Initial render
+}
+
+function parseOperandInput(wrapper) {
+    const type = wrapper.querySelector('.operand-type-select').value;
+    const contentDiv = wrapper.querySelector('.operand-content');
+
+    if (type === 'constant') {
+        const numberInput = contentDiv.querySelector('input[name="value"]');
+        return numberInput ? Number(numberInput.value) : 0;
+    } else { // type === 'operator'
+        const operatorContainer = contentDiv.querySelector('.operator-container');
+        if (!operatorContainer) return { operator: 'sum', operands: [0, 0] }; // Should not happen
+
+        const operator = operatorContainer.querySelector('.operator-select').value;
+        const operandsContainer = operatorContainer.querySelector('.operands-container');
+        const operandWrappers = operandsContainer.querySelectorAll('.operand-wrapper');
+
+        const operands = Array.from(operandWrappers).map(parseOperandInput);
+
+        return { operator, operands };
+    }
+}
+
+
 async function renderListView(path) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
@@ -492,34 +588,45 @@ async function renderAddItemView(path) {
             } else if (type === 'boolean') {
                 valueInputDiv.innerHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600">`;
             } else if (type === 'number') {
+                const operatorOptionsHTML = Object.entries(operatorLabels)
+                    .map(([value, label]) => `<option value="${value}">${label}</option>`)
+                    .join('');
+
                 valueInputDiv.innerHTML = `
                     <div id="number-operation-container">
-                        <select id="number-operator" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2">
-                            <option value="constant">Constante</option>
-                            <option value="sum">Soma</option>
-                            <option value="subtraction">Subtração</option>
-                            <option value="multiplication">Multiplicação</option>
-                            <option value="division">Divisão</option>
+                        <select id="number-operator-select" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2">
+                            ${operatorOptionsHTML}
                         </select>
-                        <div id="number-operands">
-                            <input type="number" id="item-value" name="value" value="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                        </div>
+                        <div id="number-operands-container" class="space-y-2"></div>
                     </div>`;
 
-                const operatorSelect = document.getElementById('number-operator');
-                const operandsDiv = document.getElementById('number-operands');
+                const operatorSelect = document.getElementById('number-operator-select');
+                const operandsContainer = document.getElementById('number-operands-container');
+
+                function renderOperands(operator) {
+                    operandsContainer.innerHTML = '';
+                    if (operator === 'constant') {
+                        const numberInput = document.createElement('input');
+                        numberInput.type = 'number';
+                        numberInput.id = 'item-value';
+                        numberInput.name = 'value';
+                        numberInput.value = '0';
+                        numberInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+                        operandsContainer.appendChild(numberInput);
+                    } else {
+                        // Render two operand inputs, which can be recursive
+                        createOperandInput(operandsContainer, 0, 1);
+                        createOperandInput(operandsContainer, 0, 1);
+                    }
+                }
 
                 operatorSelect.addEventListener('change', (e) => {
-                    const operator = e.target.value;
-                    if (operator === 'constant') {
-                        operandsDiv.innerHTML = `<input type="number" id="item-value" name="value" value="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-                    } else {
-                        operandsDiv.innerHTML = `
-                            <input type="number" name="operand1" value="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2" placeholder="Operando 1">
-                            <input type="number" name="operand2" value="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Operando 2">
-                        `;
-                    }
+                    renderOperands(e.target.value);
                 });
+
+                // Initial render
+                renderOperands(operatorSelect.value);
+
             } else { // text
                 valueInputDiv.innerHTML = `<input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
             }
@@ -546,24 +653,14 @@ async function renderAddItemView(path) {
                 const valueEl = form.querySelector('[name="value"]');
                 value = valueEl ? valueEl.value : '';
             } else if (type === 'number') {
-                const operatorSelect = document.getElementById('number-operator');
-                if (operatorSelect) {
-                    const operator = operatorSelect.value;
-                    if (operator === 'constant') {
-                        const valueEl = form.querySelector('[name="value"]');
-                        value = valueEl ? Number(valueEl.value) : 0;
-                    } else {
-                        const operand1El = form.querySelector('[name="operand1"]');
-                        const operand2El = form.querySelector('[name="operand2"]');
-                        const operand1 = operand1El ? Number(operand1El.value) : 0;
-                        const operand2 = operand2El ? Number(operand2El.value) : 0;
-                        value = {
-                            operator: operator,
-                            operands: [operand1, operand2]
-                        };
-                    }
+                const operator = document.getElementById('number-operator-select').value;
+                if (operator === 'constant') {
+                    const valueEl = form.querySelector('#item-value');
+                    value = valueEl ? Number(valueEl.value) : 0;
                 } else {
-                    value = 0; // Fallback
+                    const operandWrappers = form.querySelectorAll('#number-operands-container > .operand-wrapper');
+                    const operands = Array.from(operandWrappers).map(parseOperandInput);
+                    value = { operator, operands };
                 }
             }
 
@@ -623,48 +720,7 @@ async function renderEditItemView(itemId) {
         } else if (item.type === 'text') {
             valueInputDiv.innerHTML = `<input type="text" id="item-value" name="value" value="${item.value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
         } else if (item.type === 'number') {
-            const isOperation = typeof item.value === 'object' && item.value !== null;
-            const operator = isOperation ? item.value.operator : 'constant';
-            const operands = isOperation ? item.value.operands : [item.value, 0];
-
-            const operatorLabels = {
-                'constant': 'Constante', 'sum': 'Soma', 'subtraction': 'Subtração',
-                'multiplication': 'Multiplicação', 'division': 'Divisão'
-            };
-            const operatorOptionsHTML = Object.entries(operatorLabels)
-                .map(([value, label]) => `<option value="${value}" ${value === operator ? 'selected' : ''}>${label}</option>`)
-                .join('');
-
-            valueInputDiv.innerHTML = `
-                <div id="number-operation-container">
-                    <select id="number-operator" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2">
-                        ${operatorOptionsHTML}
-                    </select>
-                    <div id="number-operands"></div>
-                </div>`;
-
-            const operatorSelect = document.getElementById('number-operator');
-            const operandsDiv = document.getElementById('number-operands');
-
-            const renderOperands = (op) => {
-                if (op === 'constant') {
-                    operandsDiv.innerHTML = `<input type="number" id="item-value" name="value" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-                } else {
-                    operandsDiv.innerHTML = `
-                        <input type="number" name="operand1" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2" placeholder="Operando 1">
-                        <input type="number" name="operand2" value="${operands[1]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Operando 2">
-                    `;
-                }
-            };
-
-            renderOperands(operator);
-
-            operatorSelect.addEventListener('change', (e) => {
-                // Reset operands when changing operator type
-                operands[0] = 0;
-                operands[1] = 0;
-                renderOperands(e.target.value);
-            });
+            createOperandInput(valueInputDiv, item.value, 0);
         }
 
         document.getElementById('edit-item-form').addEventListener('submit', async (e) => {
@@ -677,13 +733,11 @@ async function renderEditItemView(itemId) {
             } else if (item.type === 'text') {
                 value = form.querySelector('[name="value"]').value;
             } else if (item.type === 'number') {
-                const operator = document.getElementById('number-operator').value;
-                if (operator === 'constant') {
-                    value = Number(form.querySelector('[name="value"]').value);
+                const operandWrapper = form.querySelector('.operand-wrapper');
+                if (operandWrapper) {
+                    value = parseOperandInput(operandWrapper);
                 } else {
-                    const operand1 = Number(form.querySelector('[name="operand1"]').value);
-                    const operand2 = Number(form.querySelector('[name="operand2"]').value);
-                    value = { operator, operands: [operand1, operand2] };
+                    value = item.value; // Fallback
                 }
             } else {
                 value = item.value; // Keep original value if type has no input
