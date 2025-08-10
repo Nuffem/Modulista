@@ -218,29 +218,50 @@ export function parse(text) {
   return parser.parse();
 }
 
-/**
- * Converts an array of items into a string in the custom format.
- * This function recursively fetches sub-items for lists to create a nested structure.
- * @param {Array<object>} items - The initial array of items to stringify.
- * @param {string} path - The path of the initial items.
- * @returns {Promise<string>} The string in the custom format.
- */
-export async function stringify(items, path) {
-  const content = await stringifyItems(items, 1, path);
-  if (content) {
-    return `{\n${content}\n}`;
+export function stringify(items, path, indentLevel = 1) {
+  if (items.length === 0) {
+    return '{}';
   }
-  return '{}';
+  const parts = stringifyItems(items, indentLevel, path);
+  return {
+    prefix: '{\n',
+    suffix: `\n${'  '.repeat(indentLevel - 1)}}`,
+    parts: parts,
+  };
 }
 
-async function stringifyItems(items, indentLevel, currentPath) {
+function stringifyItems(items, indentLevel, currentPath) {
+  const parts = [];
   const indent = '  '.repeat(indentLevel);
-  const stringifiedPromises = items.map(async (item) => {
-    const valueStr = await stringifyValue(item, indentLevel, currentPath);
-    return `${indent}${item.name}: ${valueStr}`;
-  });
-  const stringified = await Promise.all(stringifiedPromises);
-  return stringified.join('\n');
+  for (const item of items) {
+    const value = stringifyValue(item, indentLevel, currentPath);
+    parts.push(`${indent}${item.name}: `);
+    parts.push(value);
+    parts.push('\n');
+  }
+  if (parts.length > 0) {
+    parts.pop();
+  }
+  return parts;
+}
+
+export async function executePlan(plan, getItems) {
+  if (typeof plan === 'string') {
+    return plan;
+  }
+
+  let result = plan.prefix;
+  for (const part of plan.parts) {
+    if (typeof part === 'string') {
+      result += part;
+    } else if (part.type === 'LIST') {
+      const subItems = await getItems(part.path);
+      const subPlan = stringify(subItems, part.path, part.indentLevel);
+      result += await executePlan(subPlan, getItems);
+    }
+  }
+  result += plan.suffix;
+  return result;
 }
 
 function escapeText(text) {
@@ -262,8 +283,7 @@ function escapeText(text) {
   return result;
 }
 
-async function stringifyValue(item, indentLevel, currentPath) {
-  const indent = '  '.repeat(indentLevel);
+function stringifyValue(item, indentLevel, currentPath) {
   switch (item.type) {
     case 'text':
       return `"${escapeText(item.value)}"`;
@@ -279,25 +299,15 @@ async function stringifyValue(item, indentLevel, currentPath) {
         if (operatorSymbol && item.value.operands && item.value.operands.length === 2) {
           return `${item.value.operands[0]} ${operatorSymbol} ${item.value.operands[1]}`;
         }
-        // Fallback for invalid operation object
         return '0';
       }
-      return item.value; // It's a primitive number
+      return item.value;
     case 'boolean':
       return item.value ? '@1' : '@0';
     case 'list':
       const listPath = `${currentPath}${item.name}/`;
-      try {
-        const subItems = await getItems(listPath);
-        if (subItems.length > 0) {
-          const content = await stringifyItems(subItems, indentLevel + 1, listPath);
-          return `{\n${content}\n${indent}}`;
-        }
-      } catch (error) {
-        console.error(`Failed to get items for path: ${listPath}`, error);
-      }
-      return '{}';
+      return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
     default:
-      return '""'; // Should not happen with valid data
+      return '""';
   }
 }

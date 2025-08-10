@@ -1,5 +1,5 @@
 import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder } from './db.js';
-import { parse, stringify } from './custom-parser.js';
+import { parse, stringify, executePlan } from './custom-parser.js';
 
 const appContainer = document.getElementById('app-container');
 const breadcrumbEl = document.getElementById('breadcrumb');
@@ -338,7 +338,8 @@ export async function renderListView(path) {
 
             let textContent = '';
 
-            stringify(items, path).then(str => {
+            const plan = stringify(items, path);
+            executePlan(plan, getItems).then(str => {
                 textContent = str;
                 codeBlock.textContent = textContent;
             }).catch(error => {
