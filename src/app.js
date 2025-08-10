@@ -175,29 +175,55 @@ async function renderListView(path) {
             const renderList = () => {
                 const listHTML = items.length === 0
                     ? '<p class="text-gray-500 dark:text-gray-400">Nenhum item encontrado.</p>'
-                    : '<ul id="item-list" class="space-y-3">' + items.map(item => {
-                        const editUrl = `#/edit/${item.id}`;
-                        const listUrl = `#${path}${item.name}/`;
-                        const itemUrl = item.type === 'list' ? listUrl : editUrl;
-                        return `
-                            <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
-                                <a href="${itemUrl}" class="flex items-center grow">
-                                    <div class="mr-4">${getItemIcon(item.type)}</div>
-                                    <span class="font-semibold">${item.name}</span>
-                                </a>
-                                <div class="flex items-center">
-                                    ${item.type === 'boolean'
-                                        ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
-                                        : item.type === 'list'
-                                        ? `<span class="text-sm text-gray-500 mr-4"></span>`
-                                        : `<span class="text-gray-700 mr-4 dark:text-gray-300">${item.value}</span>`
-                                    }
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 dark:text-gray-500 cursor-grab handle">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                                    </svg>
-                                </div>
-                            </li>`;
-                    }).join('') + '</ul>';
+                    : (() => {
+                        const formatItemValueForDisplay = (item) => {
+                            if (item.type === 'number' && typeof item.value === 'object' && item.value !== null) {
+                                const { operator, operands } = item.value;
+                                if (!operands || operands.length !== 2) return 'Invalid operands';
+
+                                const opMap = { sum: '+', subtraction: '-', multiplication: '*', division: '/' };
+                                const opSymbol = opMap[operator];
+                                if (!opSymbol) return 'Invalid operator';
+
+                                const [op1, op2] = operands;
+                                let result;
+                                switch (operator) {
+                                    case 'sum': result = op1 + op2; break;
+                                    case 'subtraction': result = op1 - op2; break;
+                                    case 'multiplication': result = op1 * op2; break;
+                                    case 'division': result = op2 !== 0 ? op1 / op2 : 'Infinity'; break;
+                                    default: result = NaN;
+                                }
+                                const formattedResult = (typeof result === 'number' && !Number.isInteger(result)) ? result.toFixed(2) : result;
+                                return `${op1} ${opSymbol} ${op2} = ${formattedResult}`;
+                            }
+                            return item.value;
+                        };
+
+                        return '<ul id="item-list" class="space-y-3">' + items.map(item => {
+                            const editUrl = `#/edit/${item.id}`;
+                            const listUrl = `#${path}${item.name}/`;
+                            const itemUrl = item.type === 'list' ? listUrl : editUrl;
+                            return `
+                                <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
+                                    <a href="${itemUrl}" class="flex items-center grow">
+                                        <div class="mr-4">${getItemIcon(item.type)}</div>
+                                        <span class="font-semibold">${item.name}</span>
+                                    </a>
+                                    <div class="flex items-center">
+                                        ${item.type === 'boolean'
+                                            ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
+                                            : item.type === 'list'
+                                            ? `<span class="text-sm text-gray-500 mr-4"></span>`
+                                            : `<span class="text-gray-700 mr-4 dark:text-gray-300">${formatItemValueForDisplay(item)}</span>`
+                                        }
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 dark:text-gray-500 cursor-grab handle">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                        </svg>
+                                    </div>
+                                </li>`;
+                        }).join('') + '</ul>';
+                    })()
 
                 const addButtonHTML = `
                     <button data-testid="add-item-button" onclick="location.hash = '${path}add'" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
