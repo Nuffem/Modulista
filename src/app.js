@@ -105,7 +105,7 @@ async function deleteListRecursive(path) {
 }
 
 function getItemIcon(type) {
-    const iconColor = "text-gray-500";
+    const iconColor = "text-gray-500 dark:text-gray-400";
     const iconSize = "w-6 h-6";
     switch (type) {
         case 'list':
@@ -137,7 +137,7 @@ function getItemIcon(type) {
 async function renderListView(path) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
-    appContainer.innerHTML = `<p class="text-gray-500">Carregando...</p>`;
+    appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
     breadcrumbEl.style.display = 'block';
     renderBreadcrumb(path);
 
@@ -148,16 +148,16 @@ async function renderListView(path) {
         const isTextActive = currentView === 'text';
 
         const tabsHTML = `
-            <div class="mb-4 border-b border-gray-200">
+            <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
                 <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
                     <li class="mr-2">
-                        <button id="list-tab-btn" class="inline-flex items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}">
+                        <button id="list-tab-btn" class="inline-flex items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
                             Lista
                         </button>
                     </li>
                     <li class="mr-2">
-                        <button id="text-tab-btn" class="inline-flex items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}">
+                        <button id="text-tab-btn" class="inline-flex items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V5.75A2.25 2.25 0 0 0 18 3.5H6A2.25 2.25 0 0 0 3.75 5.75v12.5A2.25 2.25 0 0 0 6 20.25Z" /></svg>
                             Texto
                         </button>
@@ -174,13 +174,13 @@ async function renderListView(path) {
             let listContainer;
             const renderList = () => {
                 const listHTML = items.length === 0
-                    ? '<p class="text-gray-500">Nenhum item encontrado.</p>'
+                    ? '<p class="text-gray-500 dark:text-gray-400">Nenhum item encontrado.</p>'
                     : '<ul id="item-list" class="space-y-3">' + items.map(item => {
                         const editUrl = `#/edit/${item.id}`;
                         const listUrl = `#${path}${item.name}/`;
                         const itemUrl = item.type === 'list' ? listUrl : editUrl;
                         return `
-                            <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between">
+                            <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
                                 <a href="${itemUrl}" class="flex items-center grow">
                                     <div class="mr-4">${getItemIcon(item.type)}</div>
                                     <span class="font-semibold">${item.name}</span>
@@ -190,9 +190,9 @@ async function renderListView(path) {
                                         ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
                                         : item.type === 'list'
                                         ? `<span class="text-sm text-gray-500 mr-4"></span>`
-                                        : `<span class="text-gray-700 mr-4">${item.value}</span>`
+                                        : `<span class="text-gray-700 mr-4 dark:text-gray-300">${item.value}</span>`
                                     }
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 cursor-grab handle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 dark:text-gray-500 cursor-grab handle">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                                     </svg>
                                 </div>
@@ -200,7 +200,7 @@ async function renderListView(path) {
                     }).join('') + '</ul>';
 
                 const addButtonHTML = `
-                    <button data-testid="add-item-button" onclick="location.hash = '${path}add'" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center">
+                    <button data-testid="add-item-button" onclick="location.hash = '${path}add'" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
@@ -275,22 +275,22 @@ async function renderListView(path) {
 
         } else {
             const textContentHTML = `
-                <div class="bg-white p-4 rounded-lg shadow">
+                <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
                     <div id="text-display">
-                        <pre class="bg-gray-100 p-4 rounded overflow-x-auto"><code>Carregando...</code></pre>
+                        <pre class="bg-gray-100 p-4 rounded overflow-x-auto dark:bg-gray-700 dark:text-gray-200"><code>Carregando...</code></pre>
                         <div class="mt-4 flex justify-end">
-                            <button id="edit-text-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            <button id="edit-text-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
                             </button>
                         </div>
                     </div>
                     <div id="text-edit" class="hidden">
-                        <textarea id="text-editor" class="w-full h-64 bg-gray-100 p-4 rounded border border-gray-300"></textarea>
+                        <textarea id="text-editor" class="w-full h-64 bg-gray-100 p-4 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></textarea>
                         <div class="mt-4 flex justify-end space-x-2">
-                            <button id="save-text-btn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                            <button id="save-text-btn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded dark:bg-green-600 dark:hover:bg-green-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                             </button>
-                            <button id="cancel-text-btn" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                            <button id="cancel-text-btn" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
@@ -360,7 +360,7 @@ async function renderListView(path) {
 
 async function renderAddItemView(path) {
     breadcrumbEl.style.display = 'none';
-    appContainer.innerHTML = `<p class="text-gray-500">Carregando...</p>`;
+    appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
 
     try {
         const items = await getItems(path);
@@ -381,17 +381,17 @@ async function renderAddItemView(path) {
         const newName = `${baseName}_${nextIndex}`;
 
         appContainer.innerHTML = `
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-bold mb-4">Adicionar Novo Item</h2>
+            <div class="bg-white p-6 rounded-lg shadow-md dark:bg-gray-800">
+                <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Adicionar Novo Item</h2>
                 <form id="add-item-form">
-                    <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2">Nome</label><input type="text" id="item-name" name="name" value="${newName}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required></div>
-                    <div class="mb-4"><label for="item-type" class="block text-gray-700 text-sm font-bold mb-2">Tipo</label><select id="item-type" name="type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"><option value="text">Texto</option><option value="number">Número</option><option value="boolean">Lógico (Sim/Não)</option><option value="list">Pasta</option></select></div>
-                    <div id="value-container" class="mb-4"><label for="item-value" id="item-value-label" class="block text-gray-700 text-sm font-bold mb-2">Valor</label><div id="item-value-input"><input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"></div></div>
+                    <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label><input type="text" id="item-name" name="name" value="${newName}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required></div>
+                    <div class="mb-4"><label for="item-type" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label><select id="item-type" name="type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"><option value="text">Texto</option><option value="number">Número</option><option value="boolean">Lógico (Sim/Não)</option><option value="list">Pasta</option></select></div>
+                    <div id="value-container" class="mb-4"><label for="item-value" id="item-value-label" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label><div id="item-value-input"><input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></div></div>
                     <div class="flex items-center justify-between">
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                         </button>
-                        <button type="button" onclick="history.back()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        <button type="button" onclick="history.back()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
@@ -403,7 +403,7 @@ async function renderAddItemView(path) {
             const type = e.target.value;
             if (type === 'list') valueContainer.style.display = 'none';
             else if (type === 'boolean') { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600">`; }
-            else { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="${type === 'number' ? 'number' : 'text'}" id="item-value" name="value" value="${type === 'number' ? '0' : ''}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">`; }
+            else { valueContainer.style.display = 'block'; valueInputDiv.innerHTML = `<input type="${type === 'number' ? 'number' : 'text'}" id="item-value" name="value" value="${type === 'number' ? '0' : ''}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`; }
         });
 
         document.getElementById('add-item-form').addEventListener('submit', async (e) => {
@@ -420,7 +420,7 @@ async function renderAddItemView(path) {
 
 async function renderEditItemView(itemId) {
     breadcrumbEl.style.display = 'none';
-    appContainer.innerHTML = `<p class="text-gray-500">Carregando item...</p>`;
+    appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando item...</p>`;
     try {
         const item = await getItem(itemId);
         if (!item) { appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`; return; }
@@ -429,26 +429,26 @@ async function renderEditItemView(itemId) {
         if (item.type === 'boolean') {
             valueInputHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600" ${item.value ? 'checked' : ''}>`;
         } else {
-            valueInputHTML = `<input type="${item.type === 'number' ? 'number' : 'text'}" id="item-value" name="value" value="${item.value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">`;
+            valueInputHTML = `<input type="${item.type === 'number' ? 'number' : 'text'}" id="item-value" name="value" value="${item.value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
         }
 
         appContainer.innerHTML = `
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-bold mb-4">Editar Item</h2>
+            <div class="bg-white p-6 rounded-lg shadow-md dark:bg-gray-800">
+                <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Editar Item</h2>
                 <form id="edit-item-form">
-                    <div class="mb-4"><label class="block text-gray-700 text-sm font-bold mb-2">Tipo</label><p class="text-gray-800">${item.type}</p></div>
-                    <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2">Nome</label><input type="text" id="item-name" name="name" value="${item.name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required></div>
-                    <div id="value-container" class="mb-4"><label for="item-value" class="block text-gray-700 text-sm font-bold mb-2">Valor</label>${valueInputHTML}</div>
+                    <div class="mb-4"><label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label><p class="text-gray-800 dark:text-gray-200">${item.type}</p></div>
+                    <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label><input type="text" id="item-name" name="name" value="${item.name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required></div>
+                    <div id="value-container" class="mb-4"><label for="item-value" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>${valueInputHTML}</div>
                     <div class="flex items-center justify-between">
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                         </button>
-                        <button type="button" onclick="history.back()" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">
+                        <button type="button" onclick="history.back()" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
                 </form>
-                <div class="mt-6 border-t pt-4">
+                <div class="mt-6 border-t pt-4 dark:border-gray-700">
                     <button id="delete-item-btn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full">Excluir Item</button>
                 </div>
             </div>`;
