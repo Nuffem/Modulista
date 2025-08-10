@@ -144,83 +144,66 @@ const operatorLabels = {
 
 function createOperandInput(container, value, level = 0) {
     const isOperation = typeof value === 'object' && value !== null;
-    const initialType = isOperation ? 'operator' : 'constant';
+    const initialOperator = isOperation ? value.operator : 'constant';
 
     const wrapper = document.createElement('div');
     wrapper.className = `operand-wrapper space-y-2 p-2 rounded-lg ${level > 0 ? 'ml-4 bg-gray-50 dark:bg-gray-800' : ''}`;
     wrapper.dataset.level = level;
 
-    const typeSelect = document.createElement('select');
-    typeSelect.className = 'operand-type-select shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2';
-    typeSelect.innerHTML = `
-        <option value="constant" ${initialType === 'constant' ? 'selected' : ''}>Constante</option>
-        <option value="operator" ${initialType === 'operator' ? 'selected' : ''}>Operador</option>
-    `;
-    wrapper.appendChild(typeSelect);
+    const operatorSelect = document.createElement('select');
+    operatorSelect.className = 'operator-select shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2';
+    const operatorOptionsHTML = Object.entries(operatorLabels)
+        .map(([op, label]) => `<option value="${op}" ${op === initialOperator ? 'selected' : ''}>${label}</option>`)
+        .join('');
+    operatorSelect.innerHTML = operatorOptionsHTML;
+    wrapper.appendChild(operatorSelect);
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'operand-content';
     wrapper.appendChild(contentDiv);
 
-    function renderOperandContent(type, currentValue) {
+    function renderOperandContent(operator, currentValue) {
         contentDiv.innerHTML = ''; // Clear previous content
 
-        if (type === 'constant') {
+        if (operator === 'constant') {
             const numberInput = document.createElement('input');
             numberInput.type = 'number';
             numberInput.name = 'value';
             numberInput.className = 'shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
             numberInput.value = typeof currentValue === 'number' ? currentValue : 0;
             contentDiv.appendChild(numberInput);
-        } else { // type === 'operator'
-            const opValue = (typeof currentValue === 'object' && currentValue !== null) ? currentValue : { operator: 'sum', operands: [0, 0] };
-
-            const operatorContainer = document.createElement('div');
-            operatorContainer.className = 'operator-container space-y-2';
-
-            const operatorSelect = document.createElement('select');
-            operatorSelect.className = 'operator-select shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
-            const operatorOptionsHTML = Object.entries(operatorLabels)
-                .filter(([key]) => key !== 'constant')
-                .map(([op, label]) => `<option value="${op}" ${op === opValue.operator ? 'selected' : ''}>${label}</option>`)
-                .join('');
-            operatorSelect.innerHTML = operatorOptionsHTML;
-            operatorContainer.appendChild(operatorSelect);
+        } else { // It's an operator
+            const opValue = (typeof currentValue === 'object' && currentValue !== null) ? currentValue : { operator: operator, operands: [0, 0] };
 
             const operandsDiv = document.createElement('div');
             operandsDiv.className = 'operands-container space-y-2';
-            operatorContainer.appendChild(operandsDiv);
 
             createOperandInput(operandsDiv, opValue.operands[0], level + 1);
             createOperandInput(operandsDiv, opValue.operands[1], level + 1);
 
-            contentDiv.appendChild(operatorContainer);
+            contentDiv.appendChild(operandsDiv);
         }
     }
 
-    typeSelect.addEventListener('change', (e) => {
-        const selectedType = e.target.value;
-        const currentValue = selectedType === 'constant' ? 0 : { operator: 'sum', operands: [0, 0] };
-        renderOperandContent(selectedType, currentValue);
+    operatorSelect.addEventListener('change', (e) => {
+        const selectedOperator = e.target.value;
+        const currentValue = selectedOperator === 'constant' ? 0 : { operator: selectedOperator, operands: [0, 0] };
+        renderOperandContent(selectedOperator, currentValue);
     });
 
     container.appendChild(wrapper);
-    renderOperandContent(initialType, value); // Initial render
+    renderOperandContent(initialOperator, value); // Initial render
 }
 
 function parseOperandInput(wrapper) {
-    const type = wrapper.querySelector('.operand-type-select').value;
+    const operator = wrapper.querySelector('.operator-select').value;
     const contentDiv = wrapper.querySelector('.operand-content');
 
-    if (type === 'constant') {
+    if (operator === 'constant') {
         const numberInput = contentDiv.querySelector('input[name="value"]');
         return numberInput ? Number(numberInput.value) : 0;
-    } else { // type === 'operator'
-        const operatorContainer = contentDiv.querySelector('.operator-container');
-        if (!operatorContainer) return { operator: 'sum', operands: [0, 0] }; // Should not happen
-
-        const operator = operatorContainer.querySelector('.operator-select').value;
-        const operandsContainer = operatorContainer.querySelector('.operands-container');
+    } else { // It's an operator
+        const operandsContainer = contentDiv.querySelector('.operands-container');
         const operandWrappers = operandsContainer.querySelectorAll('.operand-wrapper');
 
         const operands = Array.from(operandWrappers).map(parseOperandInput);
@@ -273,27 +256,54 @@ async function renderListView(path) {
                     ? '<p class="text-gray-500 dark:text-gray-400">Nenhum item encontrado.</p>'
                     : (() => {
                         const formatItemValueForDisplay = (item) => {
-                            if (item.type === 'number' && typeof item.value === 'object' && item.value !== null) {
-                                const { operator, operands } = item.value;
-                                if (!operands || operands.length !== 2) return 'Invalid operands';
-
-                                const opMap = { sum: '+', subtraction: '-', multiplication: '*', division: '/' };
-                                const opSymbol = opMap[operator];
-                                if (!opSymbol) return 'Invalid operator';
-
-                                const [op1, op2] = operands;
-                                let result;
-                                switch (operator) {
-                                    case 'sum': result = op1 + op2; break;
-                                    case 'subtraction': result = op1 - op2; break;
-                                    case 'multiplication': result = op1 * op2; break;
-                                    case 'division': result = op2 !== 0 ? op1 / op2 : 'Infinity'; break;
-                                    default: result = NaN;
-                                }
-                                const formattedResult = (typeof result === 'number' && !Number.isInteger(result)) ? result.toFixed(2) : result;
-                                return `${op1} ${opSymbol} ${op2} = ${formattedResult}`;
+                            if (item.type !== 'number') {
+                                return item.value;
                             }
-                            return item.value;
+
+                            const opMap = { sum: '+', subtraction: '-', multiplication: '*', division: '/' };
+
+                            function formatOperation(value) {
+                                if (typeof value !== 'object' || value === null) {
+                                    return value;
+                                }
+                                const { operator, operands } = value;
+                                if (!operands || operands.length !== 2) return 'invalid';
+
+                                const opSymbol = opMap[operator] || '?';
+                                const op1Str = formatOperation(operands[0]);
+                                const op2Str = formatOperation(operands[1]);
+
+                                return `(${op1Str} ${opSymbol} ${op2Str})`;
+                            }
+
+                            function calculate(value) {
+                                if (typeof value !== 'object' || value === null) {
+                                    return Number(value);
+                                }
+                                const { operator, operands } = value;
+                                if (!operands || operands.length !== 2) return NaN;
+
+                                const op1 = calculate(operands[0]);
+                                const op2 = calculate(operands[1]);
+
+                                switch (operator) {
+                                    case 'sum': return op1 + op2;
+                                    case 'subtraction': return op1 - op2;
+                                    case 'multiplication': return op1 * op2;
+                                    case 'division': return op2 !== 0 ? op1 / op2 : Infinity;
+                                    default: return NaN;
+                                }
+                            }
+
+                            if (typeof item.value !== 'object' || item.value === null) {
+                                return item.value;
+                            }
+
+                            const expression = formatOperation(item.value).slice(1, -1); // Remove outer parentheses
+                            const result = calculate(item.value);
+                            const formattedResult = (typeof result === 'number' && !Number.isInteger(result)) ? result.toFixed(2) : result;
+
+                            return `${expression} = ${formattedResult}`;
                         };
 
                         return '<ul id="item-list" class="space-y-3">' + items.map(item => {
@@ -588,45 +598,9 @@ async function renderAddItemView(path) {
             } else if (type === 'boolean') {
                 valueInputDiv.innerHTML = `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600">`;
             } else if (type === 'number') {
-                const operatorOptionsHTML = Object.entries(operatorLabels)
-                    .map(([value, label]) => `<option value="${value}">${label}</option>`)
-                    .join('');
-
-                valueInputDiv.innerHTML = `
-                    <div id="number-operation-container">
-                        <select id="number-operator-select" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2">
-                            ${operatorOptionsHTML}
-                        </select>
-                        <div id="number-operands-container" class="space-y-2"></div>
-                    </div>`;
-
-                const operatorSelect = document.getElementById('number-operator-select');
-                const operandsContainer = document.getElementById('number-operands-container');
-
-                function renderOperands(operator) {
-                    operandsContainer.innerHTML = '';
-                    if (operator === 'constant') {
-                        const numberInput = document.createElement('input');
-                        numberInput.type = 'number';
-                        numberInput.id = 'item-value';
-                        numberInput.name = 'value';
-                        numberInput.value = '0';
-                        numberInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
-                        operandsContainer.appendChild(numberInput);
-                    } else {
-                        // Render two operand inputs, which can be recursive
-                        createOperandInput(operandsContainer, 0, 1);
-                        createOperandInput(operandsContainer, 0, 1);
-                    }
-                }
-
-                operatorSelect.addEventListener('change', (e) => {
-                    renderOperands(e.target.value);
-                });
-
-                // Initial render
-                renderOperands(operatorSelect.value);
-
+                // The new createOperandInput handles everything, so we just call it.
+                // We pass a default value of 0, which will make it select 'constant' initially.
+                createOperandInput(valueInputDiv, 0, 0);
             } else { // text
                 valueInputDiv.innerHTML = `<input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
             }
@@ -653,14 +627,11 @@ async function renderAddItemView(path) {
                 const valueEl = form.querySelector('[name="value"]');
                 value = valueEl ? valueEl.value : '';
             } else if (type === 'number') {
-                const operator = document.getElementById('number-operator-select').value;
-                if (operator === 'constant') {
-                    const valueEl = form.querySelector('#item-value');
-                    value = valueEl ? Number(valueEl.value) : 0;
+                const operandWrapper = form.querySelector('.operand-wrapper');
+                if (operandWrapper) {
+                    value = parseOperandInput(operandWrapper);
                 } else {
-                    const operandWrappers = form.querySelectorAll('#number-operands-container > .operand-wrapper');
-                    const operands = Array.from(operandWrappers).map(parseOperandInput);
-                    value = { operator, operands };
+                    value = 0; // Fallback
                 }
             }
 
