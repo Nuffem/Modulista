@@ -61,7 +61,7 @@ class Parser {
     } else if (char === '{') {
       return this.parseList();
     } else if (char === '-' || (char >= '0' && char <= '9')) {
-      return this.parseNumber();
+      return this.parseNumericExpression();
     } else {
       this.throwError("Invalid value");
     }
@@ -93,12 +93,57 @@ class Parser {
     return text;
   }
 
-  parseNumber() {
+  _parseSingleNumber() {
     const match = this.match(/^-?\d+(\.\d+)?/);
     if (!match) {
       this.throwError("Invalid number");
     }
     return parseFloat(match[0]);
+  }
+
+  parseNumericExpression() {
+    const firstOperand = this._parseSingleNumber();
+
+    const storedPos = this.pos;
+    this.skipWhitespace();
+
+    if (this.pos === storedPos) {
+      // No whitespace after number, so it can't be an operation
+      return firstOperand;
+    }
+
+    if (this.pos >= this.text.length) {
+      this.pos = storedPos; // backtrack
+      return firstOperand;
+    }
+
+    const operatorChar = this.peek();
+    if (['+', '-', '*', '/'].includes(operatorChar)) {
+      this.consume(operatorChar);
+      const storedPosAfterOp = this.pos;
+      this.skipWhitespace();
+      if (this.pos === storedPosAfterOp) {
+        // No whitespace after operator, so not a valid operation. Backtrack.
+        this.pos = storedPos;
+        return firstOperand;
+      }
+
+      const secondOperand = this._parseSingleNumber();
+      const operatorMap = {
+        '+': 'sum',
+        '-': 'subtraction',
+        '*': 'multiplication',
+        '/': 'division'
+      };
+      return {
+        operator: operatorMap[operatorChar],
+        operands: [firstOperand, secondOperand]
+      };
+    }
+
+    // Not an operator, backtrack whitespace
+    this.pos = storedPos;
+    return firstOperand;
   }
 
   parseBoolean() {
@@ -223,7 +268,21 @@ async function stringifyValue(item, indentLevel, currentPath) {
     case 'text':
       return `"${escapeText(item.value)}"`;
     case 'number':
-      return item.value;
+      if (typeof item.value === 'object' && item.value !== null) {
+        const operatorMap = {
+          sum: '+',
+          subtraction: '-',
+          multiplication: '*',
+          division: '/'
+        };
+        const operatorSymbol = operatorMap[item.value.operator];
+        if (operatorSymbol && item.value.operands && item.value.operands.length === 2) {
+          return `${item.value.operands[0]} ${operatorSymbol} ${item.value.operands[1]}`;
+        }
+        // Fallback for invalid operation object
+        return '0';
+      }
+      return item.value; // It's a primitive number
     case 'boolean':
       return item.value ? '@1' : '@0';
     case 'list':
