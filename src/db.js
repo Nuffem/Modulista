@@ -77,7 +77,7 @@ export function addItem(item) {
             };
 
             const request = store.add(newItem);
-            request.onsuccess = () => resolve(request.result);
+            request.onsuccess = () => resolve(newItem);
             request.onerror = (event) => reject(event.target.error);
         } catch (error) {
             reject(error);
@@ -104,6 +104,22 @@ export function getItems(path) {
         };
         request.onerror = (event) => reject(event.target.error);
     });
+}
+
+/**
+ * Retrieves a single item by its path and name.
+ * @param {string} path - The path of the item.
+ * @param {string} name - The name of the item.
+ * @returns {Promise<object>} The item object.
+ */
+export async function getItemByPathAndName(path, name) {
+    try {
+        const items = await getItems(path);
+        const item = items.find(i => i.name === name);
+        return item;
+    } catch (error) {
+        throw new Error(`Could not get item by path and name: ${error}`);
+    }
 }
 
 /**

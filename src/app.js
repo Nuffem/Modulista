@@ -1,4 +1,4 @@
-import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder } from './db.js';
+import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder, getItemByPathAndName } from './db.js';
 import { parse, stringify, executePlan } from './custom-parser.js';
 
 const appContainer = document.getElementById('app-container');
@@ -9,7 +9,7 @@ let currentView = 'list'; // 'list' or 'text'
 
 // --- Rendering Functions ---
 
-function renderBreadcrumb(path) {
+function renderBreadcrumb(path, itemName = null) {
     const parts = path.split('/').filter(p => p);
     let cumulativePath = '#/';
     let html = '<div class="flex items-center">';
@@ -18,6 +18,9 @@ function renderBreadcrumb(path) {
         cumulativePath += `${part}/`;
         html += ` <span class="text-gray-500 mx-2">/</span> <button onclick="location.hash='${cumulativePath}'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${decodeURIComponent(part)}</button>`;
     });
+    if (itemName) {
+        html += ` <span class="text-gray-500 mx-2">/</span> <span class="font-semibold">${itemName}</span>`;
+    }
     html += '</div>';
     breadcrumbEl.innerHTML = html;
 }
@@ -134,12 +137,12 @@ function getItemIcon(type) {
     }
 }
 
-export async function renderListView(path, activeItemId = null) {
+export async function renderListView(path, activeItemId = null, activeItemName = null) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
     appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
     breadcrumbEl.style.display = 'block';
-    renderBreadcrumb(path);
+    renderBreadcrumb(path, activeItemName);
 
     try {
         let items = await getItems(path);
@@ -433,8 +436,8 @@ function renderItemRow(item) {
         return item.value;
     };
 
-    const editUrl = `#/edit/${item.id}`;
     const listUrl = `#${item.path}${item.name}/`;
+    const editUrl = `#/edit${item.path}${item.name}`;
     const itemUrl = item.type === 'list' ? listUrl : editUrl;
 
     return `
@@ -589,20 +592,28 @@ function setupEditFormHandlers(item, formElement) {
 }
 
 
-async function renderItemView(itemId) {
+async function renderEditView(path) {
     try {
-        const item = await getItem(itemId);
+        const fullPath = path.substring('/edit'.length);
+        const parts = fullPath.split('/').filter(p => p);
+        const itemName = parts.pop();
+        const itemPath = `/${parts.join('/')}/`;
+
+        const item = await getItemByPathAndName(itemPath, itemName);
+
         if (!item) {
             appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`;
+            breadcrumbEl.innerHTML = '';
             return;
         }
-        // If the item is a list, just navigate to its list view
+
         if (item.type === 'list') {
             location.hash = `${item.path}${item.name}/`;
             return;
         }
-        currentView = 'list'; // Default to list view when showing an item
-        renderListView(item.path, itemId);
+
+        currentView = 'list';
+        renderListView(item.path, item.id, item.name);
     } catch (error) {
         console.error('Failed to render item view:', error);
         appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
@@ -612,9 +623,8 @@ async function renderItemView(itemId) {
 // --- Router ---
 function router() {
     const hash = window.location.hash.substring(1) || '/';
-    if (hash.startsWith('/edit/')) {
-        const itemId = hash.substring('/edit/'.length);
-        renderItemView(itemId);
+    if (hash.startsWith('/edit')) {
+        renderEditView(hash);
     } else {
         renderListView(hash);
     }
@@ -651,10 +661,9 @@ export function createNewItem(path, items) {
 export async function handleAddItemClick(path) {
     try {
         const items = await getItems(path);
-        const newItem = createNewItem(path, items);
-        const newItemId = await addItem(newItem);
-        // Navigate to the new item's view, which will be an editable form within the list
-        location.hash = `#/edit/${newItemId}`;
+        const newItemData = createNewItem(path, items);
+        const newItem = await addItem(newItemData);
+        location.hash = `#/edit${newItem.path}${newItem.name}`;
     } catch (error) {
         console.error('Failed to add item:', error);
         alert(`Erro ao adicionar o item: ${error.message}`);
