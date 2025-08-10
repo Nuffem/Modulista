@@ -191,16 +191,15 @@ async function renderListView(path) {
             renderList();
 
         } else {
-             const itemsAsText = items.map(item => {
+            const itemsAsText = items.map(item => {
+                const key = JSON.stringify(item.name);
                 let value;
                 if (item.type === 'list') {
-                    value = `[ ... ]`;
-                } else if (typeof item.value === 'string') {
-                    value = `'${item.value.replace(/'/g, "\\'")}'`;
+                    value = '"[ ... ]"';
                 } else {
-                    value = item.value;
+                    value = JSON.stringify(item.value);
                 }
-                return `  ${item.name}: ${value}`;
+                return `  ${key}: ${value}`;
             }).join(',\n');
 
             const textContentHTML = `
@@ -246,46 +245,29 @@ async function renderListView(path) {
             document.getElementById('save-text-btn').addEventListener('click', async () => {
                 const newText = textEditor.value;
                 try {
-                    const innerText = newText.trim().slice(1, -1).trim();
-                    if (!innerText) {
-                        for (const item of items) {
-                            await deleteItem(item.id);
-                        }
-                        renderListView(path);
-                        return;
-                    }
+                    const newItemsObject = JSON.parse(newText);
+                    const updatedItems = [];
 
-                    const newItemsData = innerText.split(/,\\s*\\n/).map(line => {
-                        const parts = line.split(':');
-                        const name = parts[0].trim();
-                        const valueStr = parts.slice(1).join(':').trim();
-                        let value;
-                        if (valueStr.startsWith("'") && valueStr.endsWith("'")) {
-                            value = valueStr.slice(1, -1).replace(/\\'/g, "'");
-                        } else if (valueStr === 'true') {
-                            value = true;
-                        } else if (valueStr === 'false') {
-                            value = false;
-                        } else if (valueStr === '[ ... ]') {
-                            value = null;
-                        } else {
-                            value = Number(valueStr);
-                            if (isNaN(value)) throw new Error(`Invalid value for ${name}`);
-                        }
-                        return { name, value };
-                    });
+                    for (const name in newItemsObject) {
+                        if (Object.hasOwnProperty.call(newItemsObject, name)) {
+                            const value = newItemsObject[name];
+                            const oldItem = items.find(i => i.name === name);
 
-                    for (const newItemData of newItemsData) {
-                        const oldItem = items.find(i => i.name === newItemData.name);
-                        if (oldItem && newItemData.value !== null) {
-                            await updateItem({ ...oldItem, value: newItemData.value });
+                            if (oldItem) {
+                                if (oldItem.type !== 'list' && oldItem.value !== value) {
+                                    const updatedItem = { ...oldItem, value: value };
+                                    updatedItems.push(updateItem(updatedItem));
+                                }
+                            }
                         }
                     }
 
+                    await Promise.all(updatedItems);
+                    currentView = 'list';
                     renderListView(path);
                 } catch (error) {
                     console.error('Failed to parse and update items:', error);
-                    alert('Erro ao salvar. Verifique a sintaxe do objeto.\\n' + error.message);
+                    alert('Erro ao salvar. Verifique a sintaxe do JSON.\\n' + error.message);
                 }
             });
         }
