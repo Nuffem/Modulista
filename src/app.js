@@ -467,7 +467,33 @@ async function renderAddItemView(path) {
                 <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Adicionar Novo Item</h2>
                 <form id="add-item-form">
                     <div class="mb-4"><label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label><input type="text" id="item-name" name="name" value="${newName}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required></div>
-                    <div class="mb-4"><label for="item-type" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label><select id="item-type" name="type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"><option value="text">Texto</option><option value="number">Número</option><option value="boolean">Lógico (Sim/Não)</option><option value="list">Lista</option></select></div>
+                    <div class="mb-4">
+                        <label for="item-type-button" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label>
+                        <input type="hidden" id="item-type" name="type" value="text">
+                        <button type="button" id="item-type-button" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-left flex justify-between items-center">
+                            <span id="selected-type-text">Texto</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" /></svg>
+                        </button>
+                        <div id="type-popup" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+                                <div class="mt-3">
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-2 text-center">Selecione um tipo</h3>
+                                    <input type="text" id="type-filter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Filtrar tipos...">
+                                    <ul id="type-list" class="mt-2 space-y-2" style="max-height: 200px; overflow-y: auto;">
+                                        <li data-value="text" class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">Texto</li>
+                                        <li data-value="number" class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">Número</li>
+                                        <li data-value="boolean" class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">Lógico (Sim/Não)</li>
+                                        <li data-value="list" class="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">Lista</li>
+                                    </ul>
+                                    <div class="mt-4">
+                                        <button type="button" id="close-popup-btn" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                                            Fechar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div id="value-container" class="mb-4"><label for="item-value" id="item-value-label" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label><div id="item-value-input"><input type="text" id="item-value" name="value" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></div></div>
                     <div class="flex items-center justify-between">
                         <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700">
@@ -480,9 +506,58 @@ async function renderAddItemView(path) {
                 </form>
             </div>`;
 
-        const typeSelect = document.getElementById('item-type');
         const valueContainer = document.getElementById('value-container');
         const valueInputDiv = document.getElementById('item-value-input');
+
+        const itemTypeButton = document.getElementById('item-type-button');
+        const selectedTypeText = document.getElementById('selected-type-text');
+        const typePopup = document.getElementById('type-popup');
+        const closePopupBtn = document.getElementById('close-popup-btn');
+        const typeFilter = document.getElementById('type-filter');
+        const typeList = document.getElementById('type-list');
+        const itemTypeInput = document.getElementById('item-type');
+
+        itemTypeButton.addEventListener('click', () => {
+            typePopup.classList.remove('hidden');
+        });
+
+        closePopupBtn.addEventListener('click', () => {
+            typePopup.classList.add('hidden');
+        });
+
+        typePopup.addEventListener('click', (e) => {
+            if (e.target.id === 'type-popup') {
+                typePopup.classList.add('hidden');
+            }
+        });
+
+        typeFilter.addEventListener('input', (e) => {
+            const filterText = e.target.value.toLowerCase();
+            const items = typeList.getElementsByTagName('li');
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const itemText = item.textContent.toLowerCase();
+                if (itemText.includes(filterText)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        });
+
+        typeList.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+                const selectedValue = e.target.getAttribute('data-value');
+                const selectedText = e.target.textContent;
+
+                itemTypeInput.value = selectedValue;
+                selectedTypeText.textContent = selectedText;
+
+                typePopup.classList.add('hidden');
+
+                renderValueInput(selectedValue);
+            }
+        });
 
         function renderValueInput(type) {
             valueContainer.style.display = 'block'; // show by default, hide for list
@@ -525,10 +600,8 @@ async function renderAddItemView(path) {
             }
         }
 
-        typeSelect.addEventListener('change', (e) => renderValueInput(e.target.value));
-
         // Initial render for default selected type
-        renderValueInput(typeSelect.value);
+        renderValueInput(itemTypeInput.value);
 
         document.getElementById('add-item-form').addEventListener('submit', async (e) => {
             e.preventDefault();
