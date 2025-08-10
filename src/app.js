@@ -619,8 +619,8 @@ export async function handleAddItemClick(path) {
     try {
         const items = await getItems(path);
         const newItem = createNewItem(path, items);
-        await addItem(newItem);
-        renderListView(path);
+        const newItemId = await addItem(newItem);
+        location.hash = `#/edit/${newItemId}`;
     } catch (error) {
         console.error('Failed to add item:', error);
         alert(`Erro ao adicionar o item: ${error.message}`);
