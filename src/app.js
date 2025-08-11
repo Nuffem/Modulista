@@ -508,7 +508,7 @@ function setupEditFormHandlers(item, formElement) {
             if (newType !== item.type) {
                 const updatedItem = { ...item, type: newType, value: '' }; // Reset value on type change
                 updateItem(updatedItem).then(() => {
-                    renderItemDetailView(`#${item.path}${item.name}`);
+                    renderItemDetailView(`${item.path}${item.name}`);
                 });
             }
             typeSelectorPopup.classList.add('hidden');
