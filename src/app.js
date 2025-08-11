@@ -8,7 +8,9 @@ const breadcrumbEl = document.getElementById('breadcrumb');
 
 // --- State ---
 let currentView = 'list'; // 'list' or 'text'
-let fullContextPath = '/'; // Tracks the deepest path navigated to for breadcrumb context
+
+// Get full context path from sessionStorage or initialize to root
+let fullContextPath = sessionStorage.getItem('breadcrumbContext') || '/';
 
 // --- Helper Functions ---
 
@@ -19,20 +21,18 @@ function isLandscapeMode() {
 // --- Rendering Functions ---
 
 async function renderBreadcrumb(currentPath, itemName = null) {
-    // Parse the full context to always show the complete navigation path
-    let displayPath = fullContextPath;
-    let displayItemName = null;
-    
-    // If fullContextPath is an item (doesn't end with '/'), extract the item name
-    if (!fullContextPath.endsWith('/') && fullContextPath !== '/') {
-        const parts = fullContextPath.split('/').filter(p => p);
-        displayItemName = parts.pop();
-        displayPath = `/${parts.join('/')}/`;
-        if (displayPath === '//') displayPath = '/';
-    }
-    
-    const displayParts = displayPath.split('/').filter(p => p);
+    // Determine what to display: always show the deepest context we've navigated to
+    const contextParts = fullContextPath.split('/').filter(p => p);
     const currentParts = currentPath.split('/').filter(p => p);
+    
+    // If fullContextPath contains an item, we need to separate it
+    let displayParts = contextParts.slice(); // Copy the array
+    let contextItemName = null;
+    
+    // Check if fullContextPath represents an item detail view
+    if (!fullContextPath.endsWith('/') && fullContextPath !== '/') {
+        contextItemName = displayParts.pop(); // Remove the item name from parts
+    }
     
     let cumulativePath = '#/';
     let html = '<div class="flex items-center">';
@@ -45,19 +45,19 @@ async function renderBreadcrumb(currentPath, itemName = null) {
         html += `<button onclick="location.hash='/'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${await loadIcon('home', { size: 'w-5 h-5' })}</button>`;
     }
     
-    // Show all display parts, highlighting the current active one
+    // Show all directory parts from the context
     displayParts.forEach((part, index) => {
         cumulativePath += `${part}/`;
         
-        // Determine if this segment is currently active (current directory view)
-        const isCurrentlyActive = !itemName && 
+        // Check if this directory is currently being viewed
+        const isCurrentDirectory = !itemName && 
             currentParts.length === index + 1 &&
             currentParts[index] === part;
         
         html += ` <span class="text-gray-500 mx-2 dark:text-gray-400">/</span> `;
         
-        if (isCurrentlyActive) {
-            // Current active segment - non-clickable, highlighted styling
+        if (isCurrentDirectory) {
+            // Current active directory - non-clickable, highlighted styling
             html += `<span class="bg-gray-200 text-gray-700 font-bold py-1 px-3 rounded dark:bg-gray-600 dark:text-gray-300">${decodeURIComponent(part)}</span>`;
         } else {
             // Clickable navigation button
@@ -65,18 +65,18 @@ async function renderBreadcrumb(currentPath, itemName = null) {
         }
     });
     
-    // Show the item name if there is one in the display context
-    if (displayItemName) {
-        // Check if this item is the current active item
-        const currentItemPath = currentParts.length > 0 ? `/${currentParts.join('/')}/${itemName || ''}` : `/${itemName || ''}`;
-        const displayItemPath = displayParts.length > 0 ? `/${displayParts.join('/')}/${displayItemName}` : `/${displayItemName}`;
-        const isCurrentItem = itemName && currentItemPath === displayItemPath;
+    // Show item name if there's one in the context
+    if (contextItemName) {
+        // Check if this item is currently being viewed
+        const isCurrentItem = itemName === contextItemName && 
+            currentParts.length === displayParts.length &&
+            currentParts.every((part, index) => displayParts[index] === part);
         
         html += ` <span class="text-gray-500 mx-2 dark:text-gray-400">/</span> `;
         if (isCurrentItem) {
-            html += `<span class="bg-gray-200 text-gray-700 font-bold py-1 px-3 rounded dark:bg-gray-600 dark:text-gray-300">${displayItemName}</span>`;
+            html += `<span class="bg-gray-200 text-gray-700 font-bold py-1 px-3 rounded dark:bg-gray-600 dark:text-gray-300">${contextItemName}</span>`;
         } else {
-            html += `<span class="text-gray-600 font-medium dark:text-gray-400">${displayItemName}</span>`;
+            html += `<span class="text-gray-600 font-medium dark:text-gray-400">${contextItemName}</span>`;
         }
     }
     
@@ -922,11 +922,13 @@ function updateFullContextPath(currentPath) {
     if (currentParts.length > contextParts.length) {
         // Navigating deeper - always update
         fullContextPath = currentPath;
+        sessionStorage.setItem('breadcrumbContext', fullContextPath);
     } else if (currentParts.length === contextParts.length) {
         // Same level - update if it's different
         const isDifferent = !currentParts.every((part, index) => contextParts[index] === part);
         if (isDifferent) {
             fullContextPath = currentPath;
+            sessionStorage.setItem('breadcrumbContext', fullContextPath);
         }
     }
     // If navigating to a parent (currentParts.length < contextParts.length), 
