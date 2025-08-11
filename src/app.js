@@ -1,5 +1,6 @@
 import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder, getItemByPathAndName } from './db.js';
 import { parse, stringify, executePlan } from './custom-parser.js';
+import { itemTypes, availableTypes, TYPE_LIST, TYPE_TEXT, TYPE_NUMBER, TYPE_BOOLEAN } from './types/index.js';
 
 const appContainer = document.getElementById('app-container');
 const breadcrumbEl = document.getElementById('breadcrumb');
@@ -39,10 +40,10 @@ async function syncItems(path, parsedObject) {
         const valueType = typeof value;
 
         let type;
-        if (valueType === 'string') type = 'text';
-        else if (valueType === 'number') type = 'number';
-        else if (valueType === 'boolean') type = 'boolean';
-        else if (valueType === 'object' && value !== null) type = 'list';
+        if (valueType === 'string') type = TYPE_TEXT;
+        else if (valueType === 'number') type = TYPE_NUMBER;
+        else if (valueType === 'boolean') type = TYPE_BOOLEAN;
+        else if (valueType === 'object' && value !== null) type = TYPE_LIST;
         else {
             console.warn(`Unsupported value type for ${name}: ${valueType}`);
             continue;
@@ -50,17 +51,17 @@ async function syncItems(path, parsedObject) {
 
         if (existingItem) {
             // Item exists, check for updates
-            if (existingItem.type === 'list' && type === 'list') {
+            if (existingItem.type === TYPE_LIST && type === TYPE_LIST) {
                 // Recurse for lists
                 promises.push(syncItems(`${path}${name}/`, value));
-            } else if (existingItem.type !== 'list' && type !== 'list' && existingItem.value !== value) {
+            } else if (existingItem.type !== TYPE_LIST && type !== TYPE_LIST && existingItem.value !== value) {
                 // Value changed, update it
                 const updatedItem = { ...existingItem, value, type };
                 promises.push(updateItem(updatedItem));
             } else if (existingItem.type !== type) {
                 // Type changed. This is more complex. For now, let's delete and re-add.
                 promises.push(deleteItem(existingItem.id).then(() => {
-                    const newItem = { path, name, type, value: type === 'list' ? '' : value };
+                    const newItem = { path, name, type, value: type === TYPE_LIST ? '' : value };
                     return addItem(newItem);
                 }));
             }
@@ -70,10 +71,10 @@ async function syncItems(path, parsedObject) {
                 path,
                 name,
                 type,
-                value: type === 'list' ? '' : value,
+                value: type === TYPE_LIST ? '' : value,
             };
             promises.push(addItem(newItem).then((id) => {
-                if (type === 'list') {
+                if (type === TYPE_LIST) {
                     return syncItems(`${path}${name}/`, value);
                 }
             }));
@@ -84,7 +85,7 @@ async function syncItems(path, parsedObject) {
     for (const [name, item] of existingItemsMap.entries()) {
         if (!parsedKeys.has(name)) {
             // Before deleting a list, we must delete all its children
-            if (item.type === 'list') {
+            if (item.type === TYPE_LIST) {
                 promises.push(deleteListRecursive(`${path}${name}/`).then(() => deleteItem(item.id)));
             } else {
                 promises.push(deleteItem(item.id));
@@ -107,55 +108,17 @@ async function deleteListRecursive(path) {
     await Promise.all(promises);
 }
 
-function getItemIcon(type) {
-    const iconColor = "text-gray-500 dark:text-gray-400";
-    const iconSize = "w-6 h-6";
-    switch (type) {
-        case 'list':
-            return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${iconSize} ${iconColor}"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>`;
-        case 'text':
-            return `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="${iconSize} ${iconColor}" fill="none" stroke="currentColor" stroke-width="1.5">
-  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" fill="none"/>
-  <text x="12" y="16" font-family="monospace" font-size="8" fill="currentColor" text-anchor="middle">abc</text>
-</svg>`;
-        case 'number':
-            return `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="${iconSize} ${iconColor}" fill="none" stroke="currentColor" stroke-width="1.5">
-  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" fill="none"/>
-  <text x="12" y="16" font-family="monospace" font-size="8" fill="currentColor" text-anchor="middle">123</text>
-</svg>`;
-        case 'boolean':
-            return `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="${iconSize} ${iconColor}" fill="none" stroke="currentColor" stroke-width="1.5">
-  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" fill="none"/>
-  <path d="M12 3v18" stroke="currentColor"/>
-  <path d="M15 9l3 3-4 4" stroke-width="2" stroke="currentColor" fill="none"/>
-</svg>`;
-        default:
-            return '';
-    }
-}
-
 function renderTypeSelector(item) {
-    const availableTypes = ['text', 'number', 'boolean', 'list'];
-    const typeLabels = {
-        'text': 'Texto',
-        'number': 'Número',
-        'boolean': 'Booleano',
-        'list': 'Lista'
-    };
-
     const optionsHTML = availableTypes.map(type => `
-        <div class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer" data-type="${type}">
-            ${typeLabels[type]}
+        <div class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer" data-type="${type.name}">
+            ${type.label}
         </div>
     `).join('');
 
     return `
         <div class="relative" id="type-selector-container">
             <button type="button" id="type-selector-btn" class="w-full text-left shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                ${typeLabels[item.type]}
+                ${itemTypes[item.type].label}
             </button>
             <div id="type-selector-popup" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg hidden">
                 <input type="text" id="type-filter" class="w-full p-2 border-b border-gray-300 dark:border-gray-600" placeholder="Filtrar tipos...">
@@ -429,44 +392,20 @@ export async function renderListView(path) {
 }
 
 function renderItemRow(item) {
-    const formatItemValueForDisplay = (item) => {
-        if (item.type === 'number' && typeof item.value === 'object' && item.value !== null) {
-            const { operator, operands } = item.value;
-            if (!operands || operands.length !== 2) return 'Invalid operands';
-
-            const opMap = { sum: '+', subtraction: '-', multiplication: '*', division: '/' };
-            const opSymbol = opMap[operator];
-            if (!opSymbol) return 'Invalid operator';
-
-            const [op1, op2] = operands;
-            let result;
-            switch (operator) {
-                case 'sum': result = op1 + op2; break;
-                case 'subtraction': result = op1 - op2; break;
-                case 'multiplication': result = op1 * op2; break;
-                case 'division': result = op2 !== 0 ? op1 / op2 : 'Infinity'; break;
-                default: result = NaN;
-            }
-            const formattedResult = (typeof result === 'number' && !Number.isInteger(result)) ? result.toFixed(2) : result;
-            return `${op1} ${opSymbol} ${op2} = ${formattedResult}`;
-        }
-        return item.value;
-    };
-
-    const itemUrl = `#${item.path}${item.name}${item.type === 'list' ? '/' : ''}`;
+    const itemUrl = `#${item.path}${item.name}${item.type === TYPE_LIST ? '/' : ''}`;
+    const type = itemTypes[item.type];
+    const valueDisplay = type.formatValueForDisplay(item);
 
     return `
         <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
             <a href="${itemUrl}" class="flex items-center grow">
-                <div class="mr-4">${getItemIcon(item.type)}</div>
+                <div class="mr-4">${type.icon}</div>
                 <span class="font-semibold">${item.name}</span>
             </a>
             <div class="flex items-center">
-                ${item.type === 'boolean'
+                ${item.type === TYPE_BOOLEAN
                     ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
-                    : item.type === 'list'
-                    ? `<span class="text-sm text-gray-500 mr-4"></span>`
-                    : `<span class="text-gray-700 mr-4 dark:text-gray-300">${formatItemValueForDisplay(item)}</span>`
+                    : `<span class="text-gray-700 mr-4 dark:text-gray-300">${valueDisplay}</span>`
                 }
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 dark:text-gray-500 cursor-grab handle">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -476,36 +415,8 @@ function renderItemRow(item) {
 }
 
 function renderEditFormForItem(item) {
-    const valueInputHTML = (() => {
-        if (item.type === 'boolean') {
-            return `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600" ${item.value ? 'checked' : ''}>`;
-        }
-        if (item.type === 'text') {
-            return `<input type="text" id="item-value" name="value" value="${item.value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-        }
-        if (item.type === 'number') {
-            const isOperation = typeof item.value === 'object' && item.value !== null;
-            const operator = isOperation ? item.value.operator : 'constant';
-            const operands = isOperation ? item.value.operands : [item.value, 0];
-
-            const operatorLabels = {
-                'constant': 'Constante', 'sum': 'Soma', 'subtraction': 'Subtração',
-                'multiplication': 'Multiplicação', 'division': 'Divisão'
-            };
-            const operatorOptionsHTML = Object.entries(operatorLabels)
-                .map(([value, label]) => `<option value="${value}" ${value === operator ? 'selected' : ''}>${label}</option>`)
-                .join('');
-
-            return `
-                <div id="number-operation-container">
-                    <select id="number-operator" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2">
-                        ${operatorOptionsHTML}
-                    </select>
-                    <div id="number-operands"></div>
-                </div>`;
-        }
-        return '<p class="text-gray-500">Este tipo de item não possui um valor editável.</p>';
-    })();
+    const type = itemTypes[item.type];
+    const valueInputHTML = type.renderEditControl(item);
 
     return `
         <li data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
@@ -568,7 +479,7 @@ function setupEditFormHandlers(item, formElement) {
             }
         });
     });
-    if (item.type === 'number') {
+    if (item.type === TYPE_NUMBER) {
         const operatorSelect = formElement.querySelector('#number-operator');
         const operandsDiv = formElement.querySelector('#number-operands');
         const isOperation = typeof item.value === 'object' && item.value !== null;
@@ -608,24 +519,8 @@ function setupEditFormHandlers(item, formElement) {
     formElement.addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
-        let value;
-
-        if (item.type === 'boolean') {
-            value = form.querySelector('[name="value"]').checked;
-        } else if (item.type === 'text') {
-            value = form.querySelector('[name="value"]').value;
-        } else if (item.type === 'number') {
-            const operator = form.querySelector('#number-operator').value;
-            if (operator === 'constant') {
-                value = Number(form.querySelector('[name="value"]').value);
-            } else {
-                const operand1 = Number(form.querySelector('[name="operand1"]').value);
-                const operand2 = Number(form.querySelector('[name="operand2"]').value);
-                value = { operator, operands: [operand1, operand2] };
-            }
-        } else {
-            value = item.value;
-        }
+        const type = itemTypes[item.type];
+        const value = type.parseValue(form, item);
 
         const updatedItem = { ...item, name: form.name.value, value };
         try {
@@ -720,7 +615,7 @@ export function createNewItem(path, items) {
     return {
         path,
         name: newName,
-        type: 'text',
+        type: TYPE_TEXT,
         value: ''
     };
 }
