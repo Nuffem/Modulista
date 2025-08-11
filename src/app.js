@@ -21,13 +21,32 @@ async function renderBreadcrumb(path, itemName = null) {
     const parts = path.split('/').filter(p => p);
     let cumulativePath = '#/';
     let html = '<div class="flex items-center">';
-    html += `<button onclick="location.hash='/'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${await loadIcon('home', { size: 'w-5 h-5' })}</button>`;
+    
+    // Home button - always clickable unless we're at root and no itemName
+    const isAtRoot = parts.length === 0 && !itemName;
+    if (isAtRoot) {
+        html += `<span class="bg-gray-200 text-gray-700 font-bold py-1 px-3 rounded dark:bg-gray-600 dark:text-gray-300">${await loadIcon('home', { size: 'w-5 h-5' })}</span>`;
+    } else {
+        html += `<button onclick="location.hash='/'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${await loadIcon('home', { size: 'w-5 h-5' })}</button>`;
+    }
+    
     parts.forEach((part, index) => {
         cumulativePath += `${part}/`;
-        html += ` <span class="text-gray-500 mx-2">/</span> <button onclick="location.hash='${cumulativePath}'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${decodeURIComponent(part)}</button>`;
+        const isCurrentPath = !itemName && index === parts.length - 1; // Last segment and no itemName means we're viewing this directory
+        
+        html += ` <span class="text-gray-500 mx-2 dark:text-gray-400">/</span> `;
+        
+        if (isCurrentPath) {
+            // Current directory - non-clickable, different styling
+            html += `<span class="bg-gray-200 text-gray-700 font-bold py-1 px-3 rounded dark:bg-gray-600 dark:text-gray-300">${decodeURIComponent(part)}</span>`;
+        } else {
+            // Clickable navigation button
+            html += `<button onclick="location.hash='${cumulativePath}'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${decodeURIComponent(part)}</button>`;
+        }
     });
+    
     if (itemName) {
-        html += ` <span class="text-gray-500 mx-2">/</span> <span class="font-semibold">${itemName}</span>`;
+        html += ` <span class="text-gray-500 mx-2 dark:text-gray-400">/</span> <span class="bg-gray-200 text-gray-700 font-bold py-1 px-3 rounded dark:bg-gray-600 dark:text-gray-300">${itemName}</span>`;
     }
     html += '</div>';
     breadcrumbEl.innerHTML = html;
