@@ -20,8 +20,12 @@ export async function loadIcon(name, {
             const parser = new DOMParser();
             const doc = parser.parseFromString(svgText, "image/svg+xml");
             const svgElement = doc.documentElement;
-            if (size) svgElement.classList.add(size);
-            if (color) svgElement.classList.add(color);
+            if (size) {
+                size.split(' ').forEach(c => svgElement.classList.add(c));
+            }
+            if (color) {
+                color.split(' ').forEach(c => svgElement.classList.add(c));
+            }
             svgText = new XMLSerializer().serializeToString(svgElement);
         }
 
