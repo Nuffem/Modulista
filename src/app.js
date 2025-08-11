@@ -137,6 +137,36 @@ function getItemIcon(type) {
     }
 }
 
+function renderTypeSelector(item) {
+    const availableTypes = ['text', 'number', 'boolean', 'list'];
+    const typeLabels = {
+        'text': 'Texto',
+        'number': 'Número',
+        'boolean': 'Booleano',
+        'list': 'Lista'
+    };
+
+    const optionsHTML = availableTypes.map(type => `
+        <div class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer" data-type="${type}">
+            ${typeLabels[type]}
+        </div>
+    `).join('');
+
+    return `
+        <div class="relative" id="type-selector-container">
+            <button type="button" id="type-selector-btn" class="w-full text-left shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                ${typeLabels[item.type]}
+            </button>
+            <div id="type-selector-popup" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg hidden">
+                <input type="text" id="type-filter" class="w-full p-2 border-b border-gray-300 dark:border-gray-600" placeholder="Filtrar tipos...">
+                <div id="type-list">
+                    ${optionsHTML}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 export async function renderListView(path) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
@@ -485,6 +515,10 @@ function renderEditFormForItem(item) {
                     <input type="text" id="item-name" name="name" value="${item.name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required>
                 </div>
                 <div class="mb-4">
+                    <label for="item-type" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label>
+                    <div id="item-type-selector-${item.id}">${renderTypeSelector(item)}</div>
+                </div>
+                <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
                     <div id="item-value-input-${item.id}">${valueInputHTML}</div>
                 </div>
@@ -506,6 +540,34 @@ function renderEditFormForItem(item) {
 }
 
 function setupEditFormHandlers(item, formElement) {
+    const typeSelectorBtn = formElement.querySelector('#type-selector-btn');
+    const typeSelectorPopup = formElement.querySelector('#type-selector-popup');
+
+    typeSelectorBtn.addEventListener('click', () => {
+        typeSelectorPopup.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!typeSelectorBtn.contains(e.target) && !typeSelectorPopup.contains(e.target)) {
+            typeSelectorPopup.classList.add('hidden');
+        }
+    });
+
+    const typeFilter = formElement.querySelector('#type-filter');
+    const typeList = formElement.querySelector('#type-list');
+    const typeOptions = Array.from(typeList.children);
+
+    typeFilter.addEventListener('input', () => {
+        const filterText = typeFilter.value.toLowerCase();
+        typeOptions.forEach(option => {
+            const typeName = option.textContent.toLowerCase();
+            if (typeName.includes(filterText)) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    });
     if (item.type === 'number') {
         const operatorSelect = formElement.querySelector('#number-operator');
         const operandsDiv = formElement.querySelector('#number-operands');
@@ -531,6 +593,18 @@ function setupEditFormHandlers(item, formElement) {
         });
     }
 
+    typeList.addEventListener('click', (e) => {
+        if (e.target.dataset.type) {
+            const newType = e.target.dataset.type;
+            if (newType !== item.type) {
+                const updatedItem = { ...item, type: newType, value: '' }; // Reset value on type change
+                updateItem(updatedItem).then(() => {
+                    renderItemDetailView(`#${item.path}${item.name}`);
+                });
+            }
+            typeSelectorPopup.classList.add('hidden');
+        }
+    });
     formElement.addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
