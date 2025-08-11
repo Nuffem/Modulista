@@ -32,7 +32,7 @@ async function renderBreadcrumb(path, itemName = null) {
     
     parts.forEach((part, index) => {
         cumulativePath += `${part}/`;
-        const isCurrentPath = isCurrentBreadcrumbPath(itemName, index, parts);
+        const isCurrentPath = !itemName && index === parts.length - 1; // Last segment and no itemName means we're viewing this directory
         
         html += ` <span class="text-gray-500 mx-2 dark:text-gray-400">/</span> `;
         
