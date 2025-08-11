@@ -17,11 +17,14 @@ Always reference these instructions first and fallback to search or bash command
 - Run tests: `npm test` -- completes in < 2 seconds, runs 31 tests
 - Test environment: Jest with fake-indexeddb for browser storage simulation
 - All tests use ES modules with NODE_OPTIONS=--experimental-vm-modules
+- Screenshot testing: `npm run screenshots` -- generates screenshots with proper CSS styling
+- Playwright UI mode: `npm run test:playwright:ui` -- interactive test runner
 
 ### Development Requirements
 - Node.js 18+ (CI uses Node 18)
 - Modern browser with ES modules support
 - No additional build tools or transpilation needed
+- Playwright for screenshot generation and visual testing
 
 ## Validation
 
@@ -55,6 +58,153 @@ After making changes, ALWAYS test these complete workflows:
 - Run `npm test` before committing changes
 - All 31 tests must pass
 - Tests cover: custom parser, item management, database operations
+
+## Screenshot Generation for Pull Requests
+
+### Playwright Setup and Configuration
+Modulista uses Playwright for generating high-quality screenshots with proper CSS styling for pull requests. This ensures visual changes are clearly documented and reviewed.
+
+### Installing Playwright
+```bash
+# Install Playwright (already included in package.json)
+npm install
+
+# Install browser binaries (required once per environment)
+npx playwright install chromium
+```
+
+### Taking Screenshots for PRs
+When making UI changes, **ALWAYS** generate screenshots to document the visual impact:
+
+```bash
+# Generate all standard screenshots
+npm run screenshots
+
+# Run with UI mode for interactive testing
+npm run test:playwright:ui
+
+# Update existing screenshot baselines
+npm run screenshots:update
+```
+
+### Screenshot Categories
+
+1. **Homepage Screenshots** (`homepage-full.png`):
+   - Full page capture with complete CSS styling
+   - Shows the initial state of the application
+   - Includes navigation, branding, and empty state
+
+2. **List View with Data** (`list-view-with-data.png`):
+   - Demonstrates the Lista (List) view with sample items
+   - Shows item rendering, icons, and interaction elements
+   - Captures the main functionality of the application
+
+3. **Text View Custom Format** (`text-view-custom-format.png`):
+   - Shows the Texto (Text) view with custom format syntax
+   - Demonstrates the custom parser output
+   - Highlights the unique non-JSON text format
+
+4. **Mobile Responsive View** (`mobile-view.png`):
+   - Mobile viewport (375x667) screenshot
+   - Validates responsive design implementation
+   - Shows how the UI adapts to smaller screens
+
+### Best Practices for PR Screenshots
+
+#### 1. Timing and CSS Loading
+```javascript
+// Always wait for CSS and network resources
+await page.waitForLoadState('networkidle');
+await page.waitForTimeout(1000); // Allow for dynamic content
+```
+
+#### 2. Consistent Viewport Sizes
+- Desktop: 1280x720 (default)
+- Mobile: 375x667 (iPhone viewport)
+- Use consistent sizes across all screenshots
+
+#### 3. Full Page vs Viewport Screenshots
+```javascript
+// For complete layouts
+await page.screenshot({ fullPage: true });
+
+// For specific UI elements
+await page.screenshot({ clip: { x: 0, y: 0, width: 800, height: 600 } });
+```
+
+#### 4. Sample Data Setup
+Always include meaningful test data in screenshots:
+```javascript
+// Add realistic test content
+await page.fill('input[placeholder="Nome do item"]', 'Product Demo');
+await page.selectOption('select', 'text');
+await page.fill('input[placeholder="Valor"]', 'Sample description for demo');
+```
+
+### Screenshot File Organization
+```
+tests/playwright/screenshots/
+├── homepage-full.png           # Initial application state
+├── list-view-with-data.png    # Main functionality view
+├── text-view-custom-format.png # Text editor with custom syntax
+└── mobile-view.png            # Responsive mobile layout
+```
+
+### Playwright Configuration Highlights
+- **CSS Loading**: `waitUntil: 'networkidle'` ensures all styles load
+- **Auto-server**: Automatically starts `python3 -m http.server 8000`
+- **Retries**: 2 retries in CI, 0 locally for faster feedback
+- **Viewport**: 1280x720 default for consistent screenshots
+
+### Integration with Pull Requests
+
+#### When to Generate Screenshots
+- **UI/CSS changes**: Any modification to styling, layout, or visual elements
+- **New features**: When adding new UI components or views
+- **Bug fixes**: Visual bugs that affect the user interface
+- **Responsive changes**: Modifications to mobile or tablet layouts
+
+#### Screenshot Commit Workflow
+1. Make your code changes
+2. Run `npm run screenshots` to generate new screenshots
+3. Review the generated images in `tests/playwright/screenshots/`
+4. Commit both code changes AND updated screenshots
+5. Include screenshots in PR description for easy review
+
+#### PR Description Template
+When including screenshots in PRs:
+```markdown
+## Visual Changes
+
+### Before/After Comparison
+- **Homepage**: [Describe changes]
+- **List View**: [Describe changes]  
+- **Text View**: [Describe changes]
+- **Mobile**: [Describe changes]
+
+### Screenshots
+![Homepage](tests/playwright/screenshots/homepage-full.png)
+![List View](tests/playwright/screenshots/list-view-with-data.png)
+![Text View](tests/playwright/screenshots/text-view-custom-format.png)
+![Mobile View](tests/playwright/screenshots/mobile-view.png)
+```
+
+### Troubleshooting Screenshots
+
+#### Common Issues
+1. **Fonts not loading**: Increase `waitForTimeout` duration
+2. **CSS not applied**: Ensure `waitForLoadState('networkidle')` is used
+3. **Dynamic content missing**: Add specific waits for async operations
+4. **Inconsistent colors**: Check for system dark/light mode differences
+
+#### Debug Mode
+```bash
+# Run with headed browser to debug visually
+npx playwright test --headed
+
+# Generate trace for debugging
+npx playwright test --trace on
+```
 
 ## Application Architecture
 
@@ -136,8 +286,17 @@ Essential commands for working with Modulista:
 # Setup (< 1 second)
 npm install
 
+# Install Playwright browsers (required once)
+npx playwright install chromium
+
 # Test (< 2 seconds)
 npm test
+
+# Screenshot generation for PRs
+npm run screenshots
+
+# Interactive Playwright UI
+npm run test:playwright:ui
 
 # Serve application
 python3 -m http.server 8000
