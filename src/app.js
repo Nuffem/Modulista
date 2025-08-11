@@ -1,5 +1,6 @@
 import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder, getItemByPathAndName } from './db.js';
 import { parse, stringify, executePlan } from './custom-parser.js';
+import { resolveRoute } from './router.js';
 
 const appContainer = document.getElementById('app-container');
 const breadcrumbEl = document.getElementById('breadcrumb');
@@ -137,16 +138,14 @@ function getItemIcon(type) {
     }
 }
 
-export async function renderListView(path) {
+export function renderListView(path, items) {
     if (!path.startsWith('/')) path = '/' + path;
     if (!path.endsWith('/')) path = path + '/';
-    appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
+    appContainer.innerHTML = ''; // Clear previous content
     breadcrumbEl.style.display = 'block';
     renderBreadcrumb(path);
 
     try {
-        let items = await getItems(path);
-
         const isListActive = currentView === 'list';
         const isTextActive = currentView === 'text';
 
@@ -238,18 +237,18 @@ export async function renderListView(path) {
                     const liElements = Array.from(container.querySelectorAll('li[data-id]'));
                     const newOrderedIds = liElements.map(li => li.dataset.id);
 
-                    const updatedItems = items.map(item => {
+                    const originalItems = items; // Keep a reference to the original items
+                    const updatedItems = originalItems.map(item => {
                         const newIndex = newOrderedIds.indexOf(item.id);
                         return { ...item, order: newIndex };
                     });
 
                     try {
                         await updateItemsOrder(updatedItems);
-                        items = await getItems(path); // Refresh items from DB
-                        renderList(); // Re-render the list with fresh, sorted data
+                        router(); // Re-run the router to refresh the entire view
                     } catch (error) {
                         console.error("Failed to update item order:", error);
-                        renderListView(path);
+                        router(); // Re-run router even on error to reset to consistent state
                     }
                 });
             }
@@ -371,7 +370,7 @@ export async function renderListView(path) {
                     const newItemsObject = parse(newText);
                     await syncItems(path, newItemsObject);
                     currentView = 'list';
-                    renderListView(path);
+                    router();
                 } catch (error) {
                     console.error('Failed to parse and update items:', error);
                     alert('Erro ao salvar. Verifique a sintaxe.\n' + error.message);
@@ -382,13 +381,13 @@ export async function renderListView(path) {
         document.getElementById('list-tab-btn').addEventListener('click', () => {
             if (currentView !== 'list') {
                 currentView = 'list';
-                renderListView(path); // Reset active item when switching tabs
+                router();
             }
         });
         document.getElementById('text-tab-btn').addEventListener('click', () => {
             if (currentView !== 'text') {
                 currentView = 'text';
-                renderListView(path);
+                router();
             }
         });
 
@@ -577,18 +576,8 @@ function setupEditFormHandlers(item, formElement) {
 }
 
 
-async function renderItemDetailView(path) {
+function renderItemDetailView(item) {
     try {
-        const fullPath = path;
-        const parts = fullPath.split('/').filter(p => p);
-        const itemName = parts.pop();
-        let itemPath = `/${parts.join('/')}/`;
-        if (itemPath === '//') {
-            itemPath = '/';
-        }
-
-        const item = await getItemByPathAndName(itemPath, itemName);
-
         if (!item) {
             appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`;
             breadcrumbEl.innerHTML = '';
@@ -613,13 +602,29 @@ async function renderItemDetailView(path) {
 }
 
 // --- Router ---
-function router() {
+async function router() {
+    appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
     const path = window.location.hash.substring(1) || '/';
+    const routeResult = await resolveRoute(path, getItems, getItemByPathAndName);
 
-    if (path.endsWith('/')) {
-        renderListView(path);
-    } else {
-        renderItemDetailView(path);
+    switch (routeResult.view) {
+        case 'list':
+            renderListView(routeResult.path, routeResult.items);
+            break;
+        case 'detail':
+            renderItemDetailView(routeResult.item);
+            break;
+        case 'notFound':
+            appContainer.innerHTML = `<p class="text-red-500">404 - Rota não encontrada: ${routeResult.path}</p>`;
+            breadcrumbEl.style.display = 'none';
+            break;
+        case 'error':
+            appContainer.innerHTML = `<p class="text-red-500">Erro: ${routeResult.message}</p>`;
+            breadcrumbEl.style.display = 'none';
+            break;
+        default:
+            appContainer.innerHTML = `<p class="text-red-500">Erro: Rota desconhecida.</p>`;
+            breadcrumbEl.style.display = 'none';
     }
 }
 
