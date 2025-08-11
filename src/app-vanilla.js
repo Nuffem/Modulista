@@ -33,7 +33,7 @@ async function renderBreadcrumb(path, itemName = null) {
     breadcrumbEl.innerHTML = html;
 }
 
-async function syncItems(path, parsedObject) {
+export async function syncItems(path, parsedObject) {
     const existingItems = await getItems(path);
     const existingItemsMap = new Map(existingItems.map(i => [i.name, i]));
     const parsedKeys = new Set(Object.keys(parsedObject));

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import { createNewItem } from '../src/app.js';
+import { createNewItem } from '../src/app-vanilla.js';
 
 describe('createNewItem', () => {
     test('should create a new item with an empty value', () => {
