@@ -1,6 +1,7 @@
 import { initDB, getItems, addItem, getItem, updateItem, deleteItem, updateItemsOrder, getItemByPathAndName } from './db.js';
 import { parse, stringify, executePlan } from './custom-parser.js';
 import { itemTypes, availableTypes, TYPE_LIST, TYPE_TEXT, TYPE_NUMBER, TYPE_BOOLEAN } from './types/index.js';
+import { loadIcon } from './icon-loader.js';
 
 const appContainer = document.getElementById('app-container');
 const breadcrumbEl = document.getElementById('breadcrumb');
@@ -10,11 +11,11 @@ let currentView = 'list'; // 'list' or 'text'
 
 // --- Rendering Functions ---
 
-function renderBreadcrumb(path, itemName = null) {
+async function renderBreadcrumb(path, itemName = null) {
     const parts = path.split('/').filter(p => p);
     let cumulativePath = '#/';
     let html = '<div class="flex items-center">';
-    html += `<button onclick="location.hash='/'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h7.5" /></svg></button>`;
+    html += `<button onclick="location.hash='/'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${await loadIcon('home', { size: 'w-5 h-5' })}</button>`;
     parts.forEach((part, index) => {
         cumulativePath += `${part}/`;
         html += ` <span class="text-gray-500 mx-2">/</span> <button onclick="location.hash='${cumulativePath}'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${decodeURIComponent(part)}</button>`;
@@ -135,7 +136,7 @@ export async function renderListView(path) {
     if (!path.endsWith('/')) path = path + '/';
     appContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Carregando...</p>`;
     breadcrumbEl.style.display = 'block';
-    renderBreadcrumb(path);
+    await renderBreadcrumb(path);
 
     try {
         let items = await getItems(path);
@@ -148,13 +149,13 @@ export async function renderListView(path) {
                 <ul class="flex -mb-px text-sm font-medium text-center">
                     <li class="flex-1">
                         <button id="list-tab-btn" class="inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                            ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
                             Lista
                         </button>
                     </li>
                     <li class="flex-1">
                         <button id="text-tab-btn" class="inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V5.75A2.25 2.25 0 0 0 18 3.5H6A2.25 2.25 0 0 0 3.75 5.75v12.5A2.25 2.25 0 0 0 6 20.25Z" /></svg>
+                            ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
                             Texto
                         </button>
                     </li>
@@ -168,16 +169,15 @@ export async function renderListView(path) {
 
         if (isListActive) {
             let listContainer;
-            const renderList = () => {
+            const renderList = async () => {
+                const itemRows = await Promise.all(items.map(item => renderItemRow(item)));
                 const listHTML = items.length === 0
                     ? '<p class="text-gray-500 dark:text-gray-400">Nenhum item encontrado.</p>'
-                    : '<ul id="item-list" class="space-y-3">' + items.map(item => renderItemRow(item)).join('') + '</ul>';
+                    : '<ul id="item-list" class="space-y-3">' + itemRows.join('') + '</ul>';
 
                 const addButtonHTML = `
                     <button data-testid="add-item-button" onclick="handleAddItemClick('${path}')" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
+                        ${await loadIcon('plus', { size: 'w-8 h-8' })}
                     </button>
                 `;
                 tabContent.innerHTML = listHTML + addButtonHTML;
@@ -239,15 +239,15 @@ export async function renderListView(path) {
                     try {
                         await updateItemsOrder(updatedItems);
                         items = await getItems(path); // Refresh items from DB
-                        renderList(); // Re-render the list with fresh, sorted data
+                        await renderList(); // Re-render the list with fresh, sorted data
                     } catch (error) {
                         console.error("Failed to update item order:", error);
-                        renderListView(path);
+                        await renderListView(path);
                     }
                 });
             }
 
-            renderList();
+            await renderList();
 
         } else { // Text View is Active
             const textContentHTML = `
@@ -256,13 +256,13 @@ export async function renderListView(path) {
                         <pre class="bg-gray-100 p-4 rounded overflow-x-auto dark:bg-gray-700 dark:text-gray-200"><code>Carregando...</code></pre>
                         <div class="mt-4 flex justify-end space-x-2">
                             <button id="load-from-device-btn" title="Carregar do dispositivo" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                                ${await loadIcon('upload', { size: 'w-6 h-6' })}
                             </button>
                             <button id="save-to-device-btn" title="Salvar no dispositivo" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                                ${await loadIcon('download', { size: 'w-6 h-6' })}
                             </button>
                             <button id="edit-text-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                                ${await loadIcon('pencil', { size: 'w-6 h-6' })}
                             </button>
                         </div>
                     </div>
@@ -270,10 +270,10 @@ export async function renderListView(path) {
                         <textarea id="text-editor" class="w-full h-64 bg-gray-100 p-4 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></textarea>
                         <div class="mt-4 flex justify-end space-x-2">
                             <button id="save-text-btn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded dark:bg-green-600 dark:hover:bg-green-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                                ${await loadIcon('check', { size: 'w-6 h-6' })}
                             </button>
                             <button id="cancel-text-btn" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                ${await loadIcon('x', { size: 'w-6 h-6' })}
                             </button>
                         </div>
                     </div>
@@ -364,7 +364,7 @@ export async function renderListView(path) {
                     const newItemsObject = parse(newText);
                     await syncItems(path, newItemsObject);
                     currentView = 'list';
-                    renderListView(path);
+                    await renderListView(path);
                 } catch (error) {
                     console.error('Failed to parse and update items:', error);
                     alert('Erro ao salvar. Verifique a sintaxe.\n' + error.message);
@@ -391,7 +391,7 @@ export async function renderListView(path) {
     }
 }
 
-function renderItemRow(item) {
+async function renderItemRow(item) {
     const itemUrl = `#${item.path}${item.name}${item.type === TYPE_LIST ? '/' : ''}`;
     const type = itemTypes[item.type];
     const valueDisplay = type.formatValueForDisplay(item);
@@ -399,7 +399,7 @@ function renderItemRow(item) {
     return `
         <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
             <a href="${itemUrl}" class="flex items-center grow">
-                <div class="mr-4">${type.icon}</div>
+                <div class="mr-4">${await type.getIcon()}</div>
                 <span class="font-semibold">${item.name}</span>
             </a>
             <div class="flex items-center">
@@ -407,14 +407,12 @@ function renderItemRow(item) {
                     ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
                     : `<span class="text-gray-700 mr-4 dark:text-gray-300">${valueDisplay}</span>`
                 }
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 dark:text-gray-500 cursor-grab handle">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
+                ${await loadIcon('grab-handle', { size: 'w-6 h-6', color: 'text-gray-400 dark:text-gray-500 cursor-grab handle' })}
             </div>
         </li>`;
 }
 
-function renderEditFormForItem(item) {
+async function renderEditFormForItem(item) {
     const type = itemTypes[item.type];
     const valueInputHTML = type.renderEditControl(item);
 
@@ -436,14 +434,14 @@ function renderEditFormForItem(item) {
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded dark:bg-blue-600 dark:hover:bg-blue-700" title="Salvar">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                            ${await loadIcon('check', { size: 'w-6 h-6' })}
                         </button>
                         <button type="button" onclick="location.hash='${item.path}'" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded dark:bg-gray-600 dark:hover:bg-gray-700" title="Cancelar">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            ${await loadIcon('x', { size: 'w-6 h-6' })}
                         </button>
                     </div>
                     <button type="button" id="delete-item-btn-${item.id}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-3 rounded" title="Excluir Item">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                        ${await loadIcon('trash', { size: 'w-6 h-6' })}
                     </button>
                 </div>
             </form>
@@ -565,9 +563,9 @@ async function renderItemDetailView(path) {
         }
 
         breadcrumbEl.style.display = 'block';
-        renderBreadcrumb(item.path, item.name);
+        await renderBreadcrumb(item.path, item.name);
 
-        const formHTML = renderEditFormForItem(item);
+        const formHTML = await renderEditFormForItem(item);
         appContainer.innerHTML = `<div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">${formHTML}</div>`;
 
         const form = document.getElementById(`edit-item-form-${item.id}`);
@@ -582,13 +580,13 @@ async function renderItemDetailView(path) {
 }
 
 // --- Router ---
-function router() {
+async function router() {
     const path = window.location.hash.substring(1) || '/';
 
     if (path.endsWith('/')) {
-        renderListView(path);
+        await renderListView(path);
     } else {
-        renderItemDetailView(path);
+        await renderItemDetailView(path);
     }
 }
 
@@ -634,13 +632,14 @@ export async function handleAddItemClick(path) {
 window.handleAddItemClick = handleAddItemClick;
 
 // --- App Initialization ---
-document.addEventListener('DOMContentLoaded', () => {
-    initDB().then(() => {
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await initDB();
         console.log('Database ready.');
         window.addEventListener('hashchange', router);
-        router();
-    }).catch(err => {
+        await router();
+    } catch (err) {
         console.error('Failed to initialize database:', err);
         appContainer.innerHTML = `<p class="text-red-500">Error: Could not initialize the database.</p>`;
-    });
+    }
 });

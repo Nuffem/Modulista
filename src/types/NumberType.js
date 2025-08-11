@@ -1,14 +1,14 @@
+import { loadIcon } from '../icon-loader.js';
+
 const iconColor = "text-gray-500 dark:text-gray-400";
 const iconSize = "w-6 h-6";
 
 export const NumberType = {
     name: 'number',
     label: 'Número',
-    icon: `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="${iconSize} ${iconColor}" fill="none" stroke="currentColor" stroke-width="1.5">
-  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" fill="none"/>
-  <text x="12" y="16" font-family="monospace" font-size="8" fill="currentColor" text-anchor="middle">123</text>
-</svg>`,
+    getIcon: async () => {
+        return await loadIcon('number', { size: iconSize, color: iconColor });
+    },
     renderEditControl: (item) => {
         const isOperation = typeof item.value === 'object' && item.value !== null;
         const operator = isOperation ? item.value.operator : 'constant';
