@@ -1,5 +1,5 @@
 import { renderListView } from './list-view.js';
-import { renderItemDetailView } from './item-form.js';
+import { renderItemDetailView, renderItemTabView } from './item-form.js';
 
 export async function router() {
     const path = window.location.hash.substring(1) || '/';
@@ -7,6 +7,6 @@ export async function router() {
     if (path.endsWith('/')) {
         await renderListView(path);
     } else {
-        await renderItemDetailView(path);
+        await renderItemTabView(path);
     }
 }
