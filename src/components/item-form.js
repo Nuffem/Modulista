@@ -212,18 +212,6 @@ export async function renderItemTabView(path) {
             // Side-by-side layout for landscape mode
             const sideLayoutHTML = `
                 <div class="mb-4">
-                    <div class="flex items-center justify-center mb-4">
-                        <div class="flex bg-gray-100 rounded-lg p-1 dark:bg-gray-700">
-                            <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
-                                Lista
-                            </span>
-                            <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
-                                Texto
-                            </span>
-                        </div>
-                    </div>
                     <div class="grid grid-cols-2 gap-6">
                         <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
                             <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
