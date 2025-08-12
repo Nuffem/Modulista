@@ -102,7 +102,24 @@ class Parser {
   }
 
   parseNumericExpression() {
-    return this._parseSingleNumber();
+    const firstNumber = this._parseSingleNumber();
+    this.skipWhitespace();
+    
+    // Check if this is a sum expression by looking for + operator
+    if (this.pos < this.text.length && this.peek() === '+') {
+      const numbers = [firstNumber];
+      
+      while (this.pos < this.text.length && this.peek() === '+') {
+        this.consume('+');
+        this.skipWhitespace();
+        numbers.push(this._parseSingleNumber());
+        this.skipWhitespace();
+      }
+      
+      return numbers; // Return array for sum type
+    }
+    
+    return firstNumber; // Return single number for number type
   }
 
   parseBoolean() {
@@ -257,6 +274,12 @@ function stringifyValue(item, indentLevel, currentPath) {
       return item.value;
     case 'boolean':
       return item.value ? '@1' : '@0';
+    case 'sum':
+      // Format sum as "10 + 5 + 3"
+      if (!Array.isArray(item.value) || item.value.length === 0) {
+        return '0';
+      }
+      return item.value.join(' + ');
     case 'list':
       const listPath = `${currentPath}${item.name}/`;
       return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };

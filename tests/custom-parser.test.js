@@ -21,6 +21,18 @@ describe('parse', () => {
         expect(parse('{ age: 30 }')).toEqual({ age: 30 });
     });
 
+    test('should parse a list with a sum expression', () => {
+        expect(parse('{ total: 10 + 5 + 3 }')).toEqual({ total: [10, 5, 3] });
+    });
+
+    test('should parse a sum expression with spaces', () => {
+        expect(parse('{ sum: 1.5 + 2.3 + 4.2 }')).toEqual({ sum: [1.5, 2.3, 4.2] });
+    });
+
+    test('should parse a sum expression with negative numbers', () => {
+        expect(parse('{ result: -10 + 5 + -3 }')).toEqual({ result: [-10, 5, -3] });
+    });
+
     test('should parse a list with a nested list', () => {
         const input = `{
             user: {
@@ -75,6 +87,36 @@ describe('stringify', () => {
             prefix: '{\n',
             suffix: '\n}',
             parts: ['  age: ', 30],
+        });
+    });
+
+    test('should stringify a list with a sum item', () => {
+        const items = [{ name: 'total', type: 'sum', value: [10, 5, 3] }];
+        const plan = stringify(items, 'some/path/');
+        expect(plan).toEqual({
+            prefix: '{\n',
+            suffix: '\n}',
+            parts: ['  total: ', '10 + 5 + 3'],
+        });
+    });
+
+    test('should stringify a sum with decimal numbers', () => {
+        const items = [{ name: 'sum', type: 'sum', value: [1.5, 2.3, 4.2] }];
+        const plan = stringify(items, 'some/path/');
+        expect(plan).toEqual({
+            prefix: '{\n',
+            suffix: '\n}',
+            parts: ['  sum: ', '1.5 + 2.3 + 4.2'],
+        });
+    });
+
+    test('should stringify an empty sum as 0', () => {
+        const items = [{ name: 'empty', type: 'sum', value: [] }];
+        const plan = stringify(items, 'some/path/');
+        expect(plan).toEqual({
+            prefix: '{\n',
+            suffix: '\n}',
+            parts: ['  empty: ', '0'],
         });
     });
 
