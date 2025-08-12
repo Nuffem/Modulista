@@ -31,7 +31,7 @@ export async function renderEditFormForItem(item) {
     const valueInputHTML = type.renderEditControl(item);
 
     return `
-        <li data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
+        <div data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
             <form id="edit-item-form-${item.id}">
                 <div class="mb-4">
                     <label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label>
@@ -51,7 +51,7 @@ export async function renderEditFormForItem(item) {
                     </button>
                 </div>
             </form>
-        </li>`;
+        </div>`;
 }
 
 export function setupEditFormHandlers(item, formElement) {
