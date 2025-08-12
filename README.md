@@ -2,7 +2,16 @@
 
 Modulista é uma aplicação web client-side para gerenciar estruturas de dados hierárquicas com um formato de texto customizado. Oferece uma interface de visualização dupla (visualização em Lista para edição estruturada e visualização em Texto para edição de texto bruto) e armazena dados localmente no IndexedDB.
 
-![Interface do Modulista](https://github.com/user-attachments/assets/456b118f-d309-47bc-9722-7790ab4222ed)
+![Interface do Modulista](tests/playwright/screenshots/list-view-with-data.png)
+
+*Interface principal mostrando a visualização em Lista com diferentes tipos de dados*
+
+### Visualizações da Interface
+
+| Visualização Lista | Visualização Texto | Responsivo Mobile |
+|:---:|:---:|:---:|
+| ![Lista](tests/playwright/screenshots/homepage-full.png) | ![Texto](tests/playwright/screenshots/text-view-custom-format.png) | ![Mobile](tests/playwright/screenshots/mobile-view.png) |
+| Interface estruturada para navegação | Editor de texto com formato customizado | Design responsivo para móveis |
 
 ## 🚀 Características
 

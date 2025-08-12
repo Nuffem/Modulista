@@ -8,7 +8,22 @@ test.describe('Modulista Screenshots for PR', () => {
     await page.waitForLoadState('networkidle');
     
     // Wait for any dynamic content to render
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
+    
+    // Add sample data to make the screenshot more informative
+    await page.getByTestId('add-item-button').click();
+    await page.locator('#item-value').fill('Aplicação para gerenciar dados hierárquicos');
+    await page.getByRole('button', { name: 'Salvar' }).click();
+    
+    // Add a number type item
+    await page.getByTestId('add-item-button').click();
+    await page.getByRole('textbox', { name: 'Nome' }).fill('Versão');
+    await page.getByText('Número').click();
+    await page.locator('#item-value').fill('1.0');
+    await page.getByRole('button', { name: 'Salvar' }).click();
+    
+    // Wait for items to be added
+    await page.waitForTimeout(500);
     
     // Take full page screenshot with proper CSS styling
     await page.screenshot({ 
@@ -24,23 +39,26 @@ test.describe('Modulista Screenshots for PR', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Add a test item to show functionality
-    await page.click('button[title="Adicionar item"]');
-    await page.fill('input[placeholder="Nome do item"]', 'Screenshot Test Item');
-    await page.selectOption('select', 'text');
-    await page.fill('input[placeholder="Valor"]', 'This is a test value for screenshots');
-    await page.click('button:has-text("Salvar")');
+    // Add complex sample data via text editor to show custom format
+    await page.locator('span').filter({ hasText: 'Texto' }).click();
+    await page.locator('#text-editor-text-content').fill('{ Aplicacao: "Modulista" Versao: 1.0 Descricao: "Sistema para gerenciar dados hierárquicos" Ativo: @1 }');
+    await page.locator('#save-text-btn-text-content').click();
     
-    // Wait for the item to be added and UI to update
-    await page.waitForTimeout(500);
+    // Switch back to list view
+    await page.locator('span').filter({ hasText: 'Lista' }).click();
+    
+    // Wait for the items to be processed and UI to update
+    await page.waitForTimeout(1000);
     
     // Take screenshot of the list view with data
     await page.screenshot({ 
-      path: 'tests/playwright/screenshots/list-view-with-data.png' 
+      path: 'tests/playwright/screenshots/list-view-with-data.png',
+      fullPage: true 
     });
     
-    // Verify the item was added
-    await expect(page.locator('text=Screenshot Test Item')).toBeVisible();
+    // Verify the items were added
+    await expect(page.locator('text=Aplicacao')).toBeVisible();
+    await expect(page.locator('text=Modulista')).toBeVisible();
   });
 
   test('capture text view with custom format', async ({ page }) => {
@@ -48,34 +66,37 @@ test.describe('Modulista Screenshots for PR', () => {
     await page.waitForLoadState('networkidle');
     
     // Switch to text view
-    await page.click('button:has-text("Texto")');
+    await page.locator('span').filter({ hasText: 'Texto' }).click();
     
-    // Add some sample custom format text
+    // Add comprehensive sample custom format text that showcases all data types
     const sampleText = `{
-  user: {
-    name: "João"
-    age: 30
-    active: @1
+  Aplicacao: "Modulista"
+  Versao: 1.0
+  Configuracoes: {
+    tema: "escuro"
+    notificacoes: @1
+    autoSalvar: @0
   }
-  settings: {
-    theme: "dark"
-    notifications: @0
+  Usuario: {
+    nome: "Administrador"
+    nivel: 5
+    ativo: @1
   }
 }`;
     
-    await page.fill('textarea', sampleText);
-    await page.click('button[title="Aplicar alterações"]');
+    await page.locator('#text-editor-text-content').fill(sampleText);
     
-    // Wait for processing
+    // Wait for text to be displayed
     await page.waitForTimeout(500);
     
-    // Take screenshot of text view
+    // Take screenshot of text view showing the custom format
     await page.screenshot({ 
-      path: 'tests/playwright/screenshots/text-view-custom-format.png' 
+      path: 'tests/playwright/screenshots/text-view-custom-format.png',
+      fullPage: true 
     });
     
-    // Verify text was processed
-    await expect(page.locator('textarea')).toHaveValue(sampleText);
+    // Verify text was entered
+    await expect(page.locator('#text-editor-text-content')).toHaveValue(sampleText);
   });
 
   test('capture responsive design on mobile viewport', async ({ page }) => {
