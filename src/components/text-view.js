@@ -37,9 +37,18 @@ export async function renderTextContent(path, items, containerId = 'text-content
     `;
     container.innerHTML = textContentHTML;
 
+    // Yield to the event loop to allow the DOM to update
+    await new Promise(resolve => setTimeout(resolve, 0));
+
     const textDisplay = document.getElementById(`text-display-${containerId}`);
     const textEdit = document.getElementById(`text-edit-${containerId}`);
     const textEditor = document.getElementById(`text-editor-${containerId}`);
+
+    if (!textDisplay) {
+        console.error(`Could not find #text-display-${containerId}`);
+        return;
+    }
+
     const codeBlock = textDisplay.querySelector('code');
 
     let textContent = '';

@@ -45,15 +45,7 @@ export async function renderEditFormForItem(item) {
                     <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
                     <div id="item-value-input-${item.id}">${valueInputHTML}</div>
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded dark:bg-blue-600 dark:hover:bg-blue-700" title="Salvar">
-                            ${await loadIcon('check', { size: 'w-6 h-6' })}
-                        </button>
-                        <button type="button" onclick="location.hash='${item.path}'" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded dark:bg-gray-600 dark:hover:bg-gray-700" title="Cancelar">
-                            ${await loadIcon('x', { size: 'w-6 h-6' })}
-                        </button>
-                    </div>
+                <div class="flex items-center justify-end">
                     <button type="button" id="delete-item-btn-${item.id}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-3 rounded" title="Excluir Item">
                         ${await loadIcon('trash', { size: 'w-6 h-6' })}
                     </button>
@@ -105,27 +97,77 @@ export function setupEditFormHandlers(item, formElement) {
         }
     });
     
-    formElement.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const type = itemTypes[item.type];
-        const value = type.parseValue(form, item);
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
 
-        const updatedItem = { ...item, name: form.name.value, value };
+    const handleFormChange = debounce(async () => {
+        const form = document.getElementById(`edit-item-form-${item.id}`);
+        if (!form) return;
+
+        const type = itemTypes[item.type];
+        const newName = form.name.value;
+        const newValue = type.parseValue(form, item);
+
+        if (item.name === newName && JSON.stringify(item.value) === JSON.stringify(newValue)) {
+            return;
+        }
+
+        const updatedItem = { ...item, name: newName, value: newValue };
+
         try {
             await updateItem(updatedItem);
-            location.hash = item.path;
+
+            const oldName = item.name;
+            item.name = newName;
+            item.value = newValue;
+
+            const codeBlock = document.getElementById(`item-text-${item.id}`);
+            if (codeBlock) {
+                codeBlock.textContent = 'Atualizando...';
+                try {
+                    const { getItems } = await import('../db.js');
+                    const plan = stringify([updatedItem], updatedItem.path);
+                    const str = await executePlan(plan, getItems);
+                    codeBlock.textContent = str;
+                } catch (error) {
+                    codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
+                }
+            }
+
+            if (oldName !== newName) {
+                const newPath = `${updatedItem.path}${updatedItem.name}`;
+                if (history.replaceState) {
+                    history.replaceState(null, '', `#${newPath}`);
+                } else {
+                    location.hash = newPath;
+                }
+                await renderBreadcrumb(updatedItem.path, updatedItem.name);
+            }
+
         } catch (error) {
             console.error('Failed to update item:', error);
-            alert(`Erro ao atualizar o item: ${error.message}`);
         }
-    });
+    }, 300);
+
+    formElement.querySelector('#item-name').addEventListener('input', handleFormChange);
+    const valueInput = formElement.querySelector('[name="value"]');
+    if (valueInput) {
+        const eventType = valueInput.type === 'checkbox' ? 'change' : 'input';
+        valueInput.addEventListener(eventType, handleFormChange);
+    }
 
     formElement.querySelector(`#delete-item-btn-${item.id}`).addEventListener('click', async () => {
         if (confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) {
             try {
+                const pathToDelete = item.path;
                 await deleteItem(item.id);
-                location.hash = item.path;
+                location.hash = pathToDelete;
             } catch (error) {
                 console.error('Failed to delete item:', error);
                 alert('Erro ao excluir o item.');
