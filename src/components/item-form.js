@@ -92,31 +92,6 @@ export function setupEditFormHandlers(item, formElement) {
         });
     });
     
-    if (item.type === TYPE_NUMBER) {
-        const operatorSelect = formElement.querySelector('#number-operator');
-        const operandsDiv = formElement.querySelector('#number-operands');
-        const isOperation = typeof item.value === 'object' && item.value !== null;
-        let operands = isOperation ? item.value.operands : [item.value, 0];
-
-        const renderOperands = (op) => {
-            if (op === 'constant') {
-                operandsDiv.innerHTML = `<input type="number" id="item-value" name="value" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-            } else {
-                operandsDiv.innerHTML = `
-                    <input type="number" name="operand1" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2" placeholder="Operando 1">
-                    <input type="number" name="operand2" value="${operands[1]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Operando 2">
-                `;
-            }
-        };
-
-        renderOperands(operatorSelect.value);
-
-        operatorSelect.addEventListener('change', (e) => {
-            operands = [0, 0]; // Reset operands on change
-            renderOperands(e.target.value);
-        });
-    }
-
     typeList.addEventListener('click', (e) => {
         if (e.target.dataset.type) {
             const newType = e.target.dataset.type;

@@ -141,22 +141,19 @@ describe('stringify', () => {
         });
     });
 
-    test('should stringify a numeric expression', () => {
+    test('should stringify a simple number', () => {
         const items = [
             {
                 name: 'result',
                 type: 'number',
-                value: {
-                    operator: 'sum',
-                    operands: [5, 3],
-                },
+                value: 8,
             },
         ];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
-            parts: ['  result: ', '5 + 3'],
+            parts: ['  result: ', 8],
         });
     });
 });

@@ -102,48 +102,7 @@ class Parser {
   }
 
   parseNumericExpression() {
-    const firstOperand = this._parseSingleNumber();
-
-    const storedPos = this.pos;
-    this.skipWhitespace();
-
-    if (this.pos === storedPos) {
-      // No whitespace after number, so it can't be an operation
-      return firstOperand;
-    }
-
-    if (this.pos >= this.text.length) {
-      this.pos = storedPos; // backtrack
-      return firstOperand;
-    }
-
-    const operatorChar = this.peek();
-    if (['+', '-', '*', '/'].includes(operatorChar)) {
-      this.consume(operatorChar);
-      const storedPosAfterOp = this.pos;
-      this.skipWhitespace();
-      if (this.pos === storedPosAfterOp) {
-        // No whitespace after operator, so not a valid operation. Backtrack.
-        this.pos = storedPos;
-        return firstOperand;
-      }
-
-      const secondOperand = this._parseSingleNumber();
-      const operatorMap = {
-        '+': 'sum',
-        '-': 'subtraction',
-        '*': 'multiplication',
-        '/': 'division'
-      };
-      return {
-        operator: operatorMap[operatorChar],
-        operands: [firstOperand, secondOperand]
-      };
-    }
-
-    // Not an operator, backtrack whitespace
-    this.pos = storedPos;
-    return firstOperand;
+    return this._parseSingleNumber();
   }
 
   parseBoolean() {
@@ -288,19 +247,6 @@ function stringifyValue(item, indentLevel, currentPath) {
     case 'text':
       return `"${escapeText(item.value)}"`;
     case 'number':
-      if (typeof item.value === 'object' && item.value !== null) {
-        const operatorMap = {
-          sum: '+',
-          subtraction: '-',
-          multiplication: '*',
-          division: '/'
-        };
-        const operatorSymbol = operatorMap[item.value.operator];
-        if (operatorSymbol && item.value.operands && item.value.operands.length === 2) {
-          return `${item.value.operands[0]} ${operatorSymbol} ${item.value.operands[1]}`;
-        }
-        return '0';
-      }
       return item.value;
     case 'boolean':
       return item.value ? '@1' : '@0';
