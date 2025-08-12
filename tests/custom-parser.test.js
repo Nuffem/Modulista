@@ -2,23 +2,23 @@ import { parse, stringify } from '../src/custom-parser.js';
 
 describe('parse', () => {
     test('should parse an empty list', () => {
-        expect(parse('{}')).toEqual({});
+        expect(parse('{}')).toEqual([]);
     });
 
     test('should parse a list with a single text item', () => {
-        expect(parse('{ name: "John" }')).toEqual({ name: 'John' });
+        expect(parse('{ name: "John" }')).toEqual([{ nome: 'name', tipo: 'Texto', valor: 'John' }]);
     });
 
     test('should parse a list with a single boolean item (true)', () => {
-        expect(parse('{ is_active: @1 }')).toEqual({ is_active: true });
+        expect(parse('{ is_active: @1 }')).toEqual([{ nome: 'is_active', tipo: 'Booleano', valor: true }]);
     });
 
     test('should parse a list with a single boolean item (false)', () => {
-        expect(parse('{ is_active: @0 }')).toEqual({ is_active: false });
+        expect(parse('{ is_active: @0 }')).toEqual([{ nome: 'is_active', tipo: 'Booleano', valor: false }]);
     });
 
     test('should parse a list with a single number item', () => {
-        expect(parse('{ age: 30 }')).toEqual({ age: 30 });
+        expect(parse('{ age: 30 }')).toEqual([{ nome: 'age', tipo: 'Numero', valor: 30 }]);
     });
 
     test('should parse a list with a nested list', () => {
@@ -28,12 +28,14 @@ describe('parse', () => {
                 age: 30
             }
         }`;
-        const expected = {
-            user: {
-                name: 'John',
-                age: 30,
-            },
-        };
+        const expected = [{
+            nome: 'user',
+            tipo: 'Lista',
+            valor: [
+                { nome: 'name', tipo: 'Texto', valor: 'John' },
+                { nome: 'age', tipo: 'Numero', valor: 30 },
+            ],
+        }];
         expect(parse(input)).toEqual(expected);
     });
 
@@ -59,7 +61,7 @@ describe('stringify', () => {
     });
 
     test('should stringify a list with a single text item', () => {
-        const items = [{ name: 'name', type: 'text', value: 'John' }];
+        const items = [{ nome: 'name', tipo: 'Texto', valor: 'John' }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -69,7 +71,7 @@ describe('stringify', () => {
     });
 
     test('should stringify a list with a single number item', () => {
-        const items = [{ name: 'age', type: 'number', value: 30 }];
+        const items = [{ nome: 'age', tipo: 'Numero', valor: 30 }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -79,7 +81,7 @@ describe('stringify', () => {
     });
 
     test('should stringify a list with a single boolean item (true)', () => {
-        const items = [{ name: 'is_active', type: 'boolean', value: true }];
+        const items = [{ nome: 'is_active', tipo: 'Booleano', valor: true }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -89,7 +91,7 @@ describe('stringify', () => {
     });
 
     test('should stringify a list with a single boolean item (false)', () => {
-        const items = [{ name: 'is_active', type: 'boolean', value: false }];
+        const items = [{ nome: 'is_active', tipo: 'Booleano', valor: false }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -100,9 +102,9 @@ describe('stringify', () => {
 
     test('should stringify a list with multiple items', () => {
         const items = [
-            { name: 'name', type: 'text', value: 'John' },
-            { name: 'age', type: 'number', value: 30 },
-            { name: 'is_active', type: 'boolean', value: true },
+            { nome: 'name', tipo: 'Texto', valor: 'John' },
+            { nome: 'age', tipo: 'Numero', valor: 30 },
+            { nome: 'is_active', tipo: 'Booleano', valor: true },
         ];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
@@ -118,7 +120,7 @@ describe('stringify', () => {
 
     test('should stringify a list with a nested list', () => {
         const items = [
-            { name: 'user', type: 'list', value: 'user/' },
+            { nome: 'user', tipo: 'Lista', valor: 'user/' },
         ];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
@@ -132,7 +134,7 @@ describe('stringify', () => {
     });
 
     test('should escape special characters in text values', () => {
-        const items = [{ name: 'text', type: 'text', value: 'a"b\\c' }];
+        const items = [{ nome: 'text', tipo: 'Texto', valor: 'a"b\\c' }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -144,9 +146,9 @@ describe('stringify', () => {
     test('should stringify a simple number', () => {
         const items = [
             {
-                name: 'result',
-                type: 'number',
-                value: 8,
+                nome: 'result',
+                tipo: 'Numero',
+                valor: 8,
             },
         ];
         const plan = stringify(items, 'some/path/');

@@ -21,14 +21,11 @@ class Parser {
 
   parseList() {
     this.consume('{');
-    const list = {};
+    const list = [];
     this.skipWhitespace();
     while (this.peek() !== '}') {
-      const [name, value] = this.parseItem();
-      if (list.hasOwnProperty(name)) {
-        this.throwError(`Duplicate key in list: ${name}`);
-      }
-      list[name] = value;
+      const item = this.parseItem();
+      list.push(item);
       this.skipWhitespace();
     }
     this.consume('}');
@@ -40,8 +37,8 @@ class Parser {
     this.skipWhitespace();
     this.consume(':');
     this.skipWhitespace();
-    const value = this.parseValue();
-    return [name, value];
+    const [valor, tipo] = this.parseValue();
+    return { nome: name, tipo, valor };
   }
 
   parseName() {
@@ -55,13 +52,13 @@ class Parser {
   parseValue() {
     const char = this.peek();
     if (char === '"') {
-      return this.parseText();
+      return [this.parseText(), 'Texto'];
     } else if (char === '@') {
-      return this.parseBoolean();
+      return [this.parseBoolean(), 'Booleano'];
     } else if (char === '{') {
-      return this.parseList();
+      return [this.parseList(), 'Lista'];
     } else if (char === '-' || (char >= '0' && char <= '9')) {
-      return this.parseNumericExpression();
+      return [this.parseNumericExpression(), 'Numero'];
     } else {
       this.throwError("Invalid value");
     }
@@ -194,7 +191,7 @@ function stringifyItems(items, indentLevel, currentPath) {
   const indent = '  '.repeat(indentLevel);
   for (const item of items) {
     const value = stringifyValue(item, indentLevel, currentPath);
-    parts.push(`${indent}${item.name}: `);
+    parts.push(`${indent}${item.nome}: `);
     parts.push(value);
     parts.push('\n');
   }
@@ -246,19 +243,19 @@ function escapeText(text) {
 }
 
 function stringifyValue(item, indentLevel, currentPath) {
-  switch (item.type) {
-    case 'text':
-      return `"${escapeText(item.value)}"`;
-    case 'number':
+  switch (item.tipo) {
+    case 'Texto':
+      return `"${escapeText(item.valor)}"`;
+    case 'Numero':
       // Handle invalid number values
-      if (typeof item.value !== 'number' || isNaN(item.value)) {
+      if (typeof item.valor !== 'number' || isNaN(item.valor)) {
         return 0;
       }
-      return item.value;
-    case 'boolean':
-      return item.value ? '@1' : '@0';
-    case 'list':
-      const listPath = `${currentPath}${item.name}/`;
+      return item.valor;
+    case 'Booleano':
+      return item.valor ? '@1' : '@0';
+    case 'Lista':
+      const listPath = `${currentPath}${item.nome}/`;
       return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
     default:
       return '""';
