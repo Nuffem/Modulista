@@ -1,27 +1,34 @@
 import { loadIcon } from '../icon-loader.js';
-import { getItemByPathAndName, updateItem, deleteItem } from '../db.js';
+import { getItemByPathAndName, updateItem, deleteItem, getParent } from '../db.js';
 import { itemTypes, availableTypes, TYPE_NUMBER } from '../types/index.js';
 import { renderBreadcrumb } from './breadcrumb.js';
 import { stringify, executePlan } from '../custom-parser.js';
 
-export function renderTypeSelector(item) {
-    const optionsHTML = availableTypes.map(type => `
+export function renderTypeSelector(item, types = availableTypes) {
+    const optionsHTML = types.map(type => `
         <div class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer" data-type="${type.name}">
             ${type.label}
         </div>
     `).join('');
 
+    const isEnabled = types.length > 1;
+    const buttonClasses = isEnabled
+        ? "w-full text-left shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+        : "w-full text-left shadow appearance-none border rounded py-2 px-3 text-gray-400 bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500";
+
     return `
         <div class="relative" id="type-selector-container">
-            <button type="button" id="type-selector-btn" class="w-full text-left shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+            <button type="button" id="type-selector-btn" class="${buttonClasses}" ${!isEnabled ? 'disabled' : ''}>
                 ${itemTypes[item.type].label}
             </button>
+            ${isEnabled ? `
             <div id="type-selector-popup" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg hidden">
                 <input type="text" id="type-filter" class="w-full p-2 border-b border-gray-300 dark:border-gray-600" placeholder="Filtrar tipos...">
                 <div id="type-list">
                     ${optionsHTML}
                 </div>
             </div>
+            ` : ''}
         </div>
     `;
 }
@@ -29,6 +36,11 @@ export function renderTypeSelector(item) {
 export async function renderEditFormForItem(item) {
     const type = itemTypes[item.type];
     const valueInputHTML = type.renderEditControl(item);
+
+    const parent = await getParent(item.path);
+    const isSomaChild = parent && parent.type === 'soma';
+    const allowedTypes = isSomaChild ? [itemTypes[TYPE_NUMBER]] : availableTypes;
+    const typeSelectorHTML = renderTypeSelector(item, allowedTypes);
 
     return `
         <li data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
@@ -39,7 +51,7 @@ export async function renderEditFormForItem(item) {
                 </div>
                 <div class="mb-4">
                     <label for="item-type" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label>
-                    <div id="item-type-selector-${item.id}">${renderTypeSelector(item)}</div>
+                    <div id="item-type-selector-${item.id}">${typeSelectorHTML}</div>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>

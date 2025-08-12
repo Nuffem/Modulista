@@ -1,5 +1,5 @@
-import { initDB, getItems, addItem } from './db.js';
-import { TYPE_TEXT } from './types/index.js';
+import { initDB, getItems, addItem, getParent } from './db.js';
+import { TYPE_TEXT, TYPE_NUMBER } from './types/index.js';
 import { router } from './components/router.js';
 
 // --- State ---
@@ -14,38 +14,47 @@ export function setCurrentView(view) {
     currentView = view;
 }
 
-export function createNewItem(path, items) {
-    const baseName = "Item";
+export function createNewItem(path, items, defaultType = TYPE_TEXT) {
+    let baseName = "Item";
+    if (defaultType === TYPE_NUMBER) {
+        baseName = "Numero";
+    }
 
-    // Filter items that match the pattern "Item" or "Item_number"
-    const sameNameItems = items.filter(item => {
-        return item.name === baseName || item.name.startsWith(baseName + '_');
-    });
+    const sameNameItems = items.filter(item =>
+        item.name === baseName || item.name.startsWith(baseName + '_')
+    );
 
     let maxIndex = 0;
     if (sameNameItems.length > 0) {
         const indices = sameNameItems.map(item => {
-            if (item.name === baseName) return 1; // "Item" counts as Item_1
+            if (item.name === baseName) return 1;
             const match = item.name.match(/_(\d+)$/);
             return match ? parseInt(match[1], 10) : 0;
         });
-        maxIndex = Math.max(...indices);
+        maxIndex = Math.max(0, ...indices);
     }
 
-    const newName = maxIndex === 0 ? baseName : `${baseName}_${maxIndex + 1}`;
+    const newName = maxIndex === 0 && !items.some(i => i.name === baseName)
+        ? baseName
+        : `${baseName}_${maxIndex + 1}`;
+
+    const value = defaultType === TYPE_NUMBER ? 0 : '';
 
     return {
         path,
         name: newName,
-        type: TYPE_TEXT,
-        value: ''
+        type: defaultType,
+        value: value
     };
 }
 
 export async function handleAddItemClick(path) {
     try {
+        const parent = await getParent(path);
+        const defaultType = (parent && parent.type === 'soma') ? TYPE_NUMBER : TYPE_TEXT;
+
         const items = await getItems(path);
-        const newItemData = createNewItem(path, items);
+        const newItemData = createNewItem(path, items, defaultType);
         const newItem = await addItem(newItemData);
         location.hash = `#${newItem.path}${newItem.name}`;
     } catch (error) {

@@ -220,3 +220,19 @@ export function updateItemsOrder(items) {
         });
     });
 }
+
+export async function getParent(path) {
+    if (!path || path === '/') {
+        return null; // Root has no parent
+    }
+
+    const pathParts = path.slice(1, -1).split('/');
+    if (pathParts.length === 0) {
+        return null;
+    }
+
+    const parentName = pathParts.pop();
+    const parentPath = `/${pathParts.join('/')}/`;
+
+    return await getItemByPathAndName(parentPath, parentName);
+}
