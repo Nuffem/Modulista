@@ -275,11 +275,9 @@ function stringifyValue(item, indentLevel, currentPath) {
     case 'boolean':
       return item.value ? '@1' : '@0';
     case 'sum':
-      // Format sum as "10 + 5 + 3"
-      if (!Array.isArray(item.value) || item.value.length === 0) {
-        return '0';
-      }
-      return item.value.join(' + ');
+      // Sum items work like lists but reference operandos subdirectory
+      const sumPath = `${currentPath}${item.name}/operandos/`;
+      return { type: 'LIST', path: sumPath, indentLevel: indentLevel + 1 };
     case 'list':
       const listPath = `${currentPath}${item.name}/`;
       return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };

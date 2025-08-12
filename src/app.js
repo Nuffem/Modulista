@@ -1,5 +1,5 @@
 import { initDB, getItems, addItem } from './db.js';
-import { TYPE_TEXT } from './types/index.js';
+import { TYPE_TEXT, TYPE_NUMBER } from './types/index.js';
 import { router } from './components/router.js';
 
 // --- State ---
@@ -14,8 +14,8 @@ export function setCurrentView(view) {
     currentView = view;
 }
 
-export function createNewItem(path, items) {
-    const baseName = "Item";
+export function createNewItem(path, items, type = TYPE_TEXT) {
+    const baseName = type === TYPE_NUMBER ? "Operando" : "Item";
 
     // Filter items that match the pattern "Item" or "Item_number"
     const sameNameItems = items.filter(item => {
@@ -37,8 +37,8 @@ export function createNewItem(path, items) {
     return {
         path,
         name: newName,
-        type: TYPE_TEXT,
-        value: ''
+        type: type,
+        value: type === TYPE_NUMBER ? 0 : ''
     };
 }
 
@@ -54,6 +54,19 @@ export async function handleAddItemClick(path) {
     }
 }
 window.handleAddItemClick = handleAddItemClick;
+
+export async function handleAddOperandoClick(path) {
+    try {
+        const items = await getItems(path);
+        const newItemData = createNewItem(path, items, TYPE_NUMBER);
+        const newItem = await addItem(newItemData);
+        location.hash = `#${newItem.path}${newItem.name}`;
+    } catch (error) {
+        console.error('Failed to add operando:', error);
+        alert(`Erro ao adicionar o operando: ${error.message}`);
+    }
+}
+window.handleAddOperandoClick = handleAddOperandoClick;
 
 // --- App Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {

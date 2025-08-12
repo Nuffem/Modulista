@@ -96,7 +96,7 @@ describe('stringify', () => {
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
-            parts: ['  total: ', '10 + 5 + 3'],
+            parts: ['  total: ', { type: 'LIST', path: 'some/path/total/operandos/', indentLevel: 2 }],
         });
     });
 
@@ -106,17 +106,17 @@ describe('stringify', () => {
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
-            parts: ['  sum: ', '1.5 + 2.3 + 4.2'],
+            parts: ['  sum: ', { type: 'LIST', path: 'some/path/sum/operandos/', indentLevel: 2 }],
         });
     });
 
-    test('should stringify an empty sum as 0', () => {
+    test('should stringify an empty sum as list reference', () => {
         const items = [{ name: 'empty', type: 'sum', value: [] }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
-            parts: ['  empty: ', '0'],
+            parts: ['  empty: ', { type: 'LIST', path: 'some/path/empty/operandos/', indentLevel: 2 }],
         });
     });
 

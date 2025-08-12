@@ -1,6 +1,6 @@
 import { loadIcon } from '../icon-loader.js';
 import { getItems, updateItemsOrder } from '../db.js';
-import { itemTypes, TYPE_LIST, TYPE_BOOLEAN } from '../types/index.js';
+import { itemTypes, TYPE_LIST, TYPE_BOOLEAN, TYPE_SUM } from '../types/index.js';
 import { renderBreadcrumb } from './breadcrumb.js';
 import { renderTextContent } from './text-view.js';
 
@@ -9,7 +9,15 @@ function isLandscapeMode() {
 }
 
 export async function renderItemRow(item) {
-    const itemUrl = `#${item.path}${item.name}${item.type === TYPE_LIST ? '/' : ''}`;
+    let itemUrl;
+    if (item.type === TYPE_LIST) {
+        itemUrl = `#${item.path}${item.name}/`;
+    } else if (item.type === TYPE_SUM) {
+        itemUrl = `#${item.path}${item.name}/operandos`;
+    } else {
+        itemUrl = `#${item.path}${item.name}`;
+    }
+    
     const type = itemTypes[item.type];
     const valueDisplay = type.formatValueForDisplay(item);
 
@@ -29,7 +37,7 @@ export async function renderItemRow(item) {
         </li>`;
 }
 
-export async function renderListContent(path, items, containerId = 'list-content') {
+export async function renderListContent(path, items, containerId = 'list-content', context = null) {
     let listContainer;
     const container = document.getElementById(containerId);
     
@@ -39,8 +47,10 @@ export async function renderListContent(path, items, containerId = 'list-content
             ? '<p class="text-gray-500 dark:text-gray-400">Nenhum item encontrado.</p>'
             : '<ul id="item-list" class="space-y-3">' + itemRows.join('') + '</ul>';
 
+        // Use different add button handler for operandos context
+        const addHandler = context === 'operandos' ? 'handleAddOperandoClick' : 'handleAddItemClick';
         const addButtonHTML = `
-            <button data-testid="add-item-button" onclick="handleAddItemClick('${path}')" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
+            <button data-testid="add-item-button" onclick="${addHandler}('${path}')" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
                 ${await loadIcon('plus', { size: 'w-8 h-8' })}
             </button>
         `;
@@ -114,9 +124,15 @@ export async function renderListContent(path, items, containerId = 'list-content
     await renderList();
 }
 
-export async function renderListView(path) {
-    if (!path.startsWith('/')) path = '/' + path;
-    if (!path.endsWith('/')) path = path + '/';
+export async function renderListView(path, context = null) {
+    // Handle operandos context - extract the actual data path
+    let actualPath = path;
+    if (context === 'operandos' && path.endsWith('/operandos')) {
+        actualPath = path.substring(0, path.length - '/operandos'.length) + '/';
+    } else {
+        if (!path.startsWith('/')) actualPath = '/' + path;
+        if (!path.endsWith('/')) actualPath = path + '/';
+    }
     
     const appContainer = document.getElementById('app-container');
     const breadcrumbEl = document.getElementById('breadcrumb');
@@ -126,7 +142,7 @@ export async function renderListView(path) {
     await renderBreadcrumb(path);
 
     try {
-        let items = await getItems(path);
+        let items = await getItems(actualPath);
 
         // Get current view from app state
         const { getCurrentView } = await import('../app.js');
@@ -174,8 +190,8 @@ export async function renderListView(path) {
             appContainer.innerHTML = sideLayoutHTML;
             
             // Render both views
-            await renderListContent(path, items, 'list-content');
-            await renderTextContent(path, items, 'text-content');
+            await renderListContent(actualPath, items, 'list-content', context);
+            await renderTextContent(actualPath, items, 'text-content');
             
         } else {
             // Tab layout for portrait mode
@@ -210,8 +226,10 @@ export async function renderListView(path) {
                     ? '<p class="text-gray-500 dark:text-gray-400">Nenhum item encontrado.</p>'
                     : '<ul id="item-list" class="space-y-3">' + itemRows.join('') + '</ul>';
 
+                // Use different add button handler for operandos context
+                const addHandler = context === 'operandos' ? 'handleAddOperandoClick' : 'handleAddItemClick';
                 const addButtonHTML = `
-                    <button data-testid="add-item-button" onclick="handleAddItemClick('${path}')" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
+                    <button data-testid="add-item-button" onclick="${addHandler}('${actualPath}')" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800">
                         ${await loadIcon('plus', { size: 'w-8 h-8' })}
                     </button>
                 `;
