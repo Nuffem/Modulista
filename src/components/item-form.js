@@ -2,6 +2,7 @@ import { loadIcon } from '../icon-loader.js';
 import { getItemByPathAndName, updateItem, deleteItem } from '../db.js';
 import { itemTypes, availableTypes, TYPE_NUMBER } from '../types/index.js';
 import { renderBreadcrumb } from './breadcrumb.js';
+import { stringify, executePlan } from '../custom-parser.js';
 
 export function renderTypeSelector(item) {
     const optionsHTML = availableTypes.map(type => `
@@ -122,7 +123,7 @@ export function setupEditFormHandlers(item, formElement) {
             if (newType !== item.type) {
                 const updatedItem = { ...item, type: newType, value: '' }; // Reset value on type change
                 updateItem(updatedItem).then(() => {
-                    renderItemDetailView(`${item.path}${item.name}`);
+                    renderItemTabView(`${item.path}${item.name}`);
                 });
             }
             typeSelectorPopup.classList.add('hidden');
@@ -193,5 +194,181 @@ export async function renderItemDetailView(path) {
     } catch (error) {
         console.error('Failed to render item detail view:', error);
         appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
+    }
+}
+
+function isLandscapeMode() {
+    return window.innerWidth > window.innerHeight && window.innerWidth >= 768;
+}
+
+export async function renderItemTabView(path) {
+    const appContainer = document.getElementById('app-container');
+    const breadcrumbEl = document.getElementById('breadcrumb');
+    
+    try {
+        const fullPath = path;
+        const parts = fullPath.split('/').filter(p => p);
+        const itemName = parts.pop();
+        let itemPath = `/${parts.join('/')}/`;
+        if (itemPath === '//') {
+            itemPath = '/';
+        }
+
+        const item = await getItemByPathAndName(itemPath, itemName);
+
+        if (!item) {
+            appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`;
+            breadcrumbEl.innerHTML = '';
+            return;
+        }
+
+        breadcrumbEl.style.display = 'block';
+        await renderBreadcrumb(item.path, item.name);
+
+        // Get current view from app state
+        const { getCurrentView } = await import('../app.js');
+        const currentView = getCurrentView();
+        
+        const isLandscape = isLandscapeMode();
+        const isListActive = currentView === 'list';
+        const isTextActive = currentView === 'text';
+
+        if (isLandscape) {
+            // Side-by-side layout for landscape mode
+            const sideLayoutHTML = `
+                <div class="mb-4">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="flex bg-gray-100 rounded-lg p-1 dark:bg-gray-700">
+                            <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
+                                Lista
+                            </span>
+                            <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
+                                Texto
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
+                                Lista
+                            </h3>
+                            <div id="item-form-content"></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
+                                Texto
+                            </h3>
+                            <div id="item-text-content"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            appContainer.innerHTML = sideLayoutHTML;
+            
+            // Render both views
+            await renderItemFormContent(item, 'item-form-content');
+            await renderItemTextContent(item, 'item-text-content');
+            
+        } else {
+            // Tab layout for portrait mode
+            const tabsHTML = `
+                <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
+                    <ul class="flex -mb-px text-sm font-medium text-center">
+                        <li class="flex-1">
+                            <button id="list-tab-btn" class="inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
+                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
+                                Lista
+                            </button>
+                        </li>
+                        <li class="flex-1">
+                            <button id="text-tab-btn" class="inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
+                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
+                                Texto
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div id="tab-content"></div>
+            `;
+
+            appContainer.innerHTML = tabsHTML;
+            const tabContent = document.getElementById('tab-content');
+
+            if (isListActive) {
+                await renderItemFormContent(item, 'tab-content');
+            } else {
+                await renderItemTextContent(item, 'tab-content');
+            }
+
+            // Add tab event listeners
+            const listTabBtn = document.getElementById('list-tab-btn');
+            const textTabBtn = document.getElementById('text-tab-btn');
+            if (listTabBtn && textTabBtn) {
+                const { setCurrentView, getCurrentView } = await import('../app.js');
+                listTabBtn.addEventListener('click', () => {
+                    if (getCurrentView() !== 'list') {
+                        setCurrentView('list');
+                        renderItemTabView(path);
+                    }
+                });
+                textTabBtn.addEventListener('click', () => {
+                    if (getCurrentView() !== 'text') {
+                        setCurrentView('text');
+                        renderItemTabView(path);
+                    }
+                });
+            }
+        }
+
+    } catch (error) {
+        console.error('Failed to render item tab view:', error);
+        appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
+    }
+}
+
+async function renderItemFormContent(item, containerId) {
+    const container = document.getElementById(containerId);
+    const formHTML = await renderEditFormForItem(item);
+    container.innerHTML = formHTML;
+    
+    const form = document.getElementById(`edit-item-form-${item.id}`);
+    if (form) {
+        setupEditFormHandlers(item, form);
+    }
+}
+
+async function renderItemTextContent(item, containerId) {
+    const container = document.getElementById(containerId);
+    
+    const textContentHTML = `
+        <div class="bg-gray-100 p-4 rounded dark:bg-gray-700">
+            <h4 class="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Formato de Texto:</h4>
+            <pre class="bg-white p-3 rounded border text-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"><code id="item-text-${item.id}">Carregando...</code></pre>
+        </div>
+    `;
+    container.innerHTML = textContentHTML;
+
+    const codeBlock = document.getElementById(`item-text-${item.id}`);
+    
+    try {
+        // Create a minimal items array containing just this item for formatting
+        const items = [item];
+        const plan = stringify(items, item.path);
+        const { getItems } = await import('../db.js');
+        
+        executePlan(plan, getItems).then(str => {
+            codeBlock.textContent = str;
+        }).catch(error => {
+            codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
+            console.error("Stringify error:", error);
+        });
+    } catch (error) {
+        codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
+        console.error("Error rendering item text:", error);
     }
 }
