@@ -213,10 +213,13 @@ export async function executePlan(plan, getItems) {
   for (const part of plan.parts) {
     if (typeof part === 'string') {
       result += part;
-    } else if (part.type === 'LIST') {
+    } else if (part && typeof part === 'object' && part.type === 'LIST') {
       const subItems = await getItems(part.path);
       const subPlan = stringify(subItems, part.path, part.indentLevel);
       result += await executePlan(subPlan, getItems);
+    } else {
+      // Handle primitive values (numbers, booleans, etc.)
+      result += String(part);
     }
   }
   result += plan.suffix;
@@ -247,6 +250,10 @@ function stringifyValue(item, indentLevel, currentPath) {
     case 'text':
       return `"${escapeText(item.value)}"`;
     case 'number':
+      // Handle invalid number values
+      if (typeof item.value !== 'number' || isNaN(item.value)) {
+        return 0;
+      }
       return item.value;
     case 'boolean':
       return item.value ? '@1' : '@0';
