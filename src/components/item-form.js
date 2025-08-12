@@ -200,6 +200,19 @@ export async function renderItemTabView(path) {
         breadcrumbEl.style.display = 'block';
         await renderBreadcrumb(item.path, item.name);
 
+        const type = itemTypes[item.type];
+        if (!type.hasTextView) {
+            // If the type doesn't have a text view, just render the detail view
+            const formHTML = await renderEditFormForItem(item);
+            appContainer.innerHTML = `<div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">${formHTML}</div>`;
+
+            const form = document.getElementById(`edit-item-form-${item.id}`);
+            if (form) {
+                setupEditFormHandlers(item, form);
+            }
+            return;
+        }
+
         // Get current view from app state
         const { getCurrentView } = await import('../app.js');
         const currentView = getCurrentView();

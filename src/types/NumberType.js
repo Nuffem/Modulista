@@ -6,6 +6,7 @@ const iconSize = "w-6 h-6";
 export const NumberType = {
     name: 'number',
     label: 'Número',
+    hasTextView: false,
     getIcon: async () => {
         return await loadIcon('number', { size: iconSize, color: iconColor });
     },

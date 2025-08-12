@@ -6,6 +6,7 @@ const iconSize = "w-6 h-6";
 export const TextType = {
     name: 'text',
     label: 'Texto',
+    hasTextView: true,
     getIcon: async () => {
         return await loadIcon('text', { size: iconSize, color: iconColor });
     },

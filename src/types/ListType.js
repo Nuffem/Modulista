@@ -6,6 +6,7 @@ const iconSize = "w-6 h-6";
 export const ListType = {
     name: 'list',
     label: 'Lista',
+    hasTextView: true,
     getIcon: async () => {
         return await loadIcon('folder', { size: iconSize, color: iconColor });
     },
