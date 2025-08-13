@@ -2,7 +2,7 @@ import { loadIcon } from '../icon-loader.js';
 
 export const BooleanType = {
     name: 'boolean',
-    label: 'Booleano',
+    label: 'Lógico',
     getIcon: async () => {
         return await loadIcon('boolean');
     },
