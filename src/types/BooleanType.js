@@ -15,8 +15,8 @@ export const BooleanType = {
         }
         return checkbox;
     },
-    parseValue: (form) => {
-        return form.querySelector('[name="value"]').checked;
+    parseValue: (editControl) => {
+        return editControl.checked;
     },
     formatValueForDisplay: (item) => {
         return item.value ? '@1' : '@0';

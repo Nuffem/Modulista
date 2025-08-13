@@ -10,7 +10,7 @@ export const ListType = {
         p.textContent = 'Este tipo de item não possui um valor editável.';
         return p;
     },
-    parseValue: (form, item) => {
+    parseValue: (editControl, item) => {
         return item.value; // No value to parse from form
     },
     formatValueForDisplay: (item) => {
