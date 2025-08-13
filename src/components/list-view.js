@@ -20,10 +20,7 @@ export async function renderItemRow(item) {
                 <span class="font-semibold">${item.name}</span>
             </a>
             <div class="flex items-center">
-                ${item.type === TYPE_BOOLEAN
-                    ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
-                    : `<span class="text-gray-700 mr-4 dark:text-gray-300">${valueDisplay}</span>`
-                }
+                <span class="text-gray-700 mr-4 dark:text-gray-300">${valueDisplay}</span>
                 ${await loadIcon('grab-handle', { size: 'w-6 h-6', color: 'text-gray-400 dark:text-gray-500 cursor-grab handle' })}
             </div>
         </li>`;
@@ -140,18 +137,6 @@ export async function renderListView(path) {
             // Side-by-side layout for landscape mode
             const sideLayoutHTML = `
                 <div class="mb-4">
-                    <div class="flex items-center justify-center mb-4">
-                        <div class="flex bg-gray-100 rounded-lg p-1 dark:bg-gray-700">
-                            <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
-                                Lista
-                            </span>
-                            <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
-                                Texto
-                            </span>
-                        </div>
-                    </div>
                     <div class="grid grid-cols-2 gap-6">
                         <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
                             <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
@@ -285,131 +270,7 @@ export async function renderListView(path) {
             await renderList();
 
         } else { // Text View is Active
-            const textContentHTML = `
-                <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
-                    <div id="text-display">
-                        <pre class="bg-gray-100 p-4 rounded overflow-x-auto dark:bg-gray-700 dark:text-gray-200"><code>Carregando...</code></pre>
-                        <div class="mt-4 flex justify-end space-x-2">
-                            <button id="load-from-device-btn" title="Carregar do dispositivo" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
-                                ${await loadIcon('upload', { size: 'w-6 h-6' })}
-                            </button>
-                            <button id="save-to-device-btn" title="Salvar no dispositivo" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
-                                ${await loadIcon('download', { size: 'w-6 h-6' })}
-                            </button>
-                            <button id="edit-text-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700">
-                                ${await loadIcon('pencil', { size: 'w-6 h-6' })}
-                            </button>
-                        </div>
-                    </div>
-                    <div id="text-edit" class="hidden">
-                        <textarea id="text-editor" class="w-full h-64 bg-gray-100 p-4 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></textarea>
-                        <div class="mt-4 flex justify-end space-x-2">
-                            <button id="save-text-btn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded dark:bg-green-600 dark:hover:bg-green-700">
-                                ${await loadIcon('check', { size: 'w-6 h-6' })}
-                            </button>
-                            <button id="cancel-text-btn" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700">
-                                ${await loadIcon('x', { size: 'w-6 h-6' })}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            tabContent.innerHTML = textContentHTML;
-
-            const textDisplay = document.getElementById('text-display');
-            const textEdit = document.getElementById('text-edit');
-            const textEditor = document.getElementById('text-editor');
-            const codeBlock = textDisplay.querySelector('code');
-
-            let textContent = '';
-
-            const { stringify, executePlan } = await import('../custom-parser.js');
-            const plan = stringify(items, path);
-            executePlan(plan, getItems).then(str => {
-                textContent = str;
-                codeBlock.textContent = textContent;
-            }).catch(error => {
-                codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
-                console.error("Stringify error:", error);
-            });
-
-            document.getElementById('load-from-device-btn').addEventListener('click', () => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.txt,text/plain';
-
-                input.onchange = e => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-
-                    const reader = new FileReader();
-                    reader.onload = event => {
-                        const fileContent = event.target.result;
-                        textEditor.value = fileContent;
-                        textContent = fileContent;
-
-                        textDisplay.classList.add('hidden');
-                        textEdit.classList.remove('hidden');
-                    };
-
-                    reader.onerror = event => {
-                        console.error("File could not be read!", event);
-                        alert("Erro ao ler o arquivo.");
-                    };
-
-                    reader.readAsText(file);
-                };
-
-                input.click();
-            });
-
-            document.getElementById('save-to-device-btn').addEventListener('click', () => {
-                const text = codeBlock.textContent;
-                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-
-                const pathParts = path.split('/').filter(p => p);
-                const fileName = pathParts.length > 0 ? `${pathParts.join('_')}.txt` : 'modulista_root.txt';
-                a.download = fileName;
-
-                document.body.appendChild(a);
-                a.click();
-
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }, 100);
-            });
-
-            document.getElementById('edit-text-btn').addEventListener('click', () => {
-                textEditor.value = textContent;
-                textDisplay.classList.add('hidden');
-                textEdit.classList.remove('hidden');
-            });
-
-            document.getElementById('cancel-text-btn').addEventListener('click', () => {
-                textEdit.classList.add('hidden');
-                textDisplay.classList.remove('hidden');
-            });
-
-            document.getElementById('save-text-btn').addEventListener('click', async () => {
-                const newText = textEditor.value;
-                try {
-                    const { parse } = await import('../custom-parser.js');
-                    const { syncItems } = await import('./sync.js');
-                    const newItemsObject = parse(newText);
-                    await syncItems(path, newItemsObject);
-                    
-                    const { setCurrentView } = await import('../app.js');
-                    setCurrentView('list');
-                    await renderListView(path);
-                } catch (error) {
-                    console.error('Failed to parse and update items:', error);
-                    alert('Erro ao salvar. Verifique a sintaxe.\n' + error.message);
-                }
-            });
+            await renderTextContent(path, items, 'tab-content');
         }
 
         // Only add tab event listeners in portrait mode

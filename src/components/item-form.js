@@ -2,6 +2,7 @@ import { loadIcon } from '../icon-loader.js';
 import { getItemByPathAndName, updateItem, deleteItem } from '../db.js';
 import { itemTypes, availableTypes, TYPE_NUMBER } from '../types/index.js';
 import { renderBreadcrumb } from './breadcrumb.js';
+import { stringify, executePlan } from '../custom-parser.js';
 
 export function renderTypeSelector(item) {
     const optionsHTML = availableTypes.map(type => `
@@ -30,7 +31,7 @@ export async function renderEditFormForItem(item) {
     const valueInputHTML = type.renderEditControl(item);
 
     return `
-        <li data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
+        <div data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
             <form id="edit-item-form-${item.id}">
                 <div class="mb-4">
                     <label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label>
@@ -44,21 +45,13 @@ export async function renderEditFormForItem(item) {
                     <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
                     <div id="item-value-input-${item.id}">${valueInputHTML}</div>
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded dark:bg-blue-600 dark:hover:bg-blue-700" title="Salvar">
-                            ${await loadIcon('check', { size: 'w-6 h-6' })}
-                        </button>
-                        <button type="button" onclick="location.hash='${item.path}'" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded dark:bg-gray-600 dark:hover:bg-gray-700" title="Cancelar">
-                            ${await loadIcon('x', { size: 'w-6 h-6' })}
-                        </button>
-                    </div>
+                <div class="flex items-center justify-end">
                     <button type="button" id="delete-item-btn-${item.id}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-3 rounded" title="Excluir Item">
                         ${await loadIcon('trash', { size: 'w-6 h-6' })}
                     </button>
                 </div>
             </form>
-        </li>`;
+        </div>`;
 }
 
 export function setupEditFormHandlers(item, formElement) {
@@ -91,65 +84,90 @@ export function setupEditFormHandlers(item, formElement) {
         });
     });
     
-    if (item.type === TYPE_NUMBER) {
-        const operatorSelect = formElement.querySelector('#number-operator');
-        const operandsDiv = formElement.querySelector('#number-operands');
-        const isOperation = typeof item.value === 'object' && item.value !== null;
-        let operands = isOperation ? item.value.operands : [item.value, 0];
-
-        const renderOperands = (op) => {
-            if (op === 'constant') {
-                operandsDiv.innerHTML = `<input type="number" id="item-value" name="value" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
-            } else {
-                operandsDiv.innerHTML = `
-                    <input type="number" name="operand1" value="${operands[0]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2" placeholder="Operando 1">
-                    <input type="number" name="operand2" value="${operands[1]}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Operando 2">
-                `;
-            }
-        };
-
-        renderOperands(operatorSelect.value);
-
-        operatorSelect.addEventListener('change', (e) => {
-            operands = [0, 0]; // Reset operands on change
-            renderOperands(e.target.value);
-        });
-    }
-
     typeList.addEventListener('click', (e) => {
         if (e.target.dataset.type) {
             const newType = e.target.dataset.type;
             if (newType !== item.type) {
                 const updatedItem = { ...item, type: newType, value: '' }; // Reset value on type change
                 updateItem(updatedItem).then(() => {
-                    renderItemDetailView(`${item.path}${item.name}`);
+                    renderItemTabView(`${item.path}${item.name}`);
                 });
             }
             typeSelectorPopup.classList.add('hidden');
         }
     });
     
-    formElement.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const type = itemTypes[item.type];
-        const value = type.parseValue(form, item);
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
 
-        const updatedItem = { ...item, name: form.name.value, value };
+    const handleFormChange = debounce(async () => {
+        const form = document.getElementById(`edit-item-form-${item.id}`);
+        if (!form) return;
+
+        const type = itemTypes[item.type];
+        const newName = form.name.value;
+        const newValue = type.parseValue(form, item);
+
+        if (item.name === newName && JSON.stringify(item.value) === JSON.stringify(newValue)) {
+            return;
+        }
+
+        const updatedItem = { ...item, name: newName, value: newValue };
+
         try {
             await updateItem(updatedItem);
-            location.hash = item.path;
+
+            const oldName = item.name;
+            item.name = newName;
+            item.value = newValue;
+
+            const codeBlock = document.getElementById(`item-text-${item.id}`);
+            if (codeBlock) {
+                codeBlock.textContent = 'Atualizando...';
+                try {
+                    const { getItems } = await import('../db.js');
+                    const plan = stringify([updatedItem], updatedItem.path);
+                    const str = await executePlan(plan, getItems);
+                    codeBlock.textContent = str;
+                } catch (error) {
+                    codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
+                }
+            }
+
+            if (oldName !== newName) {
+                const newPath = `${updatedItem.path}${updatedItem.name}`;
+                if (history.replaceState) {
+                    history.replaceState(null, '', `#${newPath}`);
+                } else {
+                    location.hash = newPath;
+                }
+                await renderBreadcrumb(updatedItem.path, updatedItem.name);
+            }
+
         } catch (error) {
             console.error('Failed to update item:', error);
-            alert(`Erro ao atualizar o item: ${error.message}`);
         }
-    });
+    }, 300);
+
+    formElement.querySelector('#item-name').addEventListener('input', handleFormChange);
+    const valueInput = formElement.querySelector('[name="value"]');
+    if (valueInput) {
+        const eventType = valueInput.type === 'checkbox' ? 'change' : 'input';
+        valueInput.addEventListener(eventType, handleFormChange);
+    }
 
     formElement.querySelector(`#delete-item-btn-${item.id}`).addEventListener('click', async () => {
         if (confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) {
             try {
+                const pathToDelete = item.path;
                 await deleteItem(item.id);
-                location.hash = item.path;
+                location.hash = pathToDelete;
             } catch (error) {
                 console.error('Failed to delete item:', error);
                 alert('Erro ao excluir o item.');
@@ -193,5 +211,169 @@ export async function renderItemDetailView(path) {
     } catch (error) {
         console.error('Failed to render item detail view:', error);
         appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
+    }
+}
+
+function isLandscapeMode() {
+    return window.innerWidth > window.innerHeight && window.innerWidth >= 768;
+}
+
+export async function renderItemTabView(path) {
+    const appContainer = document.getElementById('app-container');
+    const breadcrumbEl = document.getElementById('breadcrumb');
+    
+    try {
+        const fullPath = path;
+        const parts = fullPath.split('/').filter(p => p);
+        const itemName = parts.pop();
+        let itemPath = `/${parts.join('/')}/`;
+        if (itemPath === '//') {
+            itemPath = '/';
+        }
+
+        const item = await getItemByPathAndName(itemPath, itemName);
+
+        if (!item) {
+            appContainer.innerHTML = `<p class="text-red-500">Item não encontrado.</p>`;
+            breadcrumbEl.innerHTML = '';
+            return;
+        }
+
+        breadcrumbEl.style.display = 'block';
+        await renderBreadcrumb(item.path, item.name);
+
+        // Get current view from app state
+        const { getCurrentView } = await import('../app.js');
+        const currentView = getCurrentView();
+        
+        const isLandscape = isLandscapeMode();
+        const isListActive = currentView === 'list';
+        const isTextActive = currentView === 'text';
+
+        if (isLandscape) {
+            // Side-by-side layout for landscape mode
+            const sideLayoutHTML = `
+                <div class="mb-4">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
+                                Lista
+                            </h3>
+                            <div id="item-form-content"></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
+                                Texto
+                            </h3>
+                            <div id="item-text-content"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            appContainer.innerHTML = sideLayoutHTML;
+            
+            // Render both views
+            await renderItemFormContent(item, 'item-form-content');
+            await renderItemTextContent(item, 'item-text-content');
+            
+        } else {
+            // Tab layout for portrait mode
+            const tabsHTML = `
+                <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
+                    <ul class="flex -mb-px text-sm font-medium text-center">
+                        <li class="flex-1">
+                            <button id="list-tab-btn" class="inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
+                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
+                                Lista
+                            </button>
+                        </li>
+                        <li class="flex-1">
+                            <button id="text-tab-btn" class="inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
+                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
+                                Texto
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div id="tab-content"></div>
+            `;
+
+            appContainer.innerHTML = tabsHTML;
+            const tabContent = document.getElementById('tab-content');
+
+            if (isListActive) {
+                await renderItemFormContent(item, 'tab-content');
+            } else {
+                await renderItemTextContent(item, 'tab-content');
+            }
+
+            // Add tab event listeners
+            const listTabBtn = document.getElementById('list-tab-btn');
+            const textTabBtn = document.getElementById('text-tab-btn');
+            if (listTabBtn && textTabBtn) {
+                const { setCurrentView, getCurrentView } = await import('../app.js');
+                listTabBtn.addEventListener('click', () => {
+                    if (getCurrentView() !== 'list') {
+                        setCurrentView('list');
+                        renderItemTabView(path);
+                    }
+                });
+                textTabBtn.addEventListener('click', () => {
+                    if (getCurrentView() !== 'text') {
+                        setCurrentView('text');
+                        renderItemTabView(path);
+                    }
+                });
+            }
+        }
+
+    } catch (error) {
+        console.error('Failed to render item tab view:', error);
+        appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
+    }
+}
+
+async function renderItemFormContent(item, containerId) {
+    const container = document.getElementById(containerId);
+    const formHTML = await renderEditFormForItem(item);
+    container.innerHTML = formHTML;
+    
+    const form = document.getElementById(`edit-item-form-${item.id}`);
+    if (form) {
+        setupEditFormHandlers(item, form);
+    }
+}
+
+async function renderItemTextContent(item, containerId) {
+    const container = document.getElementById(containerId);
+    
+    const textContentHTML = `
+        <div class="bg-gray-100 p-4 rounded dark:bg-gray-700">
+            <h4 class="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Formato de Texto:</h4>
+            <pre class="bg-white p-3 rounded border text-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"><code id="item-text-${item.id}">Carregando...</code></pre>
+        </div>
+    `;
+    container.innerHTML = textContentHTML;
+
+    const codeBlock = document.getElementById(`item-text-${item.id}`);
+    
+    try {
+        // Create a minimal items array containing just this item for formatting
+        const items = [item];
+        const plan = stringify(items, item.path);
+        const { getItems } = await import('../db.js');
+        
+        executePlan(plan, getItems).then(str => {
+            codeBlock.textContent = str;
+        }).catch(error => {
+            codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
+            console.error("Stringify error:", error);
+        });
+    } catch (error) {
+        codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
+        console.error("Error rendering item text:", error);
     }
 }

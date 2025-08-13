@@ -11,7 +11,7 @@ export async function renderBreadcrumb(path, itemName = null) {
         html += ` <span class="text-gray-500 mx-2">/</span> <button onclick="location.hash='${cumulativePath}'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${decodeURIComponent(part)}</button>`;
     });
     if (itemName) {
-        html += ` <span class="text-gray-500 mx-2">/</span> <span class="font-semibold">${itemName}</span>`;
+        html += ` <span class="text-gray-500 mx-2">/</span> <button onclick="location.hash='${cumulativePath}${itemName}'" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">${itemName}</button>`;
     }
     html += '</div>';
     breadcrumbEl.innerHTML = html;

@@ -2,6 +2,7 @@
  * This file contains the logic for parsing and stringifying the custom text format.
  */
 import { getItems } from './db.js';
+import { itemTypes } from './types/index.js';
 
 class Parser {
   constructor(text) {
@@ -102,48 +103,7 @@ class Parser {
   }
 
   parseNumericExpression() {
-    const firstOperand = this._parseSingleNumber();
-
-    const storedPos = this.pos;
-    this.skipWhitespace();
-
-    if (this.pos === storedPos) {
-      // No whitespace after number, so it can't be an operation
-      return firstOperand;
-    }
-
-    if (this.pos >= this.text.length) {
-      this.pos = storedPos; // backtrack
-      return firstOperand;
-    }
-
-    const operatorChar = this.peek();
-    if (['+', '-', '*', '/'].includes(operatorChar)) {
-      this.consume(operatorChar);
-      const storedPosAfterOp = this.pos;
-      this.skipWhitespace();
-      if (this.pos === storedPosAfterOp) {
-        // No whitespace after operator, so not a valid operation. Backtrack.
-        this.pos = storedPos;
-        return firstOperand;
-      }
-
-      const secondOperand = this._parseSingleNumber();
-      const operatorMap = {
-        '+': 'sum',
-        '-': 'subtraction',
-        '*': 'multiplication',
-        '/': 'division'
-      };
-      return {
-        operator: operatorMap[operatorChar],
-        operands: [firstOperand, secondOperand]
-      };
-    }
-
-    // Not an operator, backtrack whitespace
-    this.pos = storedPos;
-    return firstOperand;
+    return this._parseSingleNumber();
   }
 
   parseBoolean() {
@@ -254,10 +214,13 @@ export async function executePlan(plan, getItems) {
   for (const part of plan.parts) {
     if (typeof part === 'string') {
       result += part;
-    } else if (part.type === 'LIST') {
+    } else if (part && typeof part === 'object' && part.type === 'LIST') {
       const subItems = await getItems(part.path);
       const subPlan = stringify(subItems, part.path, part.indentLevel);
       result += await executePlan(subPlan, getItems);
+    } else {
+      // Handle primitive values (numbers, booleans, etc.)
+      result += String(part);
     }
   }
   result += plan.suffix;
@@ -284,30 +247,19 @@ function escapeText(text) {
 }
 
 function stringifyValue(item, indentLevel, currentPath) {
-  switch (item.type) {
-    case 'text':
-      return `"${escapeText(item.value)}"`;
-    case 'number':
-      if (typeof item.value === 'object' && item.value !== null) {
-        const operatorMap = {
-          sum: '+',
-          subtraction: '-',
-          multiplication: '*',
-          division: '/'
-        };
-        const operatorSymbol = operatorMap[item.value.operator];
-        if (operatorSymbol && item.value.operands && item.value.operands.length === 2) {
-          return `${item.value.operands[0]} ${operatorSymbol} ${item.value.operands[1]}`;
-        }
-        return '0';
-      }
-      return item.value;
-    case 'boolean':
-      return item.value ? '@1' : '@0';
-    case 'list':
-      const listPath = `${currentPath}${item.name}/`;
-      return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
-    default:
-      return '""';
-  }
+    if (item.type === 'list') {
+        const listPath = `${currentPath}${item.name}/`;
+        return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
+    }
+
+    if (item.type === 'text') {
+        return `"${escapeText(item.value)}"`;
+    }
+
+    const type = itemTypes[item.type];
+    if (!type) {
+        return '""';
+    }
+
+    return type.formatValueForDisplay(item);
 }

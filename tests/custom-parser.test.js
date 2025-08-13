@@ -74,7 +74,7 @@ describe('stringify', () => {
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
-            parts: ['  age: ', 30],
+            parts: ['  age: ', '30'],
         });
     });
 
@@ -110,7 +110,7 @@ describe('stringify', () => {
             suffix: '\n}',
             parts: [
                 '  name: ', '"John"', '\n',
-                '  age: ', 30, '\n',
+                '  age: ', '30', '\n',
                 '  is_active: ', '@1'
             ],
         });
@@ -141,22 +141,19 @@ describe('stringify', () => {
         });
     });
 
-    test('should stringify a numeric expression', () => {
+    test('should stringify a simple number', () => {
         const items = [
             {
                 name: 'result',
                 type: 'number',
-                value: {
-                    operator: 'sum',
-                    operands: [5, 3],
-                },
+                value: 8,
             },
         ];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
-            parts: ['  result: ', '5 + 3'],
+            parts: ['  result: ', '8'],
         });
     });
 });

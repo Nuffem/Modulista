@@ -10,57 +10,16 @@ export const NumberType = {
         return await loadIcon('number', { size: iconSize, color: iconColor });
     },
     renderEditControl: (item) => {
-        const isOperation = typeof item.value === 'object' && item.value !== null;
-        const operator = isOperation ? item.value.operator : 'constant';
-        const operands = isOperation ? item.value.operands : [item.value, 0];
-
-        const operatorLabels = {
-            'constant': 'Constante', 'sum': 'Soma', 'subtraction': 'Subtração',
-            'multiplication': 'Multiplicação', 'division': 'Divisão'
-        };
-        const operatorOptionsHTML = Object.entries(operatorLabels)
-            .map(([value, label]) => `<option value="${value}" ${value === operator ? 'selected' : ''}>${label}</option>`)
-            .join('');
-
-        return `
-            <div id="number-operation-container">
-                <select id="number-operator" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2">
-                    ${operatorOptionsHTML}
-                </select>
-                <div id="number-operands"></div>
-            </div>`;
+        const value = typeof item.value === 'number' ? item.value : 0;
+        return `<input type="number" id="item-value" name="value" value="${value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
     },
     parseValue: (form) => {
-        const operator = form.querySelector('#number-operator').value;
-        if (operator === 'constant') {
-            return Number(form.querySelector('[name="value"]').value);
-        } else {
-            const operand1 = Number(form.querySelector('[name="operand1"]').value);
-            const operand2 = Number(form.querySelector('[name="operand2"]').value);
-            return { operator, operands: [operand1, operand2] };
-        }
+        return Number(form.querySelector('[name="value"]').value);
     },
     formatValueForDisplay: (item) => {
-        if (typeof item.value === 'object' && item.value !== null) {
-            const { operator, operands } = item.value;
-            if (!operands || operands.length !== 2) return 'Invalid operands';
-
-            const opMap = { sum: '+', subtraction: '-', multiplication: '*', division: '/' };
-            const opSymbol = opMap[operator];
-            if (!opSymbol) return 'Invalid operator';
-
-            const [op1, op2] = operands;
-            let result;
-            switch (operator) {
-                case 'sum': result = op1 + op2; break;
-                case 'subtraction': result = op1 - op2; break;
-                case 'multiplication': result = op1 * op2; break;
-                case 'division': result = op2 !== 0 ? op1 / op2 : 'Infinity'; break;
-                default: result = NaN;
-            }
-            const formattedResult = (typeof result === 'number' && !Number.isInteger(result)) ? result.toFixed(2) : result;
-            return `${op1} ${opSymbol} ${op2} = ${formattedResult}`;
+        if (typeof item.value !== 'number' || isNaN(item.value)) {
+            return '0';
         }
-        return item.value;
+        return String(item.value);
     },
 };
