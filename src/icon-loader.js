@@ -1,8 +1,11 @@
 const iconCache = new Map();
 
+const iconColor = "text-gray-500 dark:text-gray-400";
+const iconSize = "w-6 h-6";
+
 export async function loadIcon(name, {
-    size,
-    color
+    size = iconSize,
+    color = iconColor
 } = {}) {
     if (iconCache.has(name)) {
         return iconCache.get(name);

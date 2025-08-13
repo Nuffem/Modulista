@@ -1,13 +1,10 @@
 import { loadIcon } from '../icon-loader.js';
 
-const iconColor = "text-gray-500 dark:text-gray-400";
-const iconSize = "w-6 h-6";
-
 export const NumberType = {
     name: 'number',
     label: 'Número',
     getIcon: async () => {
-        return await loadIcon('number', { size: iconSize, color: iconColor });
+        return await loadIcon('number');
     },
     renderEditControl: (item) => {
         const value = typeof item.value === 'number' ? item.value : 0;

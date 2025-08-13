@@ -1,13 +1,10 @@
 import { loadIcon } from '../icon-loader.js';
 
-const iconColor = "text-gray-500 dark:text-gray-400";
-const iconSize = "w-6 h-6";
-
 export const ListType = {
     name: 'list',
     label: 'Lista',
     getIcon: async () => {
-        return await loadIcon('folder', { size: iconSize, color: iconColor });
+        return await loadIcon('folder');
     },
     renderEditControl: (item) => {
         return '<p class="text-gray-500">Este tipo de item não possui um valor editável.</p>';
