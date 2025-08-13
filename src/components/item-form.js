@@ -28,9 +28,8 @@ export function renderTypeSelector(item) {
 
 export async function renderEditFormForItem(item) {
     const type = itemTypes[item.type];
-    const valueInputHTML = type.renderEditControl(item);
 
-    return `
+    const formHTML = `
         <div data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
             <form id="edit-item-form-${item.id}">
                 <div class="mb-4">
@@ -43,7 +42,7 @@ export async function renderEditFormForItem(item) {
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
-                    <div id="item-value-input-${item.id}">${valueInputHTML}</div>
+                    <div id="item-value-input-${item.id}"></div>
                 </div>
                 <div class="flex items-center justify-end">
                     <button type="button" id="delete-item-btn-${item.id}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-3 rounded" title="Excluir Item">
@@ -52,6 +51,15 @@ export async function renderEditFormForItem(item) {
                 </div>
             </form>
         </div>`;
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = formHTML;
+
+    const valueInputContainer = tempDiv.querySelector(`#item-value-input-${item.id}`);
+    const valueControlElement = type.createEditControl(item);
+    valueInputContainer.appendChild(valueControlElement);
+
+    return tempDiv.firstElementChild;
 }
 
 export function setupEditFormHandlers(item, formElement) {
@@ -200,8 +208,13 @@ export async function renderItemDetailView(path) {
         breadcrumbEl.style.display = 'block';
         await renderBreadcrumb(item.path, item.name);
 
-        const formHTML = await renderEditFormForItem(item);
-        appContainer.innerHTML = `<div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">${formHTML}</div>`;
+        const formElement = await renderEditFormForItem(item);
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.className = 'p-4 bg-white rounded-lg shadow dark:bg-gray-800';
+        wrapperDiv.appendChild(formElement);
+
+        appContainer.innerHTML = '';
+        appContainer.appendChild(wrapperDiv);
 
         const form = document.getElementById(`edit-item-form-${item.id}`);
         if (form) {
@@ -338,8 +351,9 @@ export async function renderItemTabView(path) {
 
 async function renderItemFormContent(item, containerId) {
     const container = document.getElementById(containerId);
-    const formHTML = await renderEditFormForItem(item);
-    container.innerHTML = formHTML;
+    const formElement = await renderEditFormForItem(item);
+    container.innerHTML = '';
+    container.appendChild(formElement);
     
     const form = document.getElementById(`edit-item-form-${item.id}`);
     if (form) {
