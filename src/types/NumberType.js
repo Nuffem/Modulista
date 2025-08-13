@@ -17,6 +17,9 @@ export const NumberType = {
         return Number(form.querySelector('[name="value"]').value);
     },
     formatValueForDisplay: (item) => {
-        return item.value;
+        if (typeof item.value !== 'number' || isNaN(item.value)) {
+            return '0';
+        }
+        return String(item.value);
     },
 };
