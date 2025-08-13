@@ -16,7 +16,7 @@ export async function renderItemRow(item) {
     return `
         <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
             <a href="${itemUrl}" class="flex items-center grow">
-                <div class="mr-4">${await type.getIcon()}</div>
+                <div class="mr-4">${await loadIcon(type.icon)}</div>
                 <span class="font-semibold">${item.name}</span>
             </a>
             <div class="flex items-center">

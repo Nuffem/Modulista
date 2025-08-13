@@ -3,9 +3,7 @@ import { loadIcon } from '../icon-loader.js';
 export const NumberType = {
     name: 'number',
     label: 'Número',
-    getIcon: async () => {
-        return await loadIcon('number');
-    },
+    icon: 'number',
     renderEditControl: (item) => {
         const value = typeof item.value === 'number' ? item.value : 0;
         return `<input type="number" id="item-value" name="value" value="${value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
