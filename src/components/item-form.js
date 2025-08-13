@@ -120,7 +120,8 @@ export function setupEditFormHandlers(item, formElement) {
 
         const type = itemTypes[item.type];
         const newName = form.name.value;
-        const newValue = type.parseValue(form, item);
+        const editControl = form.querySelector('[name="value"]');
+        const newValue = type.parseValue(editControl, item);
 
         if (item.name === newName && JSON.stringify(item.value) === JSON.stringify(newValue)) {
             return;

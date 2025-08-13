@@ -13,8 +13,8 @@ export const TextType = {
         input.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
         return input;
     },
-    parseValue: (form) => {
-        return form.querySelector('[name="value"]').value;
+    parseValue: (editControl) => {
+        return editControl.value;
     },
     formatValueForDisplay: (item) => {
         return item.value;
