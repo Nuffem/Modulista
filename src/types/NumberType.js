@@ -3,9 +3,7 @@ import { loadIcon } from '../icon-loader.js';
 export const NumberType = {
     name: 'number',
     label: 'Número',
-    getIcon: async () => {
-        return await loadIcon('number');
-    },
+    icon: 'number',
     createEditControl: (item) => {
         const input = document.createElement('input');
         input.type = 'number';

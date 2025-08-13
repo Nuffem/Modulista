@@ -3,9 +3,7 @@ import { loadIcon } from '../icon-loader.js';
 export const TextType = {
     name: 'text',
     label: 'Texto',
-    getIcon: async () => {
-        return await loadIcon('text');
-    },
+    icon: 'text',
     createEditControl: (item) => {
         const input = document.createElement('input');
         input.type = 'text';

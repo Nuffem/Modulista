@@ -3,9 +3,7 @@ import { loadIcon } from '../icon-loader.js';
 export const BooleanType = {
     name: 'boolean',
     label: 'Lógico',
-    getIcon: async () => {
-        return await loadIcon('boolean');
-    },
+    icon: 'boolean',
     createEditControl: (item) => {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';

@@ -3,9 +3,7 @@ import { loadIcon } from '../icon-loader.js';
 export const ListType = {
     name: 'list',
     label: 'Lista',
-    getIcon: async () => {
-        return await loadIcon('folder');
-    },
+    icon: 'folder',
     createEditControl: (item) => {
         const p = document.createElement('p');
         p.className = 'text-gray-500';
