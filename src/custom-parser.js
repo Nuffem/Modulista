@@ -1,7 +1,6 @@
 /**
  * This file contains the logic for parsing and stringifying the custom text format.
  */
-import { getItems } from './db.js';
 
 class Parser {
   constructor(text) {
@@ -174,55 +173,6 @@ export function parse(text) {
   return parser.parse();
 }
 
-export function stringify(items, path, indentLevel = 1) {
-  if (items.length === 0) {
-    return '{}';
-  }
-  const parts = stringifyItems(items, indentLevel, path);
-  return {
-    prefix: '{\n',
-    suffix: `\n${'  '.repeat(indentLevel - 1)}}`,
-    parts: parts,
-  };
-}
-
-function stringifyItems(items, indentLevel, currentPath) {
-  const parts = [];
-  const indent = '  '.repeat(indentLevel);
-  for (const item of items) {
-    const value = stringifyValue(item, indentLevel, currentPath);
-    parts.push(`${indent}${item.nome}: `);
-    parts.push(value);
-    parts.push('\n');
-  }
-  if (parts.length > 0) {
-    parts.pop();
-  }
-  return parts;
-}
-
-export async function executePlan(plan, getItems) {
-  if (typeof plan === 'string') {
-    return plan;
-  }
-
-  let result = plan.prefix;
-  for (const part of plan.parts) {
-    if (typeof part === 'string') {
-      result += part;
-    } else if (part && typeof part === 'object' && part.type === 'LIST') {
-      const subItems = await getItems(part.path);
-      const subPlan = stringify(subItems, part.path, part.indentLevel);
-      result += await executePlan(subPlan, getItems);
-    } else {
-      // Handle primitive values (numbers, booleans, etc.)
-      result += String(part);
-    }
-  }
-  result += plan.suffix;
-  return result;
-}
-
 function escapeText(text) {
   if (typeof text !== 'string') {
     text = String(text);
@@ -242,12 +192,11 @@ function escapeText(text) {
   return result;
 }
 
-function stringifyValue(item, indentLevel, currentPath) {
+async function stringifyValue(item, indentLevel, currentPath, getItems) {
   switch (item.tipo) {
     case 'Texto':
       return `"${escapeText(item.valor)}"`;
     case 'Numero':
-      // Handle invalid number values
       if (typeof item.valor !== 'number' || isNaN(item.valor)) {
         return 0;
       }
@@ -256,8 +205,26 @@ function stringifyValue(item, indentLevel, currentPath) {
       return item.valor ? '@1' : '@0';
     case 'Lista':
       const listPath = `${currentPath}${item.nome}/`;
-      return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
+      const subItems = await getItems(listPath);
+      return await stringify(subItems, listPath, getItems, indentLevel + 1);
     default:
       return '""';
   }
+}
+
+export async function stringify(items, path, getItems, indentLevel = 1) {
+  if (!items || items.length === 0) {
+    return '{}';
+  }
+
+  const indent = '  '.repeat(indentLevel);
+  const closingIndent = '  '.repeat(indentLevel - 1);
+  let content = '';
+
+  for (const item of items) {
+    const value = await stringifyValue(item, indentLevel, path, getItems);
+    content += `${indent}${item.nome}: ${value}\n`;
+  }
+
+  return `{\n${content}${closingIndent}}`;
 }

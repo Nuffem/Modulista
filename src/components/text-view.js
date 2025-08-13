@@ -1,5 +1,5 @@
 import { loadIcon } from '../icon-loader.js';
-import { parse, stringify, executePlan } from '../custom-parser.js';
+import { parse, stringify } from '../custom-parser.js';
 import { getItems } from '../db.js';
 import { syncItems } from './sync.js';
 
@@ -53,14 +53,16 @@ export async function renderTextContent(path, items, containerId = 'text-content
 
     let textContent = '';
 
-    const plan = stringify(items, path);
-    executePlan(plan, getItems).then(str => {
-        textContent = str;
-        codeBlock.textContent = textContent;
-    }).catch(error => {
-        codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
-        console.error("Stringify error:", error);
-    });
+    stringify(items, path, getItems)
+        .then(str => {
+            textContent = str;
+            codeBlock.textContent = textContent;
+        })
+        .catch(error => {
+            const errorMessage = `Erro ao gerar o texto: ${error.message}`;
+            codeBlock.textContent = errorMessage;
+            console.error("Stringify error:", error);
+        });
 
     document.getElementById(`load-from-device-btn-${containerId}`).addEventListener('click', () => {
         const input = document.createElement('input');

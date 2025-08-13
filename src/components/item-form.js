@@ -2,7 +2,7 @@ import { loadIcon } from '../icon-loader.js';
 import { getItemByPathAndName, updateItem, deleteItem } from '../db.js';
 import { itemTypes, availableTypes, TYPE_NUMBER } from '../types/index.js';
 import { renderBreadcrumb } from './breadcrumb.js';
-import { stringify, executePlan } from '../custom-parser.js';
+import { stringify } from '../custom-parser.js';
 
 export function renderTypeSelector(item) {
     const optionsHTML = availableTypes.map(type => `
@@ -132,8 +132,7 @@ export function setupEditFormHandlers(item, formElement) {
                 codeBlock.textContent = 'Atualizando...';
                 try {
                     const { getItems } = await import('../db.js');
-                    const plan = stringify([updatedItem], updatedItem.path);
-                    const str = await executePlan(plan, getItems);
+                    const str = await stringify([updatedItem], updatedItem.path, getItems);
                     codeBlock.textContent = str;
                 } catch (error) {
                     codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
@@ -361,12 +360,8 @@ async function renderItemTextContent(item, containerId) {
     const codeBlock = document.getElementById(`item-text-${item.id}`);
     
     try {
-        // Create a minimal items array containing just this item for formatting
-        const items = [item];
-        const plan = stringify(items, item.path);
         const { getItems } = await import('../db.js');
-        
-        executePlan(plan, getItems).then(str => {
+        stringify([item], item.path, getItems).then(str => {
             codeBlock.textContent = str;
         }).catch(error => {
             codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
