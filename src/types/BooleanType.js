@@ -6,8 +6,16 @@ export const BooleanType = {
     getIcon: async () => {
         return await loadIcon('boolean');
     },
-    renderEditControl: (item) => {
-        return `<input type="checkbox" id="item-value" name="value" class="form-checkbox h-5 w-5 text-blue-600" ${item.value ? 'checked' : ''}>`;
+    createEditControl: (item) => {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'item-value';
+        checkbox.name = 'value';
+        checkbox.className = 'form-checkbox h-5 w-5 text-blue-600';
+        if (item.value) {
+            checkbox.checked = true;
+        }
+        return checkbox;
     },
     parseValue: (form) => {
         return form.querySelector('[name="value"]').checked;

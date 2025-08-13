@@ -6,8 +6,11 @@ export const ListType = {
     getIcon: async () => {
         return await loadIcon('folder');
     },
-    renderEditControl: (item) => {
-        return '<p class="text-gray-500">Este tipo de item não possui um valor editável.</p>';
+    createEditControl: (item) => {
+        const p = document.createElement('p');
+        p.className = 'text-gray-500';
+        p.textContent = 'Este tipo de item não possui um valor editável.';
+        return p;
     },
     parseValue: (form, item) => {
         return item.value; // No value to parse from form

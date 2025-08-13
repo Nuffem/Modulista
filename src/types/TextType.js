@@ -6,8 +6,14 @@ export const TextType = {
     getIcon: async () => {
         return await loadIcon('text');
     },
-    renderEditControl: (item) => {
-        return `<input type="text" id="item-value" name="value" value="${item.value}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">`;
+    createEditControl: (item) => {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'item-value';
+        input.name = 'value';
+        input.value = item.value;
+        input.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+        return input;
     },
     parseValue: (form) => {
         return form.querySelector('[name="value"]').value;
