@@ -5,7 +5,7 @@ const iconSize = "w-6 h-6";
 
 export const BooleanType = {
     name: 'boolean',
-    label: 'Booleano',
+    label: 'Lógico',
     getIcon: async () => {
         return await loadIcon('boolean', { size: iconSize, color: iconColor });
     },
