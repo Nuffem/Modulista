@@ -20,10 +20,7 @@ export async function renderItemRow(item) {
                 <span class="font-semibold">${item.name}</span>
             </a>
             <div class="flex items-center">
-                ${item.type === TYPE_BOOLEAN
-                    ? `<input type="checkbox" ${item.value ? 'checked' : ''} disabled class="form-checkbox h-5 w-5 text-blue-600 mr-4">`
-                    : `<span class="text-gray-700 mr-4 dark:text-gray-300">${valueDisplay}</span>`
-                }
+                <span class="text-gray-700 mr-4 dark:text-gray-300">${valueDisplay}</span>
                 ${await loadIcon('grab-handle', { size: 'w-6 h-6', color: 'text-gray-400 dark:text-gray-500 cursor-grab handle' })}
             </div>
         </li>`;

@@ -16,7 +16,6 @@ export const BooleanType = {
         return form.querySelector('[name="value"]').checked;
     },
     formatValueForDisplay: (item) => {
-        // The value is rendered as a checkbox in renderItemRow, not as text
-        return '';
+        return item.value ? '@1' : '@0';
     },
 };

@@ -74,7 +74,7 @@ describe('stringify', () => {
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
-            parts: ['  age: ', 30],
+            parts: ['  age: ', '30'],
         });
     });
 
@@ -110,7 +110,7 @@ describe('stringify', () => {
             suffix: '\n}',
             parts: [
                 '  name: ', '"John"', '\n',
-                '  age: ', 30, '\n',
+                '  age: ', '30', '\n',
                 '  is_active: ', '@1'
             ],
         });
@@ -153,7 +153,7 @@ describe('stringify', () => {
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
-            parts: ['  result: ', 8],
+            parts: ['  result: ', '8'],
         });
     });
 });

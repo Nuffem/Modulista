@@ -2,6 +2,7 @@
  * This file contains the logic for parsing and stringifying the custom text format.
  */
 import { getItems } from './db.js';
+import { itemTypes } from './types/index.js';
 
 class Parser {
   constructor(text) {
@@ -246,21 +247,19 @@ function escapeText(text) {
 }
 
 function stringifyValue(item, indentLevel, currentPath) {
-  switch (item.type) {
-    case 'text':
-      return `"${escapeText(item.value)}"`;
-    case 'number':
-      // Handle invalid number values
-      if (typeof item.value !== 'number' || isNaN(item.value)) {
-        return 0;
-      }
-      return item.value;
-    case 'boolean':
-      return item.value ? '@1' : '@0';
-    case 'list':
-      const listPath = `${currentPath}${item.name}/`;
-      return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
-    default:
-      return '""';
-  }
+    if (item.type === 'list') {
+        const listPath = `${currentPath}${item.name}/`;
+        return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
+    }
+
+    if (item.type === 'text') {
+        return `"${escapeText(item.value)}"`;
+    }
+
+    const type = itemTypes[item.type];
+    if (!type) {
+        return '""';
+    }
+
+    return type.formatValueForDisplay(item);
 }
