@@ -1,8 +1,4 @@
-import { loadIcon } from '../icon-loader.js';
-import { getItemByPathAndName, updateItem, deleteItem } from '../db.js';
-import { itemTypes, availableTypes, TYPE_NUMBER } from '../types/index.js';
-import { createBreadcrumb } from './breadcrumb.js';
-import { stringify, executePlan } from '../custom-parser.js';
+import { itemTypes, availableTypes } from '../types/index.js';
 
 export function createTypeSelector(item) {
     const container = document.createElement('div');
