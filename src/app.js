@@ -61,14 +61,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         await initDB();
         console.log('Database ready.');
         window.addEventListener('hashchange', router);
-        
+
+        let isLandscape = window.innerWidth > window.innerHeight;
+
         // Re-render on window resize to handle orientation changes
         window.addEventListener('resize', () => {
-            const path = window.location.hash.substring(1) || '/';
-            if (path.endsWith('/')) {
-                import('./components/list-view.js').then(module => {
-                    module.displayListView(path);
-                });
+            const newIsLandscape = window.innerWidth > window.innerHeight;
+            if (newIsLandscape !== isLandscape) {
+                isLandscape = newIsLandscape;
+                const path = window.location.hash.substring(1) || '/';
+                if (path.endsWith('/')) {
+                    import('./components/list-view.js').then(module => {
+                        module.displayListView(path);
+                    });
+                }
             }
         });
         
