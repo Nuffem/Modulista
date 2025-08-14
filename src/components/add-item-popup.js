@@ -1,6 +1,7 @@
 import { addItem } from '../db.js';
-import { itemTypes, TYPE_TEXT } from '../types/index.js';
+import { itemTypes, TYPE_TEXT, TYPE_LIST } from '../types/index.js';
 import { createInlineTypeSelector } from './item-form.js';
+import { displayListView } from './list-view.js';
 
 let popupInstance = null;
 
@@ -145,7 +146,11 @@ export function showAddItemPopup(path, suggestedName) {
         try {
             const newItem = await addItem(newItemData);
             closePopup();
-            location.hash = `#${newItem.path}${newItem.name}`;
+            if (selectedType === TYPE_LIST) {
+                location.hash = `#${newItem.path}${newItem.name}`;
+            } else {
+                displayListView(path);
+            }
         } catch (error) {
             console.error('Failed to add item:', error);
             alert(`Erro ao adicionar o item: ${error.message}`);
