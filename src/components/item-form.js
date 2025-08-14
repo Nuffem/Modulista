@@ -41,7 +41,7 @@ export function createTypeSelector(item) {
     return container;
 }
 
-export function createInlineTypeSelector() {
+export async function createInlineTypeSelector() {
     const container = document.createElement('div');
     container.id = 'type-selector-container';
 
@@ -56,7 +56,7 @@ export function createInlineTypeSelector() {
     typeList.id = 'type-list';
     typeList.className = 'border rounded-md max-h-40 overflow-y-auto dark:border-gray-600';
 
-    availableTypes.forEach(async type => {
+    for (const type of availableTypes) {
         const option = document.createElement('div');
         option.className = 'flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
         option.dataset.type = type.name;
@@ -71,7 +71,7 @@ export function createInlineTypeSelector() {
         option.appendChild(iconSpan);
         option.appendChild(labelSpan);
         typeList.appendChild(option);
-    });
+    }
 
     container.appendChild(typeList);
 
