@@ -162,9 +162,9 @@ export async function createItemRow(item) {
     return li;
 }
 
-function toggleContextMenu(event, item, listItemElement) {
+async function toggleContextMenu(event, item, listItemElement) {
     closeAllContextMenus();
-    const menu = createContextMenu(item, listItemElement);
+    const menu = await createContextMenu(item, listItemElement);
 
     document.body.appendChild(menu);
 
@@ -183,31 +183,41 @@ function toggleContextMenu(event, item, listItemElement) {
     document.addEventListener('click', closeAllContextMenus, { once: true });
 }
 
-function createContextMenu(item, listItemElement) {
+async function createContextMenu(item, listItemElement) {
     const menu = document.createElement('div');
     menu.className = 'absolute z-10 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700';
-    menu.innerHTML = `
-        <ul>
-            <li>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600" id="rename-item">Renomear</a>
-            </li>
-            <li>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600" id="delete-item">Excluir</a>
-            </li>
-        </ul>
-    `;
 
-    menu.querySelector('#rename-item').addEventListener('click', (e) => {
+    const ul = document.createElement('ul');
+
+    // Opção Renomear
+    const renameLi = document.createElement('li');
+    const renameLink = document.createElement('a');
+    renameLink.href = '#';
+    renameLink.className = 'flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600';
+    renameLink.innerHTML = await loadIcon('pencil', { size: 'w-4 h-4 mr-2' }) + 'Renomear';
+    renameLink.addEventListener('click', (e) => {
         e.preventDefault();
         handleRenameItem(item);
         closeAllContextMenus();
     });
+    renameLi.appendChild(renameLink);
+    ul.appendChild(renameLi);
 
-    menu.querySelector('#delete-item').addEventListener('click', (e) => {
+    // Opção Excluir
+    const deleteLi = document.createElement('li');
+    const deleteLink = document.createElement('a');
+    deleteLink.href = '#';
+    deleteLink.className = 'flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600';
+    deleteLink.innerHTML = await loadIcon('trash', { size: 'w-4 h-4 mr-2' }) + 'Excluir';
+    deleteLink.addEventListener('click', (e) => {
         e.preventDefault();
         handleDeleteItem(item);
         closeAllContextMenus();
     });
+    deleteLi.appendChild(deleteLink);
+    ul.appendChild(deleteLi);
+
+    menu.appendChild(ul);
 
     return menu;
 }
