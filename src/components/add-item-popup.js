@@ -1,6 +1,6 @@
 import { addItem } from '../db.js';
 import { itemTypes, TYPE_TEXT } from '../types/index.js';
-import { createTypeSelector } from './item-form.js';
+import { createInlineTypeSelector } from './item-form.js';
 
 let popupInstance = null;
 
@@ -55,8 +55,7 @@ export function showAddItemPopup(path, suggestedName) {
     const typeLabel = document.createElement('label');
     typeLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
     typeLabel.textContent = 'Tipo';
-    const tempItem = { type: TYPE_TEXT, value: '' };
-    const typeSelector = createTypeSelector(tempItem);
+    const typeSelector = createInlineTypeSelector();
     typeContainer.appendChild(typeLabel);
     typeContainer.appendChild(typeSelector);
     form.appendChild(typeContainer);
@@ -89,27 +88,43 @@ export function showAddItemPopup(path, suggestedName) {
     popupInstance = popup;
 
     // Setup type selector handlers
-    const typeSelectorBtn = popup.querySelector('#type-selector-btn');
-    const typeSelectorPopup = popup.querySelector('#type-selector-popup');
     let selectedType = TYPE_TEXT;
 
-    typeSelectorBtn.addEventListener('click', () => {
-        typeSelectorPopup.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!typeSelectorBtn.contains(e.target) && !typeSelectorPopup.contains(e.target)) {
-            typeSelectorPopup.classList.add('hidden');
-        }
-    });
-
     const typeList = popup.querySelector('#type-list');
+    const typeOptions = Array.from(typeList.children);
+    const typeFilter = popup.querySelector('#type-filter');
+
+    function selectType(type) {
+        selectedType = type;
+        typeOptions.forEach(option => {
+            if (option.dataset.type === type) {
+                option.classList.add('bg-blue-100', 'dark:bg-blue-800');
+            } else {
+                option.classList.remove('bg-blue-100', 'dark:bg-blue-800');
+            }
+        });
+    }
+
+    // Set initial selection
+    selectType(selectedType);
+
     typeList.addEventListener('click', (e) => {
-        if (e.target.dataset.type) {
-            selectedType = e.target.dataset.type;
-            typeSelectorBtn.textContent = itemTypes[selectedType].label;
-            typeSelectorPopup.classList.add('hidden');
+        const option = e.target.closest('[data-type]');
+        if (option) {
+            selectType(option.dataset.type);
         }
+    });
+
+    typeFilter.addEventListener('input', () => {
+        const filterText = typeFilter.value.toLowerCase();
+        typeOptions.forEach(option => {
+            const typeName = option.textContent.toLowerCase();
+            if (typeName.includes(filterText)) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
     });
 
     form.addEventListener('submit', async (e) => {
