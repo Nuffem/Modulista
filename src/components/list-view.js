@@ -144,6 +144,21 @@ export async function createItemRow(item) {
         toggleContextMenu(e, item, li);
     });
 
+    if (item.type === TYPE_BOOLEAN) {
+        li.addEventListener('click', (e) => {
+            // Avoid interfering with other interactions like context menu
+            if (e.button !== 0) return;
+
+            const checkbox = li.querySelector('input[type="checkbox"]');
+            if (checkbox && e.target.tagName !== 'INPUT') {
+                checkbox.checked = !checkbox.checked;
+                // Manually trigger the change event to save the new state
+                const changeEvent = new Event('change', { bubbles: true });
+                checkbox.dispatchEvent(changeEvent);
+            }
+        });
+    }
+
     return li;
 }
 
