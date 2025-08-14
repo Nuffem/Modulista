@@ -1,7 +1,7 @@
 import { loadIcon } from '../icon-loader.js';
 
-export async function createBreadcrumb(path, itemName = null) {
-    const parts = path.split('/').filter(p => p);
+export async function createBreadcrumb() {
+    const parts = location.hash.split('/').slice(1).filter(p => p);
     let cumulativePath = '#/';
 
     const container = document.createElement('div');
@@ -18,7 +18,7 @@ export async function createBreadcrumb(path, itemName = null) {
 
         const separator = document.createElement('span');
         separator.className = 'text-gray-500 mx-2';
-        separator.textContent = '/';
+        separator.textContent = '>';
         container.appendChild(separator);
 
         const partButton = document.createElement('button');
@@ -27,19 +27,6 @@ export async function createBreadcrumb(path, itemName = null) {
         partButton.onclick = () => location.hash = cumulativePath;
         container.appendChild(partButton);
     });
-
-    if (itemName) {
-        const separator = document.createElement('span');
-        separator.className = 'text-gray-500 mx-2';
-        separator.textContent = '/';
-        container.appendChild(separator);
-
-        const itemButton = document.createElement('button');
-        itemButton.className = 'bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded';
-        itemButton.textContent = itemName;
-        itemButton.onclick = () => location.hash = `${cumulativePath}${itemName}`;
-        container.appendChild(itemButton);
-    }
 
     return container;
 }
