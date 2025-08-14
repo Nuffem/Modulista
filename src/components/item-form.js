@@ -1,4 +1,5 @@
 import { itemTypes, availableTypes } from '../types/index.js';
+import { loadIcon } from '../icon-loader.js';
 
 export function createTypeSelector(item) {
     const container = document.createElement('div');
@@ -55,11 +56,20 @@ export function createInlineTypeSelector() {
     typeList.id = 'type-list';
     typeList.className = 'border rounded-md max-h-40 overflow-y-auto dark:border-gray-600';
 
-    availableTypes.forEach(type => {
+    availableTypes.forEach(async type => {
         const option = document.createElement('div');
-        option.className = 'p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
+        option.className = 'flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
         option.dataset.type = type.name;
-        option.textContent = type.label;
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'mr-2';
+        iconSpan.innerHTML = await loadIcon(type.icon, { size: 'w-5 h-5' });
+
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = type.label;
+
+        option.appendChild(iconSpan);
+        option.appendChild(labelSpan);
         typeList.appendChild(option);
     });
 
