@@ -12,7 +12,7 @@ function closePopup() {
     }
 }
 
-export function showAddItemPopup(path, suggestedName) {
+export async function showAddItemPopup(path, suggestedName) {
     if (popupInstance) {
         closePopup();
     }
@@ -56,7 +56,7 @@ export function showAddItemPopup(path, suggestedName) {
     const typeLabel = document.createElement('label');
     typeLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
     typeLabel.textContent = 'Tipo';
-    const typeSelector = createInlineTypeSelector();
+    const typeSelector = await createInlineTypeSelector();
     typeContainer.appendChild(typeLabel);
     typeContainer.appendChild(typeSelector);
     form.appendChild(typeContainer);
