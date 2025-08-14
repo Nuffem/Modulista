@@ -66,8 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addEventListener('resize', () => {
             const path = window.location.hash.substring(1) || '/';
             if (path.endsWith('/')) {
-                const { renderListView } = import('./components/list-view.js').then(module => {
-                    module.renderListView(path);
+                import('./components/list-view.js').then(module => {
+                    module.displayListView(path);
                 });
             }
         });
