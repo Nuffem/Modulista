@@ -1,6 +1,9 @@
 import { initDB, getItems, addItem } from './db.js';
-import { TYPE_TEXT } from './types/index.js';
+import { TYPE_TEXT, availableTypes } from './types/index.js';
 import { router } from './components/router.js';
+import { showModal, hideModal } from './components/modal.js';
+import { displayListView } from './components/list-view.js';
+import { createTypeSelector } from './components/item-form.js';
 
 // --- State ---
 let currentView = 'list'; // 'list' or 'text'
@@ -14,44 +17,79 @@ export function setCurrentView(view) {
     currentView = view;
 }
 
-export function createNewItem(path, items) {
-    const baseName = "Item";
+export async function handleAddItemClick(path) {
+    const form = document.createElement('form');
+    form.className = 'space-y-4';
 
-    // Filter items that match the pattern "Item" or "Item_number"
-    const sameNameItems = items.filter(item => {
-        return item.name === baseName || item.name.startsWith(baseName + '_');
+    // Name field
+    const nameContainer = document.createElement('div');
+    const nameLabel = document.createElement('label');
+    nameLabel.htmlFor = 'new-item-name';
+    nameLabel.className = 'block text-sm font-medium text-gray-700 dark:text-gray-300';
+    nameLabel.textContent = 'Nome';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.id = 'new-item-name';
+    nameInput.name = 'name';
+    nameInput.className = 'mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+    nameInput.required = true;
+    nameContainer.appendChild(nameLabel);
+    nameContainer.appendChild(nameInput);
+    form.appendChild(nameContainer);
+
+    // Type field
+    const typeContainer = document.createElement('div');
+    const typeLabel = document.createElement('label');
+    typeLabel.htmlFor = 'new-item-type';
+    typeLabel.className = 'block text-sm font-medium text-gray-700 dark:text-gray-300';
+    typeLabel.textContent = 'Tipo';
+
+    // Use a temporary item object for the type selector
+    let selectedType = TYPE_TEXT;
+    const tempItem = { type: selectedType };
+    const typeSelectorContainer = createTypeSelector(tempItem);
+    typeContainer.appendChild(typeLabel);
+    typeContainer.appendChild(typeSelectorContainer);
+    form.appendChild(typeContainer);
+
+    // Handle type selection within the modal
+    const typeSelectorBtn = typeSelectorContainer.querySelector('#type-selector-btn');
+    const typeList = typeSelectorContainer.querySelector('#type-list');
+    typeList.addEventListener('click', (e) => {
+        if (e.target.dataset.type) {
+            selectedType = e.target.dataset.type;
+            const itemType = availableTypes.find(t => t.name === selectedType);
+            if (itemType) {
+                typeSelectorBtn.textContent = itemType.label;
+            }
+            typeSelectorContainer.querySelector('#type-selector-popup').classList.add('hidden');
+        }
     });
 
-    let maxIndex = 0;
-    if (sameNameItems.length > 0) {
-        const indices = sameNameItems.map(item => {
-            if (item.name === baseName) return 1; // "Item" counts as Item_1
-            const match = item.name.match(/_(\d+)$/);
-            return match ? parseInt(match[1], 10) : 0;
-        });
-        maxIndex = Math.max(...indices);
-    }
+    const onSave = async () => {
+        const newName = nameInput.value.trim();
+        if (!newName) {
+            alert('O nome do item não pode estar vazio.');
+            return;
+        }
 
-    const newName = maxIndex === 0 ? baseName : `${baseName}_${maxIndex + 1}`;
-
-    return {
-        path,
-        name: newName,
-        type: TYPE_TEXT,
-        value: ''
+        try {
+            const newItemData = {
+                path,
+                name: newName,
+                type: selectedType,
+                value: '' // Default empty value
+            };
+            await addItem(newItemData);
+            hideModal();
+            await displayListView(path);
+        } catch (error) {
+            console.error('Failed to add item:', error);
+            alert(`Erro ao adicionar o item: ${error.message}`);
+        }
     };
-}
 
-export async function handleAddItemClick(path) {
-    try {
-        const items = await getItems(path);
-        const newItemData = createNewItem(path, items);
-        const newItem = await addItem(newItemData);
-        location.hash = `#${newItem.path}${newItem.name}`;
-    } catch (error) {
-        console.error('Failed to add item:', error);
-        alert(`Erro ao adicionar o item: ${error.message}`);
-    }
+    showModal('Adicionar Novo Item', form, onSave);
 }
 window.handleAddItemClick = handleAddItemClick;
 
