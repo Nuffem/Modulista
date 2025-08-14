@@ -26,58 +26,19 @@ export function renderTypeSelector(item) {
     `;
 }
 
-export async function renderEditFormForItem(item) {
-    const type = itemTypes[item.type];
-
-    const formHTML = `
-        <div data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
-            <form id="edit-item-form-${item.id}">
-                <div class="mb-4">
-                    <label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label>
-                    <input type="text" id="item-name" name="name" value="${item.name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required>
-                </div>
-                <div class="mb-4">
-                    <label for="item-type" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label>
-                    <div id="item-type-selector-${item.id}">${renderTypeSelector(item)}</div>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
-                    <div id="item-value-input-${item.id}"></div>
-                </div>
-                <div class="flex items-center justify-end">
-                    <button type="button" id="delete-item-btn-${item.id}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-3 rounded" title="Excluir Item">
-                        ${await loadIcon('trash', { size: 'w-6 h-6' })}
-                    </button>
-                </div>
-            </form>
-        </div>`;
-
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = formHTML;
-
-    const valueInputContainer = tempDiv.querySelector(`#item-value-input-${item.id}`);
-    const valueControlElement = type.createEditControl(item);
-    valueInputContainer.appendChild(valueControlElement);
-
-    return tempDiv.firstElementChild;
-}
-
-export function setupEditFormHandlers(item, formElement) {
-    const typeSelectorBtn = formElement.querySelector('#type-selector-btn');
-    const typeSelectorPopup = formElement.querySelector('#type-selector-popup');
-
-    typeSelectorBtn.addEventListener('click', () => {
-        typeSelectorPopup.classList.toggle('hidden');
+export function setupTypeSelector(button, popup, onTypeSelect) {
+    button.addEventListener('click', () => {
+        popup.classList.toggle('hidden');
     });
 
     document.addEventListener('click', (e) => {
-        if (!typeSelectorBtn.contains(e.target) && !typeSelectorPopup.contains(e.target)) {
-            typeSelectorPopup.classList.add('hidden');
+        if (!button.contains(e.target) && !popup.contains(e.target)) {
+            popup.classList.add('hidden');
         }
     });
 
-    const typeFilter = formElement.querySelector('#type-filter');
-    const typeList = formElement.querySelector('#type-list');
+    const typeFilter = popup.querySelector('#type-filter');
+    const typeList = popup.querySelector('#type-list');
     const typeOptions = Array.from(typeList.children);
 
     typeFilter.addEventListener('input', () => {
@@ -95,16 +56,40 @@ export function setupEditFormHandlers(item, formElement) {
     typeList.addEventListener('click', (e) => {
         if (e.target.dataset.type) {
             const newType = e.target.dataset.type;
-            if (newType !== item.type) {
-                const updatedItem = { ...item, type: newType, value: '' }; // Reset value on type change
-                updateItem(updatedItem).then(() => {
-                    renderItemTabView(`${item.path}${item.name}`);
-                });
-            }
-            typeSelectorPopup.classList.add('hidden');
+            onTypeSelect(newType);
+            popup.classList.add('hidden');
         }
     });
-    
+}
+
+export async function renderEditFormForItem(item) {
+    const type = itemTypes[item.type];
+
+    const formHTML = `
+        <div data-id="${item.id}" draggable="false" class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+            <form id="edit-item-form-${item.id}">
+                <div class="mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">${item.name}</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">${itemTypes[item.type].label}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
+                    <div id="item-value-input-${item.id}"></div>
+                </div>
+            </form>
+        </div>`;
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = formHTML;
+
+    const valueInputContainer = tempDiv.querySelector(`#item-value-input-${item.id}`);
+    const valueControlElement = type.createEditControl(item);
+    valueInputContainer.appendChild(valueControlElement);
+
+    return tempDiv.firstElementChild;
+}
+
+export function setupEditFormHandlers(item, formElement) {
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -114,28 +99,25 @@ export function setupEditFormHandlers(item, formElement) {
         };
     }
 
-    const handleFormChange = debounce(async () => {
+    const handleValueChange = debounce(async () => {
         const form = document.getElementById(`edit-item-form-${item.id}`);
         if (!form) return;
 
         const type = itemTypes[item.type];
-        const newName = form.name.value;
         const editControl = form.querySelector('[name="value"]');
         const newValue = type.parseValue(editControl, item);
 
-        if (item.name === newName && JSON.stringify(item.value) === JSON.stringify(newValue)) {
+        if (JSON.stringify(item.value) === JSON.stringify(newValue)) {
             return;
         }
 
-        const updatedItem = { ...item, name: newName, value: newValue };
+        const updatedItem = { ...item, value: newValue };
 
         try {
             await updateItem(updatedItem);
+            item.value = newValue; // Update local item state
 
-            const oldName = item.name;
-            item.name = newName;
-            item.value = newValue;
-
+            // Also update the text view if it's present
             const codeBlock = document.getElementById(`item-text-${item.id}`);
             if (codeBlock) {
                 codeBlock.textContent = 'Atualizando...';
@@ -148,41 +130,16 @@ export function setupEditFormHandlers(item, formElement) {
                     codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
                 }
             }
-
-            if (oldName !== newName) {
-                const newPath = `${updatedItem.path}${updatedItem.name}`;
-                if (history.replaceState) {
-                    history.replaceState(null, '', `#${newPath}`);
-                } else {
-                    location.hash = newPath;
-                }
-                await renderBreadcrumb(updatedItem.path, updatedItem.name);
-            }
-
         } catch (error) {
-            console.error('Failed to update item:', error);
+            console.error('Failed to update item value:', error);
         }
     }, 300);
 
-    formElement.querySelector('#item-name').addEventListener('input', handleFormChange);
     const valueInput = formElement.querySelector('[name="value"]');
     if (valueInput) {
         const eventType = valueInput.type === 'checkbox' ? 'change' : 'input';
-        valueInput.addEventListener(eventType, handleFormChange);
+        valueInput.addEventListener(eventType, handleValueChange);
     }
-
-    formElement.querySelector(`#delete-item-btn-${item.id}`).addEventListener('click', async () => {
-        if (confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) {
-            try {
-                const pathToDelete = item.path;
-                await deleteItem(item.id);
-                location.hash = pathToDelete;
-            } catch (error) {
-                console.error('Failed to delete item:', error);
-                alert('Erro ao excluir o item.');
-            }
-        }
-    });
 }
 
 export async function renderItemDetailView(path) {

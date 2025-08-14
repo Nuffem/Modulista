@@ -13,6 +13,9 @@ export async function renderItemRow(item) {
     const type = itemTypes[item.type];
     const valueDisplay = type.formatValueForDisplay(item);
 
+    const menuId = `menu-${item.id}`;
+    const menuButtonId = `menu-button-${item.id}`;
+
     return `
         <li data-id="${item.id}" draggable="true" class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700">
             <a href="${itemUrl}" class="flex items-center grow">
@@ -21,9 +24,119 @@ export async function renderItemRow(item) {
             </a>
             <div class="flex items-center">
                 <span class="text-gray-700 mr-4 dark:text-gray-300">${valueDisplay}</span>
+                <div class="relative">
+                    <button id="${menuButtonId}" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                        ${await loadIcon('pencil', { size: 'w-5 h-5' })}
+                    </button>
+                    <div id="${menuId}" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 hidden">
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700" data-action="rename">Renomear</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700" data-action="delete">Excluir</a>
+                    </div>
+                </div>
                 ${await loadIcon('grab-handle', { size: 'w-6 h-6', color: 'text-gray-400 dark:text-gray-500 cursor-grab handle' })}
             </div>
         </li>`;
+}
+
+import { showModal } from './modal.js';
+import { updateItem, deleteItem } from '../db.js';
+
+function setupItemMenuHandlers(container, items, path) {
+    container.addEventListener('click', e => {
+        const actionLink = e.target.closest('a[data-action]');
+        if (actionLink) {
+            e.preventDefault();
+            const action = actionLink.dataset.action;
+            const li = actionLink.closest('li[data-id]');
+            const itemId = li.dataset.id;
+            const item = items.find(i => i.id == itemId);
+
+            if (!item) return;
+
+            // Close the menu
+            const menu = actionLink.closest('[id^="menu-"]');
+            if (menu) {
+                menu.classList.add('hidden');
+            }
+
+            if (action === 'rename') {
+                const formContent = document.createElement('div');
+                formContent.innerHTML = `
+                    <form id="rename-item-form">
+                        <div class="mb-4">
+                            <label for="item-new-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Novo Nome</label>
+                            <input type="text" id="item-new-name" name="name" value="${item.name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required>
+                        </div>
+                    </form>
+                `;
+
+                const actions = [
+                    {
+                        label: 'Cancelar',
+                        className: 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200',
+                        onClick: (_, closeModal) => closeModal()
+                    },
+                    {
+                        label: 'Salvar',
+                        className: 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded',
+                        onClick: async (_, closeModal) => {
+                            const newName = formContent.querySelector('#item-new-name').value.trim();
+                            if (newName && newName !== item.name) {
+                                try {
+                                    await updateItem({ ...item, name: newName });
+                                    closeModal();
+                                    renderListView(path);
+                                } catch (error) {
+                                    console.error('Failed to rename item:', error);
+                                    alert(`Erro ao renomear o item: ${error.message}`);
+                                }
+                            } else {
+                                closeModal();
+                            }
+                        }
+                    }
+                ];
+                showModal('Renomear Item', formContent, actions);
+
+            } else if (action === 'delete') {
+                if (confirm(`Tem certeza que deseja excluir o item "${item.name}"? Esta ação não pode ser desfeita.`)) {
+                    deleteItem(item.id).then(() => {
+                        renderListView(path);
+                    }).catch(error => {
+                        console.error('Failed to delete item:', error);
+                        alert('Erro ao excluir o item.');
+                    });
+                }
+            }
+        }
+
+        const menuButton = e.target.closest('[id^="menu-button-"]');
+        if (menuButton) {
+            e.preventDefault();
+            const id = menuButton.id.split('-').pop();
+            const menu = document.getElementById(`menu-${id}`);
+
+            // Close all other menus
+            document.querySelectorAll('[id^="menu-"]').forEach(m => {
+                if (m.id !== menu.id) {
+                    m.classList.add('hidden');
+                }
+            });
+
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
+        }
+    });
+
+    // Close menus when clicking outside
+    document.addEventListener('click', e => {
+        if (!e.target.closest('[id^="menu-button-"]') && !e.target.closest('[id^="menu-"]')) {
+            document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+    });
 }
 
 export async function renderListContent(path, items, containerId = 'list-content') {
@@ -44,6 +157,7 @@ export async function renderListContent(path, items, containerId = 'list-content
         container.innerHTML = listHTML + addButtonHTML;
         listContainer = document.getElementById('item-list');
         addDragAndDropHandlers(listContainer);
+        setupItemMenuHandlers(listContainer, items, path);
     };
 
     const addDragAndDropHandlers = (container) => {
@@ -203,6 +317,7 @@ export async function renderListView(path) {
                 tabContent.innerHTML = listHTML + addButtonHTML;
                 listContainer = document.getElementById('item-list');
                 addDragAndDropHandlers(listContainer);
+                setupItemMenuHandlers(listContainer, items, path);
             };
 
             const addDragAndDropHandlers = (container) => {
