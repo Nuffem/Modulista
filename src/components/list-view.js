@@ -1,5 +1,5 @@
 import { loadIcon } from '../icon-loader.js';
-import { getItems, updateItemsOrder } from '../db.js';
+import { getItems, updateItemsOrder, updateItem, deleteItem } from '../db.js';
 import { itemTypes, TYPE_LIST, TYPE_BOOLEAN } from '../types/index.js';
 import { createBreadcrumb } from './breadcrumb.js';
 import { displayTextContent } from './text-view.js';
@@ -42,9 +42,106 @@ export async function createItemRow(item) {
     valueSpan.textContent = valueDisplay;
     controlsContainer.appendChild(valueSpan);
 
+    // Three-dots menu for mobile
+    const isMobile = 'ontouchstart' in window;
+    if (isMobile) {
+        const menuButton = document.createElement('button');
+        menuButton.className = 'p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600';
+        menuButton.innerHTML = await loadIcon('three-dots-vertical', { size: 'w-6 h-6' });
+        menuButton.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleContextMenu(e, item, li);
+        };
+        controlsContainer.appendChild(menuButton);
+    }
+
     li.appendChild(controlsContainer);
 
+    // Context menu for desktop
+    li.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleContextMenu(e, item, li);
+    });
+
     return li;
+}
+
+function toggleContextMenu(event, item, listItemElement) {
+    closeAllContextMenus();
+    const menu = createContextMenu(item, listItemElement);
+
+    // Position menu at cursor
+    menu.style.top = `${event.clientY}px`;
+    menu.style.left = `${event.clientX}px`;
+
+    document.body.appendChild(menu);
+
+    // Close menu when clicking outside
+    document.addEventListener('click', closeAllContextMenus, { once: true });
+}
+
+function createContextMenu(item, listItemElement) {
+    const menu = document.createElement('div');
+    menu.className = 'absolute z-10 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700';
+    menu.innerHTML = `
+        <ul>
+            <li>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600" id="rename-item">Renomear</a>
+            </li>
+            <li>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600" id="delete-item">Excluir</a>
+            </li>
+        </ul>
+    `;
+
+    menu.querySelector('#rename-item').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleRenameItem(item);
+        closeAllContextMenus();
+    });
+
+    menu.querySelector('#delete-item').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleDeleteItem(item);
+        closeAllContextMenus();
+    });
+
+    return menu;
+}
+
+function closeAllContextMenus() {
+    const menus = document.querySelectorAll('.absolute.z-10');
+    menus.forEach(menu => menu.remove());
+}
+
+async function handleRenameItem(item) {
+    const newName = prompt('Digite o novo nome do item:', item.name);
+    if (newName && newName.trim() !== '' && newName !== item.name) {
+        try {
+            const updatedItem = { ...item, name: newName.trim() };
+            await updateItem(updatedItem);
+            // Refresh the view
+            await displayListView(item.path);
+        } catch (error) {
+            console.error('Failed to rename item:', error);
+            alert('Erro ao renomear o item.');
+        }
+    }
+}
+
+async function handleDeleteItem(item) {
+    if (confirm(`Tem certeza que deseja excluir o item "${item.name}"?`)) {
+        try {
+            await deleteItem(item.id);
+            // Refresh the view
+            await displayListView(item.path);
+        } catch (error) {
+            console.error('Failed to delete item:', error);
+            alert('Erro ao excluir o item.');
+        }
+    }
 }
 
 export async function displayListContent(path, items, containerId = 'list-content') {
