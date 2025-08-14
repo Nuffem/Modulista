@@ -1,5 +1,5 @@
 import { addItem } from '../db.js';
-import { itemTypes, TYPE_TEXT } from '../types/index.js';
+import { itemTypes, TYPE_TEXT, TYPE_LIST } from '../types/index.js';
 import { createInlineTypeSelector } from './item-form.js';
 
 let popupInstance = null;
@@ -88,7 +88,7 @@ export function showAddItemPopup(path, suggestedName) {
     popupInstance = popup;
 
     // Setup type selector handlers
-    let selectedType = TYPE_TEXT;
+    let selectedType = TYPE_LIST;
 
     const typeList = popup.querySelector('#type-list');
     const typeOptions = Array.from(typeList.children);
