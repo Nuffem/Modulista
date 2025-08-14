@@ -8,10 +8,19 @@ function isLandscapeMode() {
     return window.innerWidth > window.innerHeight && window.innerWidth >= 768;
 }
 
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
 export async function createItemRow(item) {
-    const itemUrl = `#${item.path}${item.name}${item.type === TYPE_LIST ? '/' : ''}`;
+    const isList = item.type === TYPE_LIST;
+    const itemUrl = isList ? `#${item.path}${item.name}/` : `javascript:void(0);`;
     const type = itemTypes[item.type];
-    const valueDisplay = type.formatValueForDisplay(item);
 
     const li = document.createElement('li');
     li.dataset.id = item.id;
@@ -21,6 +30,9 @@ export async function createItemRow(item) {
     const a = document.createElement('a');
     a.href = itemUrl;
     a.className = 'flex items-center grow';
+    if (!isList) {
+        a.style.cursor = 'default';
+    }
 
     const iconContainer = document.createElement('div');
     iconContainer.className = 'mr-4';
@@ -37,10 +49,33 @@ export async function createItemRow(item) {
     const controlsContainer = document.createElement('div');
     controlsContainer.className = 'flex items-center';
 
-    const valueSpan = document.createElement('span');
-    valueSpan.className = 'text-gray-700 mr-4 dark:text-gray-300';
-    valueSpan.textContent = valueDisplay;
-    controlsContainer.appendChild(valueSpan);
+    if (!isList) {
+        const valueControl = type.createEditControl(item);
+        valueControl.classList.add('w-32'); // Adjust width as needed
+        controlsContainer.appendChild(valueControl);
+
+        const handleUpdate = debounce(async () => {
+            const newValue = type.parseValue(valueControl);
+            if (JSON.stringify(item.value) !== JSON.stringify(newValue)) {
+                const updatedItem = { ...item, value: newValue };
+                try {
+                    await updateItem(updatedItem);
+                    item.value = newValue; // Update local item state
+                } catch (error) {
+                    console.error('Failed to update item:', error);
+                    // Optionally, revert the control to the old value
+                    valueControl.value = item.value;
+                }
+            }
+        }, 500);
+
+        const eventType = valueControl.type === 'checkbox' ? 'change' : 'input';
+        valueControl.addEventListener(eventType, handleUpdate);
+
+        valueControl.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
 
     // Three-dots menu for mobile
     const isMobile = 'ontouchstart' in window;

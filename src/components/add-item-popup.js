@@ -1,6 +1,6 @@
 import { addItem } from '../db.js';
 import { itemTypes, TYPE_TEXT } from '../types/index.js';
-import { createTypeSelector, setupEditFormHandlers } from './item-form.js';
+import { createTypeSelector } from './item-form.js';
 
 let popupInstance = null;
 
