@@ -16,7 +16,7 @@ export async function createItemRow(item) {
     const li = document.createElement('li');
     li.dataset.id = item.id;
     li.draggable = true;
-    li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700';
+    li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
 
     const a = document.createElement('a');
     a.href = itemUrl;
@@ -41,10 +41,6 @@ export async function createItemRow(item) {
     valueSpan.className = 'text-gray-700 mr-4 dark:text-gray-300';
     valueSpan.textContent = valueDisplay;
     controlsContainer.appendChild(valueSpan);
-
-    const grabHandle = document.createElement('div');
-    grabHandle.innerHTML = await loadIcon('grab-handle', { size: 'w-6 h-6', color: 'text-gray-400 dark:text-gray-500 cursor-grab handle' });
-    controlsContainer.appendChild(grabHandle);
 
     li.appendChild(controlsContainer);
 
@@ -83,8 +79,38 @@ export async function displayListContent(path, items, containerId = 'list-conten
 function addDragAndDropHandlers(container, path, items) {
     if (!container) return;
     let draggedItemId = null;
+    const isMobile = 'ontouchstart' in window;
+    let canDrag = !isMobile;
+    let longPressTimer;
+
+    container.addEventListener('touchstart', e => {
+        if (isMobile) {
+            const target = e.target.closest('li[data-id]');
+            if (!target) return;
+            longPressTimer = setTimeout(() => {
+                canDrag = true;
+            }, 500);
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchend', e => {
+        if (isMobile) {
+            clearTimeout(longPressTimer);
+            canDrag = false;
+        }
+    });
+
+    container.addEventListener('touchmove', e => {
+        if (isMobile) {
+            clearTimeout(longPressTimer);
+        }
+    });
 
     container.addEventListener('dragstart', e => {
+        if (!canDrag) {
+            e.preventDefault();
+            return;
+        }
         const target = e.target.closest('li[data-id]');
         if (target && target.draggable) {
             draggedItemId = target.dataset.id;
@@ -97,6 +123,9 @@ function addDragAndDropHandlers(container, path, items) {
     });
 
     container.addEventListener('dragend', e => {
+        if (isMobile) {
+            canDrag = false;
+        }
         const target = e.target.closest('li[data-id]');
         if(target) {
             target.classList.remove('opacity-50');
