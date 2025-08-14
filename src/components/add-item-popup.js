@@ -89,7 +89,7 @@ export function showAddItemPopup(path, suggestedName) {
     popupInstance = popup;
 
     // Setup type selector handlers
-    let selectedType = TYPE_TEXT;
+    let selectedType = TYPE_LIST;
 
     const typeList = popup.querySelector('#type-list');
     const typeOptions = Array.from(typeList.children);
