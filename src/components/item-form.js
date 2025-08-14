@@ -44,6 +44,34 @@ export function createTypeSelector(item) {
     return container;
 }
 
+export function createInlineTypeSelector() {
+    const container = document.createElement('div');
+    container.id = 'type-selector-container';
+
+    const filterInput = document.createElement('input');
+    filterInput.type = 'text';
+    filterInput.id = 'type-filter';
+    filterInput.className = 'w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 mb-2';
+    filterInput.placeholder = 'Filtrar tipos...';
+    container.appendChild(filterInput);
+
+    const typeList = document.createElement('div');
+    typeList.id = 'type-list';
+    typeList.className = 'border rounded-md max-h-40 overflow-y-auto dark:border-gray-600';
+
+    availableTypes.forEach(type => {
+        const option = document.createElement('div');
+        option.className = 'p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
+        option.dataset.type = type.name;
+        option.textContent = type.label;
+        typeList.appendChild(option);
+    });
+
+    container.appendChild(typeList);
+
+    return container;
+}
+
 export async function createEditFormForItem(item) {
     const type = itemTypes[item.type];
 
