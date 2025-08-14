@@ -1,6 +1,7 @@
 import { initDB, getItems, addItem } from './db.js';
 import { TYPE_TEXT } from './types/index.js';
 import { router } from './components/router.js';
+import { showAddItemPopup } from './components/add-item-popup.js';
 
 // --- State ---
 let currentView = 'list'; // 'list' or 'text'
@@ -46,11 +47,10 @@ export async function handleAddItemClick(path) {
     try {
         const items = await getItems(path);
         const newItemData = createNewItem(path, items);
-        const newItem = await addItem(newItemData);
-        location.hash = `#${newItem.path}${newItem.name}`;
+        showAddItemPopup(path, newItemData.name);
     } catch (error) {
-        console.error('Failed to add item:', error);
-        alert(`Erro ao adicionar o item: ${error.message}`);
+        console.error('Failed to open add item popup:', error);
+        alert(`Erro ao abrir o popup de adição de item: ${error.message}`);
     }
 }
 window.handleAddItemClick = handleAddItemClick;
