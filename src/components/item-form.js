@@ -40,7 +40,7 @@ export function createTypeSelector(item) {
     return container;
 }
 
-export function createInlineTypeSelector() {
+export function createInlineTypeSelector(types = availableTypes) {
     const container = document.createElement('div');
     container.id = 'type-selector-container';
 
@@ -55,7 +55,7 @@ export function createInlineTypeSelector() {
     typeList.id = 'type-list';
     typeList.className = 'border rounded-md max-h-40 overflow-y-auto dark:border-gray-600';
 
-    availableTypes.forEach(type => {
+    types.forEach(type => {
         const option = document.createElement('div');
         option.className = 'p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
         option.dataset.type = type.name;

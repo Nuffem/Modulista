@@ -1,6 +1,6 @@
 import { loadIcon } from '../icon-loader.js';
 import { getItems, updateItemsOrder, updateItem, deleteItem } from '../db.js';
-import { itemTypes, TYPE_LIST, TYPE_BOOLEAN } from '../types/index.js';
+import { itemTypes, TYPE_LIST, TYPE_BOOLEAN, TYPE_SOMA } from '../types/index.js';
 import { createBreadcrumb } from './breadcrumb.js';
 import { displayTextContent } from './text-view.js';
 
@@ -18,7 +18,7 @@ function debounce(func, wait) {
 }
 
 export async function createItemRow(item) {
-    const isList = item.type === TYPE_LIST;
+    const isContainer = item.type === TYPE_LIST || item.type === TYPE_SOMA;
     const isTextOrNumber = item.type === 'text' || item.type === 'number';
     const type = itemTypes[item.type];
 
@@ -75,12 +75,12 @@ export async function createItemRow(item) {
     } else {
         li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
 
-        const itemUrl = isList ? `#${item.path}${item.name}/` : 'javascript:void(0);';
+        const itemUrl = isContainer ? `#${item.path}${item.name}/` : 'javascript:void(0);';
 
         const a = document.createElement('a');
         a.href = itemUrl;
         a.className = 'flex items-center grow';
-        if (!isList) {
+        if (!isContainer) {
             a.style.cursor = 'default';
         }
 
@@ -99,7 +99,7 @@ export async function createItemRow(item) {
         controlsContainer = document.createElement('div');
         controlsContainer.className = 'flex items-center';
 
-        if (!isList) { // This is for Boolean
+        if (!isContainer) { // This is for Boolean
             const valueControl = type.createEditControl(item);
             valueControl.classList.add('w-32');
             controlsContainer.appendChild(valueControl);

@@ -51,16 +51,16 @@ describe('parse', () => {
 });
 
 describe('stringify', () => {
-    test('should stringify an empty list', () => {
+    test('should stringify an empty list', async () => {
         const items = [];
         const expected = '{}';
-        const result = stringify(items, 'some/path/');
+        const result = await stringify(items, 'some/path/');
         expect(result).toBe(expected);
     });
 
-    test('should stringify a list with a single text item', () => {
+    test('should stringify a list with a single text item', async () => {
         const items = [{ name: 'name', type: 'text', value: 'John' }];
-        const plan = stringify(items, 'some/path/');
+        const plan = await stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
@@ -68,9 +68,9 @@ describe('stringify', () => {
         });
     });
 
-    test('should stringify a list with a single number item', () => {
+    test('should stringify a list with a single number item', async () => {
         const items = [{ name: 'age', type: 'number', value: 30 }];
-        const plan = stringify(items, 'some/path/');
+        const plan = await stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
@@ -78,9 +78,9 @@ describe('stringify', () => {
         });
     });
 
-    test('should stringify a list with a single boolean item (true)', () => {
+    test('should stringify a list with a single boolean item (true)', async () => {
         const items = [{ name: 'is_active', type: 'boolean', value: true }];
-        const plan = stringify(items, 'some/path/');
+        const plan = await stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
@@ -88,9 +88,9 @@ describe('stringify', () => {
         });
     });
 
-    test('should stringify a list with a single boolean item (false)', () => {
+    test('should stringify a list with a single boolean item (false)', async () => {
         const items = [{ name: 'is_active', type: 'boolean', value: false }];
-        const plan = stringify(items, 'some/path/');
+        const plan = await stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
@@ -98,13 +98,13 @@ describe('stringify', () => {
         });
     });
 
-    test('should stringify a list with multiple items', () => {
+    test('should stringify a list with multiple items', async () => {
         const items = [
             { name: 'name', type: 'text', value: 'John' },
             { name: 'age', type: 'number', value: 30 },
             { name: 'is_active', type: 'boolean', value: true },
         ];
-        const plan = stringify(items, 'some/path/');
+        const plan = await stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
@@ -116,11 +116,11 @@ describe('stringify', () => {
         });
     });
 
-    test('should stringify a list with a nested list', () => {
+    test('should stringify a list with a nested list', async () => {
         const items = [
             { name: 'user', type: 'list', value: 'user/' },
         ];
-        const plan = stringify(items, 'some/path/');
+        const plan = await stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
@@ -131,9 +131,9 @@ describe('stringify', () => {
         });
     });
 
-    test('should escape special characters in text values', () => {
+    test('should escape special characters in text values', async () => {
         const items = [{ name: 'text', type: 'text', value: 'a"b\\c' }];
-        const plan = stringify(items, 'some/path/');
+        const plan = await stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',
@@ -141,7 +141,7 @@ describe('stringify', () => {
         });
     });
 
-    test('should stringify a simple number', () => {
+    test('should stringify a simple number', async () => {
         const items = [
             {
                 name: 'result',
@@ -149,7 +149,7 @@ describe('stringify', () => {
                 value: 8,
             },
         ];
-        const plan = stringify(items, 'some/path/');
+        const plan = await stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
             suffix: '\n}',

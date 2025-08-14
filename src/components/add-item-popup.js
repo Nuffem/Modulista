@@ -1,5 +1,5 @@
-import { addItem } from '../db.js';
-import { itemTypes, TYPE_TEXT, TYPE_LIST } from '../types/index.js';
+import { addItem, getItemByPathAndName } from '../db.js';
+import { itemTypes, TYPE_TEXT, TYPE_LIST, TYPE_SOMA, availableTypes, TYPE_NUMBER } from '../types/index.js';
 import { createInlineTypeSelector } from './item-form.js';
 import { displayListView } from './list-view.js';
 
@@ -12,10 +12,21 @@ function closePopup() {
     }
 }
 
-export function showAddItemPopup(path, suggestedName) {
+async function getParentItem(path) {
+    if (path === '/') return null;
+    const pathSegments = path.split('/').filter(Boolean);
+    if (pathSegments.length === 0) return null;
+    const parentName = pathSegments.pop();
+    const parentPath = `/${pathSegments.join('/')}/`;
+    return await getItemByPathAndName(parentPath, parentName);
+}
+
+export async function showAddItemPopup(path, suggestedName) {
     if (popupInstance) {
         closePopup();
     }
+
+    const parentItem = await getParentItem(path);
 
     const popup = document.createElement('div');
     popup.id = 'add-item-popup';
@@ -56,7 +67,13 @@ export function showAddItemPopup(path, suggestedName) {
     const typeLabel = document.createElement('label');
     typeLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
     typeLabel.textContent = 'Tipo';
-    const typeSelector = createInlineTypeSelector();
+
+    let typesToShow = availableTypes;
+    if (parentItem && parentItem.type === TYPE_SOMA) {
+        typesToShow = [itemTypes[TYPE_NUMBER]];
+    }
+
+    const typeSelector = createInlineTypeSelector(typesToShow);
     typeContainer.appendChild(typeLabel);
     typeContainer.appendChild(typeSelector);
     form.appendChild(typeContainer);
@@ -89,7 +106,7 @@ export function showAddItemPopup(path, suggestedName) {
     popupInstance = popup;
 
     // Setup type selector handlers
-    let selectedType = TYPE_LIST;
+    let selectedType = (parentItem && parentItem.type === TYPE_SOMA) ? TYPE_NUMBER : TYPE_LIST;
 
     const typeList = popup.querySelector('#type-list');
     const typeOptions = Array.from(typeList.children);
@@ -146,7 +163,7 @@ export function showAddItemPopup(path, suggestedName) {
         try {
             const newItem = await addItem(newItemData);
             closePopup();
-            if (selectedType === TYPE_LIST) {
+            if (selectedType === TYPE_LIST || selectedType === TYPE_SOMA) {
                 location.hash = `#${newItem.path}${newItem.name}`;
             } else {
                 displayListView(path);

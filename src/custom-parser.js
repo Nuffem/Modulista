@@ -103,7 +103,15 @@ class Parser {
   }
 
   parseNumericExpression() {
-    return this._parseSingleNumber();
+    let result = this._parseSingleNumber();
+    this.skipWhitespace();
+    while (this.pos < this.text.length && this.peek() === '+') {
+      this.consume('+');
+      this.skipWhitespace();
+      result += this._parseSingleNumber();
+      this.skipWhitespace();
+    }
+    return result;
   }
 
   parseBoolean() {
@@ -178,11 +186,11 @@ export function parse(text) {
   return parser.parse();
 }
 
-export function stringify(items, path, indentLevel = 1) {
+export async function stringify(items, path, indentLevel = 1) {
   if (items.length === 0) {
     return '{}';
   }
-  const parts = stringifyItems(items, indentLevel, path);
+  const parts = await stringifyItems(items, indentLevel, path);
   return {
     prefix: '{\n',
     suffix: `\n${'  '.repeat(indentLevel - 1)}}`,
@@ -190,11 +198,11 @@ export function stringify(items, path, indentLevel = 1) {
   };
 }
 
-function stringifyItems(items, indentLevel, currentPath) {
+async function stringifyItems(items, indentLevel, currentPath) {
   const parts = [];
   const indent = '  '.repeat(indentLevel);
   for (const item of items) {
-    const value = stringifyValue(item, indentLevel, currentPath);
+    const value = await stringifyValue(item, indentLevel, currentPath);
     parts.push(`${indent}${item.name}: `);
     parts.push(value);
     parts.push('\n');
@@ -214,9 +222,9 @@ export async function executePlan(plan, getItems) {
   for (const part of plan.parts) {
     if (typeof part === 'string') {
       result += part;
-    } else if (part && typeof part === 'object' && part.type === 'LIST') {
+    } else if (part && typeof part === 'object' && (part.type === 'LIST' || part.type === 'SOMA')) {
       const subItems = await getItems(part.path);
-      const subPlan = stringify(subItems, part.path, part.indentLevel);
+      const subPlan = await stringify(subItems, part.path, part.indentLevel);
       result += await executePlan(subPlan, getItems);
     } else {
       // Handle primitive values (numbers, booleans, etc.)
@@ -246,10 +254,20 @@ function escapeText(text) {
   return result;
 }
 
-function stringifyValue(item, indentLevel, currentPath) {
+async function stringifyValue(item, indentLevel, currentPath) {
     if (item.type === 'list') {
         const listPath = `${currentPath}${item.name}/`;
         return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
+    }
+
+    if (item.type === 'soma') {
+        const listPath = `${currentPath}${item.name}/`;
+        const children = await getItems(listPath);
+        const numbers = children.filter(child => child.type === 'number').map(child => child.value);
+        if (numbers.length === 0) {
+            return '0';
+        }
+        return numbers.join(' + ');
     }
 
     if (item.type === 'text') {
