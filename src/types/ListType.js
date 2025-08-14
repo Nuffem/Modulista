@@ -3,7 +3,7 @@ import { loadIcon } from '../icon-loader.js';
 export const ListType = {
     name: 'list',
     label: 'Lista',
-    icon: 'folder',
+    icon: 'list-square',
     createEditControl: (item) => {
         const p = document.createElement('p');
         p.className = 'text-gray-500';
