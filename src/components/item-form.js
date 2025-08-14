@@ -1,65 +1,122 @@
 import { loadIcon } from '../icon-loader.js';
 import { getItemByPathAndName, updateItem, deleteItem } from '../db.js';
 import { itemTypes, availableTypes, TYPE_NUMBER } from '../types/index.js';
-import { renderBreadcrumb } from './breadcrumb.js';
+import { createBreadcrumb } from './breadcrumb.js';
 import { stringify, executePlan } from '../custom-parser.js';
 
-export function renderTypeSelector(item) {
-    const optionsHTML = availableTypes.map(type => `
-        <div class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer" data-type="${type.name}">
-            ${type.label}
-        </div>
-    `).join('');
+export function createTypeSelector(item) {
+    const container = document.createElement('div');
+    container.className = 'relative';
+    container.id = 'type-selector-container';
 
-    return `
-        <div class="relative" id="type-selector-container">
-            <button type="button" id="type-selector-btn" class="w-full text-left shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                ${itemTypes[item.type].label}
-            </button>
-            <div id="type-selector-popup" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg hidden">
-                <input type="text" id="type-filter" class="w-full p-2 border-b border-gray-300 dark:border-gray-600" placeholder="Filtrar tipos...">
-                <div id="type-list">
-                    ${optionsHTML}
-                </div>
-            </div>
-        </div>
-    `;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'type-selector-btn';
+    button.className = 'w-full text-left shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+    button.textContent = itemTypes[item.type].label;
+    container.appendChild(button);
+
+    const popup = document.createElement('div');
+    popup.id = 'type-selector-popup';
+    popup.className = 'absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg hidden';
+
+    const filterInput = document.createElement('input');
+    filterInput.type = 'text';
+    filterInput.id = 'type-filter';
+    filterInput.className = 'w-full p-2 border-b border-gray-300 dark:border-gray-600';
+    filterInput.placeholder = 'Filtrar tipos...';
+    popup.appendChild(filterInput);
+
+    const typeList = document.createElement('div');
+    typeList.id = 'type-list';
+
+    availableTypes.forEach(type => {
+        const option = document.createElement('div');
+        option.className = 'p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
+        option.dataset.type = type.name;
+        option.textContent = type.label;
+        typeList.appendChild(option);
+    });
+
+    popup.appendChild(typeList);
+    container.appendChild(popup);
+
+    return container;
 }
 
-export async function renderEditFormForItem(item) {
+export async function createEditFormForItem(item) {
     const type = itemTypes[item.type];
 
-    const formHTML = `
-        <div data-id="${item.id}" draggable="false" class="p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500">
-            <form id="edit-item-form-${item.id}">
-                <div class="mb-4">
-                    <label for="item-name" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nome</label>
-                    <input type="text" id="item-name" name="name" value="${item.name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required>
-                </div>
-                <div class="mb-4">
-                    <label for="item-type" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Tipo</label>
-                    <div id="item-type-selector-${item.id}">${renderTypeSelector(item)}</div>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Valor</label>
-                    <div id="item-value-input-${item.id}"></div>
-                </div>
-                <div class="flex items-center justify-end">
-                    <button type="button" id="delete-item-btn-${item.id}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-3 rounded" title="Excluir Item">
-                        ${await loadIcon('trash', { size: 'w-6 h-6' })}
-                    </button>
-                </div>
-            </form>
-        </div>`;
+    const container = document.createElement('div');
+    container.dataset.id = item.id;
+    container.draggable = false;
+    container.className = 'p-4 bg-blue-50 rounded-lg shadow-lg dark:bg-gray-800 border border-blue-500';
 
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = formHTML;
+    const form = document.createElement('form');
+    form.id = `edit-item-form-${item.id}`;
 
-    const valueInputContainer = tempDiv.querySelector(`#item-value-input-${item.id}`);
+    // Name field
+    const nameContainer = document.createElement('div');
+    nameContainer.className = 'mb-4';
+    const nameLabel = document.createElement('label');
+    nameLabel.htmlFor = 'item-name';
+    nameLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
+    nameLabel.textContent = 'Nome';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.id = 'item-name';
+    nameInput.name = 'name';
+    nameInput.value = item.name;
+    nameInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+    nameInput.required = true;
+    nameContainer.appendChild(nameLabel);
+    nameContainer.appendChild(nameInput);
+    form.appendChild(nameContainer);
+
+    // Type field
+    const typeContainer = document.createElement('div');
+    typeContainer.className = 'mb-4';
+    const typeLabel = document.createElement('label');
+    typeLabel.htmlFor = 'item-type';
+    typeLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
+    typeLabel.textContent = 'Tipo';
+    const typeSelectorContainer = document.createElement('div');
+    typeSelectorContainer.id = `item-type-selector-${item.id}`;
+    const typeSelector = createTypeSelector(item);
+    typeSelectorContainer.appendChild(typeSelector);
+    typeContainer.appendChild(typeLabel);
+    typeContainer.appendChild(typeSelectorContainer);
+    form.appendChild(typeContainer);
+
+    // Value field
+    const valueContainer = document.createElement('div');
+    valueContainer.className = 'mb-4';
+    const valueLabel = document.createElement('label');
+    valueLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
+    valueLabel.textContent = 'Valor';
+    const valueInputContainer = document.createElement('div');
+    valueInputContainer.id = `item-value-input-${item.id}`;
     const valueControlElement = type.createEditControl(item);
     valueInputContainer.appendChild(valueControlElement);
+    valueContainer.appendChild(valueLabel);
+    valueContainer.appendChild(valueInputContainer);
+    form.appendChild(valueContainer);
 
-    return tempDiv.firstElementChild;
+    // Delete button
+    const deleteButtonContainer = document.createElement('div');
+    deleteButtonContainer.className = 'flex items-center justify-end';
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.id = `delete-item-btn-${item.id}`;
+    deleteButton.className = 'bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-3 rounded';
+    deleteButton.title = 'Excluir Item';
+    deleteButton.innerHTML = await loadIcon('trash', { size: 'w-6 h-6' });
+    deleteButtonContainer.appendChild(deleteButton);
+    form.appendChild(deleteButtonContainer);
+
+    container.appendChild(form);
+
+    return container;
 }
 
 export function setupEditFormHandlers(item, formElement) {
@@ -98,7 +155,7 @@ export function setupEditFormHandlers(item, formElement) {
             if (newType !== item.type) {
                 const updatedItem = { ...item, type: newType, value: '' }; // Reset value on type change
                 updateItem(updatedItem).then(() => {
-                    renderItemTabView(`${item.path}${item.name}`);
+                    displayItemTabView(`${item.path}${item.name}`);
                 });
             }
             typeSelectorPopup.classList.add('hidden');
@@ -156,7 +213,10 @@ export function setupEditFormHandlers(item, formElement) {
                 } else {
                     location.hash = newPath;
                 }
-                await renderBreadcrumb(updatedItem.path, updatedItem.name);
+                const breadcrumbEl = document.getElementById('breadcrumb');
+                const breadcrumbContent = await createBreadcrumb(updatedItem.path, updatedItem.name);
+                breadcrumbEl.innerHTML = '';
+                breadcrumbEl.appendChild(breadcrumbContent);
             }
 
         } catch (error) {
@@ -185,7 +245,7 @@ export function setupEditFormHandlers(item, formElement) {
     });
 }
 
-export async function renderItemDetailView(path) {
+export async function displayItemDetailView(path) {
     const appContainer = document.getElementById('app-container');
     const breadcrumbEl = document.getElementById('breadcrumb');
     
@@ -207,9 +267,11 @@ export async function renderItemDetailView(path) {
         }
 
         breadcrumbEl.style.display = 'block';
-        await renderBreadcrumb(item.path, item.name);
+        const breadcrumbContent = await createBreadcrumb(item.path, item.name);
+        breadcrumbEl.innerHTML = '';
+        breadcrumbEl.appendChild(breadcrumbContent);
 
-        const formElement = await renderEditFormForItem(item);
+        const formElement = await createEditFormForItem(item);
         const wrapperDiv = document.createElement('div');
         wrapperDiv.className = 'p-4 bg-white rounded-lg shadow dark:bg-gray-800';
         wrapperDiv.appendChild(formElement);
@@ -223,7 +285,7 @@ export async function renderItemDetailView(path) {
         }
 
     } catch (error) {
-        console.error('Failed to render item detail view:', error);
+        console.error('Failed to display item detail view:', error);
         appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
     }
 }
@@ -232,7 +294,7 @@ function isLandscapeMode() {
     return window.innerWidth > window.innerHeight && window.innerWidth >= 768;
 }
 
-export async function renderItemTabView(path) {
+export async function displayItemTabView(path) {
     const appContainer = document.getElementById('app-container');
     const breadcrumbEl = document.getElementById('breadcrumb');
     
@@ -254,9 +316,10 @@ export async function renderItemTabView(path) {
         }
 
         breadcrumbEl.style.display = 'block';
-        await renderBreadcrumb(item.path, item.name);
+        const breadcrumbContent = await createBreadcrumb(item.path, item.name);
+        breadcrumbEl.innerHTML = '';
+        breadcrumbEl.appendChild(breadcrumbContent);
 
-        // Get current view from app state
         const { getCurrentView } = await import('../app.js');
         const currentView = getCurrentView();
         
@@ -264,95 +327,108 @@ export async function renderItemTabView(path) {
         const isListActive = currentView === 'list';
         const isTextActive = currentView === 'text';
 
+        appContainer.innerHTML = ''; // Clear existing content
+
         if (isLandscape) {
-            // Side-by-side layout for landscape mode
-            const sideLayoutHTML = `
-                <div class="mb-4">
-                    <div class="grid grid-cols-2 gap-6">
-                        <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
-                            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
-                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
-                                Lista
-                            </h3>
-                            <div id="item-form-content"></div>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800">
-                            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
-                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
-                                Texto
-                            </h3>
-                            <div id="item-text-content"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            const layoutContainer = document.createElement('div');
+            layoutContainer.className = 'mb-4';
+
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-2 gap-6';
+
+            // Form View
+            const formContainer = document.createElement('div');
+            formContainer.className = 'bg-white p-4 rounded-lg shadow dark:bg-gray-800';
+            const formHeader = document.createElement('h3');
+            formHeader.className = 'text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center';
+            formHeader.innerHTML = `${await loadIcon('list', { size: 'w-5 h-5 mr-2' })} Lista`;
+            const formContent = document.createElement('div');
+            formContent.id = 'item-form-content';
+            formContainer.appendChild(formHeader);
+            formContainer.appendChild(formContent);
+
+            // Text View
+            const textContainer = document.createElement('div');
+            textContainer.className = 'bg-white p-4 rounded-lg shadow dark:bg-gray-800';
+            const textHeader = document.createElement('h3');
+            textHeader.className = 'text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center';
+            textHeader.innerHTML = `${await loadIcon('code', { size: 'w-5 h-5 mr-2' })} Texto`;
+            const textContent = document.createElement('div');
+            textContent.id = 'item-text-content';
+            textContainer.appendChild(textHeader);
+            textContainer.appendChild(textContent);
+
+            grid.appendChild(formContainer);
+            grid.appendChild(textContainer);
+            layoutContainer.appendChild(grid);
+            appContainer.appendChild(layoutContainer);
             
-            appContainer.innerHTML = sideLayoutHTML;
-            
-            // Render both views
-            await renderItemFormContent(item, 'item-form-content');
-            await renderItemTextContent(item, 'item-text-content');
+            await displayItemFormContent(item, 'item-form-content');
+            await displayItemTextContent(item, 'item-text-content');
             
         } else {
-            // Tab layout for portrait mode
-            const tabsHTML = `
-                <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
-                    <ul class="flex -mb-px text-sm font-medium text-center">
-                        <li class="flex-1">
-                            <button id="list-tab-btn" class="inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
-                                ${await loadIcon('list', { size: 'w-5 h-5 mr-2' })}
-                                Lista
-                            </button>
-                        </li>
-                        <li class="flex-1">
-                            <button id="text-tab-btn" class="inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}">
-                                ${await loadIcon('code', { size: 'w-5 h-5 mr-2' })}
-                                Texto
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-                <div id="tab-content"></div>
-            `;
+            const tabsContainer = document.createElement('div');
+            tabsContainer.className = 'mb-4 border-b border-gray-200 dark:border-gray-700';
 
-            appContainer.innerHTML = tabsHTML;
-            const tabContent = document.getElementById('tab-content');
+            const tabList = document.createElement('ul');
+            tabList.className = 'flex -mb-px text-sm font-medium text-center';
+
+            const listTabItem = document.createElement('li');
+            listTabItem.className = 'flex-1';
+            const listTabBtn = document.createElement('button');
+            listTabBtn.id = 'list-tab-btn';
+            listTabBtn.className = `inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}`;
+            listTabBtn.innerHTML = `${await loadIcon('list', { size: 'w-5 h-5 mr-2' })} Lista`;
+            listTabItem.appendChild(listTabBtn);
+
+            const textTabItem = document.createElement('li');
+            textTabItem.className = 'flex-1';
+            const textTabBtn = document.createElement('button');
+            textTabBtn.id = 'text-tab-btn';
+            textTabBtn.className = `inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}`;
+            textTabBtn.innerHTML = `${await loadIcon('code', { size: 'w-5 h-5 mr-2' })} Texto`;
+            textTabItem.appendChild(textTabBtn);
+
+            tabList.appendChild(listTabItem);
+            tabList.appendChild(textTabItem);
+            tabsContainer.appendChild(tabList);
+
+            const tabContent = document.createElement('div');
+            tabContent.id = 'tab-content';
+
+            appContainer.appendChild(tabsContainer);
+            appContainer.appendChild(tabContent);
 
             if (isListActive) {
-                await renderItemFormContent(item, 'tab-content');
+                await displayItemFormContent(item, 'tab-content');
             } else {
-                await renderItemTextContent(item, 'tab-content');
+                await displayItemTextContent(item, 'tab-content');
             }
 
-            // Add tab event listeners
-            const listTabBtn = document.getElementById('list-tab-btn');
-            const textTabBtn = document.getElementById('text-tab-btn');
-            if (listTabBtn && textTabBtn) {
-                const { setCurrentView, getCurrentView } = await import('../app.js');
-                listTabBtn.addEventListener('click', () => {
-                    if (getCurrentView() !== 'list') {
-                        setCurrentView('list');
-                        renderItemTabView(path);
-                    }
-                });
-                textTabBtn.addEventListener('click', () => {
-                    if (getCurrentView() !== 'text') {
-                        setCurrentView('text');
-                        renderItemTabView(path);
-                    }
-                });
-            }
+            const { setCurrentView, getCurrentView } = await import('../app.js');
+            listTabBtn.addEventListener('click', () => {
+                if (getCurrentView() !== 'list') {
+                    setCurrentView('list');
+                    displayItemTabView(path);
+                }
+            });
+            textTabBtn.addEventListener('click', () => {
+                if (getCurrentView() !== 'text') {
+                    setCurrentView('text');
+                    displayItemTabView(path);
+                }
+            });
         }
 
     } catch (error) {
-        console.error('Failed to render item tab view:', error);
+        console.error('Failed to display item tab view:', error);
         appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar o item.</p>`;
     }
 }
 
-async function renderItemFormContent(item, containerId) {
+async function displayItemFormContent(item, containerId) {
     const container = document.getElementById(containerId);
-    const formElement = await renderEditFormForItem(item);
+    const formElement = await createEditFormForItem(item);
     container.innerHTML = '';
     container.appendChild(formElement);
     
@@ -362,21 +438,30 @@ async function renderItemFormContent(item, containerId) {
     }
 }
 
-async function renderItemTextContent(item, containerId) {
+async function displayItemTextContent(item, containerId) {
     const container = document.getElementById(containerId);
-    
-    const textContentHTML = `
-        <div class="bg-gray-100 p-4 rounded dark:bg-gray-700">
-            <h4 class="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Formato de Texto:</h4>
-            <pre class="bg-white p-3 rounded border text-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"><code id="item-text-${item.id}">Carregando...</code></pre>
-        </div>
-    `;
-    container.innerHTML = textContentHTML;
+    container.innerHTML = '';
 
-    const codeBlock = document.getElementById(`item-text-${item.id}`);
+    const textContentContainer = document.createElement('div');
+    textContentContainer.className = 'bg-gray-100 p-4 rounded dark:bg-gray-700';
+
+    const header = document.createElement('h4');
+    header.className = 'text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300';
+    header.textContent = 'Formato de Texto:';
+    textContentContainer.appendChild(header);
+
+    const pre = document.createElement('pre');
+    pre.className = 'bg-white p-3 rounded border text-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200';
+
+    const codeBlock = document.createElement('code');
+    codeBlock.id = `item-text-${item.id}`;
+    codeBlock.textContent = 'Carregando...';
+    pre.appendChild(codeBlock);
+    textContentContainer.appendChild(pre);
+
+    container.appendChild(textContentContainer);
     
     try {
-        // Create a minimal items array containing just this item for formatting
         const items = [item];
         const plan = stringify(items, item.path);
         const { getItems } = await import('../db.js');
@@ -389,6 +474,6 @@ async function renderItemTextContent(item, containerId) {
         });
     } catch (error) {
         codeBlock.textContent = `Erro ao gerar o texto: ${error.message}`;
-        console.error("Error rendering item text:", error);
+        console.error("Error displaying item text:", error);
     }
 }
