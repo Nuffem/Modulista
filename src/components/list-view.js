@@ -19,40 +19,35 @@ function debounce(func, wait) {
 
 export async function createItemRow(item) {
     const isList = item.type === TYPE_LIST;
-    const itemUrl = isList ? `#${item.path}${item.name}/` : `javascript:void(0);`;
+    const isTextOrNumber = item.type === 'text' || item.type === 'number';
     const type = itemTypes[item.type];
 
     const li = document.createElement('li');
     li.dataset.id = item.id;
     li.draggable = true;
-    li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
 
-    const a = document.createElement('a');
-    a.href = itemUrl;
-    a.className = 'flex items-center grow';
-    if (!isList) {
-        a.style.cursor = 'default';
-    }
+    let controlsContainer;
 
-    const iconContainer = document.createElement('div');
-    iconContainer.className = 'mr-4';
-    iconContainer.innerHTML = await loadIcon(type.icon);
-    a.appendChild(iconContainer);
+    if (isTextOrNumber) {
+        li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-start dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
 
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'font-semibold';
-    nameSpan.textContent = item.name;
-    a.appendChild(nameSpan);
+        const iconContainer = document.createElement('div');
+        iconContainer.className = 'mr-4 pt-1';
+        iconContainer.innerHTML = await loadIcon(type.icon);
+        li.appendChild(iconContainer);
 
-    li.appendChild(a);
+        const mainContent = document.createElement('div');
+        mainContent.className = 'flex-grow';
 
-    const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'flex items-center';
+        const nameLabel = document.createElement('label');
+        nameLabel.htmlFor = `item-value-${item.id}`;
+        nameLabel.className = 'block text-gray-700 text-sm font-bold mb-1 dark:text-gray-300';
+        nameLabel.textContent = item.name;
+        mainContent.appendChild(nameLabel);
 
-    if (!isList) {
         const valueControl = type.createEditControl(item);
-        valueControl.classList.add('w-32'); // Adjust width as needed
-        controlsContainer.appendChild(valueControl);
+        valueControl.id = `item-value-${item.id}`;
+        mainContent.appendChild(valueControl);
 
         const handleUpdate = debounce(async () => {
             const newValue = type.parseValue(valueControl);
@@ -60,24 +55,76 @@ export async function createItemRow(item) {
                 const updatedItem = { ...item, value: newValue };
                 try {
                     await updateItem(updatedItem);
-                    item.value = newValue; // Update local item state
+                    item.value = newValue;
                 } catch (error) {
                     console.error('Failed to update item:', error);
-                    // Optionally, revert the control to the old value
                     valueControl.value = item.value;
                 }
             }
         }, 500);
 
-        const eventType = valueControl.type === 'checkbox' ? 'change' : 'input';
-        valueControl.addEventListener(eventType, handleUpdate);
+        valueControl.addEventListener('input', handleUpdate);
+        valueControl.addEventListener('click', (e) => e.stopPropagation());
 
-        valueControl.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
+        li.appendChild(mainContent);
+
+        controlsContainer = document.createElement('div');
+        controlsContainer.className = 'flex items-center ml-2';
+        li.appendChild(controlsContainer);
+
+    } else {
+        li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
+
+        const itemUrl = isList ? `#${item.path}${item.name}/` : 'javascript:void(0);';
+
+        const a = document.createElement('a');
+        a.href = itemUrl;
+        a.className = 'flex items-center grow';
+        if (!isList) {
+            a.style.cursor = 'default';
+        }
+
+        const iconContainer = document.createElement('div');
+        iconContainer.className = 'mr-4';
+        iconContainer.innerHTML = await loadIcon(type.icon);
+        a.appendChild(iconContainer);
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'font-semibold';
+        nameSpan.textContent = item.name;
+        a.appendChild(nameSpan);
+
+        li.appendChild(a);
+
+        controlsContainer = document.createElement('div');
+        controlsContainer.className = 'flex items-center';
+
+        if (!isList) { // This is for Boolean
+            const valueControl = type.createEditControl(item);
+            valueControl.classList.add('w-32');
+            controlsContainer.appendChild(valueControl);
+
+            const handleUpdate = debounce(async () => {
+                const newValue = type.parseValue(valueControl);
+                if (JSON.stringify(item.value) !== JSON.stringify(newValue)) {
+                    const updatedItem = { ...item, value: newValue };
+                    try {
+                        await updateItem(updatedItem);
+                        item.value = newValue;
+                    } catch (error) {
+                        console.error('Failed to update item:', error);
+                        valueControl.value = item.value;
+                    }
+                }
+            }, 500);
+
+            const eventType = valueControl.type === 'checkbox' ? 'change' : 'input';
+            valueControl.addEventListener(eventType, handleUpdate);
+            valueControl.addEventListener('click', (e) => e.stopPropagation());
+        }
+        li.appendChild(controlsContainer);
     }
 
-    // Three-dots menu for mobile
     const isMobile = 'ontouchstart' in window;
     if (isMobile) {
         const menuButton = document.createElement('button');
@@ -91,9 +138,6 @@ export async function createItemRow(item) {
         controlsContainer.appendChild(menuButton);
     }
 
-    li.appendChild(controlsContainer);
-
-    // Context menu for desktop
     li.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
