@@ -72,11 +72,18 @@ function toggleContextMenu(event, item, listItemElement) {
     closeAllContextMenus();
     const menu = createContextMenu(item, listItemElement);
 
-    // Position menu at cursor
-    menu.style.top = `${event.clientY}px`;
-    menu.style.left = `${event.clientX}px`;
-
     document.body.appendChild(menu);
+
+    const menuWidth = menu.offsetWidth;
+    const windowWidth = window.innerWidth;
+    let left = event.clientX;
+
+    if (left + menuWidth > windowWidth) {
+        left = windowWidth - menuWidth - 5; // 5px de margem
+    }
+
+    menu.style.top = `${event.clientY}px`;
+    menu.style.left = `${left}px`;
 
     // Close menu when clicking outside
     document.addEventListener('click', closeAllContextMenus, { once: true });
