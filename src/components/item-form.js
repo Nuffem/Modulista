@@ -63,7 +63,7 @@ export async function createInlineTypeSelector() {
 
         const iconSpan = document.createElement('span');
         iconSpan.className = 'mr-2';
-        iconSpan.innerHTML = await loadIcon(type.icon, { size: 'w-5 h-5' });
+        iconSpan.innerHTML = await loadIcon(type.ícone, { size: 'w-5 h-5' });
 
         const labelSpan = document.createElement('span');
         labelSpan.textContent = type.label;
