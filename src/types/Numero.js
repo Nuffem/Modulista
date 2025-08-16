@@ -1,6 +1,6 @@
 export default {
     name: 'number',
-    label: 'Número',
+    rótulo: 'Número',
     icon: 'number',
     createEditControl: (item) => {
         const input = document.createElement('input');

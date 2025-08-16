@@ -1,6 +1,6 @@
 export default  {
     name: 'boolean',
-    label: 'Lógico',
+    rótulo: 'Lógico',
     icon: 'boolean',
     createEditControl: (item) => {
         const checkbox = document.createElement('input');
