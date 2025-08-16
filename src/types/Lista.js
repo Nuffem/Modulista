@@ -1,6 +1,6 @@
 export default {
     name: 'list',
-    label: 'Lista',
+    rótulo: 'Lista',
     ícone: 'list-square',
     createEditControl: (item) => {
         const p = document.createElement('p');
