@@ -247,12 +247,12 @@ function escapeText(text) {
 }
 
 function stringifyValue(item, indentLevel, currentPath) {
-    if (item.type === 'list') {
+    if (item.type === itemTypes.LIST.type) {
         const listPath = `${currentPath}${item.name}/`;
         return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
     }
 
-    if (item.type === 'text') {
+    if (item.type === itemTypes.TEXT.type) {
         return `"${escapeText(item.value)}"`;
     }
 

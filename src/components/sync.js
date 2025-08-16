@@ -1,5 +1,5 @@
 import { getItems, addItem, updateItem, deleteItem } from '../db.js';
-import { TYPE_TEXT, TYPE_NUMBER, TYPE_BOOLEAN, TYPE_LIST } from '../types.js';
+import { itemTypes } from '../types.js';
 
 export async function syncItems(path, parsedObject) {
     const existingItems = await getItems(path);
@@ -15,10 +15,10 @@ export async function syncItems(path, parsedObject) {
         const valueType = typeof value;
 
         let type;
-        if (valueType === 'string') type = TYPE_TEXT;
-        else if (valueType === 'number') type = TYPE_NUMBER;
-        else if (valueType === 'boolean') type = TYPE_BOOLEAN;
-        else if (valueType === 'object' && value !== null) type = TYPE_LIST;
+        if (valueType === 'string') type = itemTypes.TEXT.type;
+        else if (valueType === 'number') type = itemTypes.NUMBER.type;
+        else if (valueType === 'boolean') type = itemTypes.BOOLEAN.type;
+        else if (valueType === 'object' && value !== null) type = itemTypes.LIST.type;
         else {
             console.warn(`Unsupported value type for ${name}: ${valueType}`);
             continue;
@@ -26,17 +26,17 @@ export async function syncItems(path, parsedObject) {
 
         if (existingItem) {
             // Item exists, check for updates
-            if (existingItem.type === TYPE_LIST && type === TYPE_LIST) {
+            if (existingItem.type === itemTypes.LIST.type && type === itemTypes.LIST.type) {
                 // Recurse for lists
                 promises.push(syncItems(`${path}${name}/`, value));
-            } else if (existingItem.type !== TYPE_LIST && type !== TYPE_LIST && existingItem.value !== value) {
+            } else if (existingItem.type !== itemTypes.LIST.type && type !== itemTypes.LIST.type && existingItem.value !== value) {
                 // Value changed, update it
                 const updatedItem = { ...existingItem, value, type };
                 promises.push(updateItem(updatedItem));
             } else if (existingItem.type !== type) {
                 // Type changed. This is more complex. For now, let's delete and re-add.
                 promises.push(deleteItem(existingItem.id).then(() => {
-                    const newItem = { path, name, type, value: type === TYPE_LIST ? '' : value };
+                    const newItem = { path, name, type, value: type === itemTypes.LIST.type ? '' : value };
                     return addItem(newItem);
                 }));
             }
@@ -46,10 +46,10 @@ export async function syncItems(path, parsedObject) {
                 path,
                 name,
                 type,
-                value: type === TYPE_LIST ? '' : value,
+                value: type === itemTypes.LIST.type ? '' : value,
             };
             promises.push(addItem(newItem).then((id) => {
-                if (type === TYPE_LIST) {
+                if (type === itemTypes.LIST.type) {
                     return syncItems(`${path}${name}/`, value);
                 }
             }));
@@ -60,7 +60,7 @@ export async function syncItems(path, parsedObject) {
     for (const [name, item] of existingItemsMap.entries()) {
         if (!parsedKeys.has(name)) {
             // Before deleting a list, we must delete all its children
-            if (item.type === TYPE_LIST) {
+            if (item.type === itemTypes.LIST.type) {
                 promises.push(deleteListRecursive(`${path}${name}/`).then(() => deleteItem(item.id)));
             } else {
                 promises.push(deleteItem(item.id));
@@ -75,7 +75,7 @@ export async function deleteListRecursive(path) {
     const items = await getItems(path);
     const promises = [];
     for (const item of items) {
-        if (item.type === 'list') {
+        if (item.type === itemTypes.LIST.type) {
             promises.push(deleteListRecursive(`${path}${item.name}/`));
         }
         promises.push(deleteItem(item.id));

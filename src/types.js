@@ -3,16 +3,16 @@ import { TextType } from './types/TextType.js';
 import { NumberType } from './types/NumberType.js';
 import { BooleanType } from './types/BooleanType.js';
 
-export const TYPE_LIST = 'list';
-export const TYPE_TEXT = 'text';
-export const TYPE_NUMBER = 'number';
-export const TYPE_BOOLEAN = 'boolean';
-
 export const itemTypes = {
-    [TYPE_LIST]: ListType,
-    [TYPE_TEXT]: TextType,
-    [TYPE_NUMBER]: NumberType,
-    [TYPE_BOOLEAN]: BooleanType,
+    LIST: ListType,
+    TEXT: TextType,
+    NUMBER: NumberType,
+    BOOLEAN: BooleanType,
 };
+
+// Add a 'type' property to each type object
+for (const key in itemTypes) {
+    itemTypes[key].type = key;
+}
 
 export const availableTypes = Object.values(itemTypes);

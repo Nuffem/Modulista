@@ -1,6 +1,6 @@
 import { loadIcon } from '../icon-loader.js';
 import { getItems, updateItemsOrder, updateItem, deleteItem } from '../db.js';
-import { itemTypes, TYPE_LIST, TYPE_BOOLEAN } from '../types.js';
+import { itemTypes } from '../types.js';
 import { createBreadcrumb } from './breadcrumb.js';
 import { displayTextContent } from './text-view.js';
 
@@ -18,8 +18,8 @@ function debounce(func, wait) {
 }
 
 export async function createItemRow(item) {
-    const isList = item.type === TYPE_LIST;
-    const isTextOrNumber = item.type === 'text' || item.type === 'number';
+    const isList = item.type === itemTypes.LIST.type;
+    const isTextOrNumber = item.type === itemTypes.TEXT.type || item.type === itemTypes.NUMBER.type;
     const type = itemTypes[item.type];
 
     const li = document.createElement('li');
@@ -144,7 +144,7 @@ export async function createItemRow(item) {
         toggleContextMenu(e, item, li);
     });
 
-    if (item.type === TYPE_BOOLEAN) {
+    if (item.type === itemTypes.BOOLEAN.type) {
         li.addEventListener('click', (e) => {
             // Avoid interfering with other interactions like context menu
             if (e.button !== 0) return;

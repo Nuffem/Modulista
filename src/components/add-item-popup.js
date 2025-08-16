@@ -1,5 +1,5 @@
 import { addItem } from '../db.js';
-import { itemTypes, TYPE_TEXT, TYPE_LIST } from '../types.js';
+import { itemTypes } from '../types.js';
 import { createInlineTypeSelector } from './item-form.js';
 import { displayListView } from './list-view.js';
 
@@ -89,7 +89,7 @@ export async function showAddItemPopup(path, suggestedName) {
     popupInstance = popup;
 
     // Setup type selector handlers
-    let selectedType = TYPE_LIST;
+    let selectedType = itemTypes.LIST.type;
 
     const typeList = popup.querySelector('#type-list');
     const typeOptions = Array.from(typeList.children);
@@ -146,7 +146,7 @@ export async function showAddItemPopup(path, suggestedName) {
         try {
             const newItem = await addItem(newItemData);
             closePopup();
-            if (selectedType === TYPE_LIST) {
+            if (selectedType === itemTypes.LIST.type) {
                 location.hash = `#${newItem.path}${newItem.name}`;
             } else {
                 displayListView(path);

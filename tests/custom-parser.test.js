@@ -1,4 +1,5 @@
 import { parse, stringify } from '../src/custom-parser.js';
+import { itemTypes } from '../src/types.js';
 
 describe('parse', () => {
     test('should parse an empty list', () => {
@@ -59,7 +60,7 @@ describe('stringify', () => {
     });
 
     test('should stringify a list with a single text item', () => {
-        const items = [{ name: 'name', type: 'text', value: 'John' }];
+        const items = [{ name: 'name', type: itemTypes.TEXT.type, value: 'John' }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -69,7 +70,7 @@ describe('stringify', () => {
     });
 
     test('should stringify a list with a single number item', () => {
-        const items = [{ name: 'age', type: 'number', value: 30 }];
+        const items = [{ name: 'age', type: itemTypes.NUMBER.type, value: 30 }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -79,7 +80,7 @@ describe('stringify', () => {
     });
 
     test('should stringify a list with a single boolean item (true)', () => {
-        const items = [{ name: 'is_active', type: 'boolean', value: true }];
+        const items = [{ name: 'is_active', type: itemTypes.BOOLEAN.type, value: true }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -89,7 +90,7 @@ describe('stringify', () => {
     });
 
     test('should stringify a list with a single boolean item (false)', () => {
-        const items = [{ name: 'is_active', type: 'boolean', value: false }];
+        const items = [{ name: 'is_active', type: itemTypes.BOOLEAN.type, value: false }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -100,9 +101,9 @@ describe('stringify', () => {
 
     test('should stringify a list with multiple items', () => {
         const items = [
-            { name: 'name', type: 'text', value: 'John' },
-            { name: 'age', type: 'number', value: 30 },
-            { name: 'is_active', type: 'boolean', value: true },
+            { name: 'name', type: itemTypes.TEXT.type, value: 'John' },
+            { name: 'age', type: itemTypes.NUMBER.type, value: 30 },
+            { name: 'is_active', type: itemTypes.BOOLEAN.type, value: true },
         ];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
@@ -118,7 +119,7 @@ describe('stringify', () => {
 
     test('should stringify a list with a nested list', () => {
         const items = [
-            { name: 'user', type: 'list', value: 'user/' },
+            { name: 'user', type: itemTypes.LIST.type, value: 'user/' },
         ];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
@@ -132,7 +133,7 @@ describe('stringify', () => {
     });
 
     test('should escape special characters in text values', () => {
-        const items = [{ name: 'text', type: 'text', value: 'a"b\\c' }];
+        const items = [{ name: 'text', type: itemTypes.TEXT.type, value: 'a"b\\c' }];
         const plan = stringify(items, 'some/path/');
         expect(plan).toEqual({
             prefix: '{\n',
@@ -145,7 +146,7 @@ describe('stringify', () => {
         const items = [
             {
                 name: 'result',
-                type: 'number',
+                type: itemTypes.NUMBER.type,
                 value: 8,
             },
         ];
