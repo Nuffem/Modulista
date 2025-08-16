@@ -1,7 +1,7 @@
 export default {
     name: 'text',
     label: 'Texto',
-    icon: 'texto',
+    ícone: 'texto',
     createEditControl: (item) => {
         const input = document.createElement('input');
         input.type = 'text';
