@@ -10,7 +10,7 @@ export function createTypeSelector(item) {
     button.type = 'button';
     button.id = 'type-selector-btn';
     button.className = 'w-full text-left shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
-    button.textContent = itemTypes[item.type].label;
+    button.textContent = itemTypes[item.type].rótulo;
     container.appendChild(button);
 
     const popup = document.createElement('div');
@@ -31,7 +31,7 @@ export function createTypeSelector(item) {
         const option = document.createElement('div');
         option.className = 'p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
         option.dataset.type = type.name;
-        option.textContent = type.label;
+        option.textContent = type.rótulo;
         typeList.appendChild(option);
     });
 
@@ -66,7 +66,7 @@ export async function createInlineTypeSelector() {
         iconSpan.innerHTML = await loadIcon(type.icon, { size: 'w-5 h-5' });
 
         const labelSpan = document.createElement('span');
-        labelSpan.textContent = type.label;
+        labelSpan.textContent = type.rótulo;
 
         option.appendChild(iconSpan);
         option.appendChild(labelSpan);
