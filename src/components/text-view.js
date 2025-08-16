@@ -28,20 +28,20 @@ export async function displayTextContent(path, items, containerId = 'text-conten
     loadBtn.id = `load-from-device-btn-${containerId}`;
     loadBtn.title = 'Carregar do dispositivo';
     loadBtn.className = 'bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700';
-    loadBtn.innerHTML = await loadIcon('upload', { size: 'w-6 h-6' });
+    loadBtn.innerHTML = await loadIcon('carregar', { size: 'w-6 h-6' });
     displayButtons.appendChild(loadBtn);
 
     const saveBtn = document.createElement('button');
     saveBtn.id = `save-to-device-btn-${containerId}`;
     saveBtn.title = 'Salvar no dispositivo';
     saveBtn.className = 'bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700';
-    saveBtn.innerHTML = await loadIcon('download', { size: 'w-6 h-6' });
+    saveBtn.innerHTML = await loadIcon('baixar', { size: 'w-6 h-6' });
     displayButtons.appendChild(saveBtn);
 
     const editBtn = document.createElement('button');
     editBtn.id = `edit-text-btn-${containerId}`;
     editBtn.className = 'bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-600 dark:hover:bg-blue-700';
-    editBtn.innerHTML = await loadIcon('pencil', { size: 'w-6 h-6' });
+    editBtn.innerHTML = await loadIcon('lapis', { size: 'w-6 h-6' });
     displayButtons.appendChild(editBtn);
     textDisplay.appendChild(displayButtons);
 
@@ -61,13 +61,13 @@ export async function displayTextContent(path, items, containerId = 'text-conten
     const saveEditBtn = document.createElement('button');
     saveEditBtn.id = `save-text-btn-${containerId}`;
     saveEditBtn.className = 'bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded dark:bg-green-600 dark:hover:bg-green-700';
-    saveEditBtn.innerHTML = await loadIcon('check', { size: 'w-6 h-6' });
+    saveEditBtn.innerHTML = await loadIcon('verificar', { size: 'w-6 h-6' });
     editButtons.appendChild(saveEditBtn);
 
     const cancelEditBtn = document.createElement('button');
     cancelEditBtn.id = `cancel-text-btn-${containerId}`;
     cancelEditBtn.className = 'bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded dark:bg-gray-600 dark:hover:bg-gray-700';
-    cancelEditBtn.innerHTML = await loadIcon('x', { size: 'w-6 h-6' });
+    cancelEditBtn.innerHTML = await loadIcon('fechar', { size: 'w-6 h-6' });
     editButtons.appendChild(cancelEditBtn);
     textEdit.appendChild(editButtons);
 

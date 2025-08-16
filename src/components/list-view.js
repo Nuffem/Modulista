@@ -129,7 +129,7 @@ export async function createItemRow(item) {
     if (isMobile) {
         const menuButton = document.createElement('button');
         menuButton.className = 'p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600';
-        menuButton.innerHTML = await loadIcon('three-dots-vertical', { size: 'w-6 h-6' });
+        menuButton.innerHTML = await loadIcon('tres-pontos-vertical', { size: 'w-6 h-6' });
         menuButton.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -194,7 +194,7 @@ async function createContextMenu(item, listItemElement) {
     const renameLink = document.createElement('a');
     renameLink.href = '#';
     renameLink.className = 'flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600';
-    renameLink.innerHTML = await loadIcon('pencil', { size: 'w-4 h-4 mr-2' }) + 'Renomear';
+    renameLink.innerHTML = await loadIcon('lapis', { size: 'w-4 h-4 mr-2' }) + 'Renomear';
     renameLink.addEventListener('click', (e) => {
         e.preventDefault();
         handleRenameItem(item);
@@ -208,7 +208,7 @@ async function createContextMenu(item, listItemElement) {
     const deleteLink = document.createElement('a');
     deleteLink.href = '#';
     deleteLink.className = 'flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600';
-    deleteLink.innerHTML = await loadIcon('trash', { size: 'w-4 h-4 mr-2' }) + 'Excluir';
+    deleteLink.innerHTML = await loadIcon('lixeira', { size: 'w-4 h-4 mr-2' }) + 'Excluir';
     deleteLink.addEventListener('click', (e) => {
         e.preventDefault();
         handleDeleteItem(item);
@@ -279,7 +279,7 @@ export async function displayListContent(path, items, containerId = 'list-conten
     const addButton = document.createElement('button');
     addButton.dataset.testid = 'add-item-button';
     addButton.className = 'fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800';
-    addButton.innerHTML = await loadIcon('plus', { size: 'w-8 h-8' });
+    addButton.innerHTML = await loadIcon('mais', { size: 'w-8 h-8' });
     addButton.onclick = () => handleAddItemClick(path);
     container.appendChild(addButton);
 }
@@ -415,7 +415,7 @@ export async function displayListView(path) {
             listContainer.className = 'bg-white p-4 rounded-lg shadow dark:bg-gray-800';
             const listHeader = document.createElement('h3');
             listHeader.className = 'text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center';
-            listHeader.innerHTML = `${await loadIcon('list', { size: 'w-5 h-5 mr-2' })} Lista`;
+            listHeader.innerHTML = `${await loadIcon('lista', { size: 'w-5 h-5 mr-2' })} Lista`;
             const listContent = document.createElement('div');
             listContent.id = 'list-content';
             listContainer.appendChild(listHeader);
@@ -425,7 +425,7 @@ export async function displayListView(path) {
             textContainer.className = 'bg-white p-4 rounded-lg shadow dark:bg-gray-800';
             const textHeader = document.createElement('h3');
             textHeader.className = 'text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center';
-            textHeader.innerHTML = `${await loadIcon('code', { size: 'w-5 h-5 mr-2' })} Texto`;
+            textHeader.innerHTML = `${await loadIcon('codigo', { size: 'w-5 h-5 mr-2' })} Texto`;
             const textContentEl = document.createElement('div');
             textContentEl.id = 'text-content';
             textContainer.appendChild(textHeader);
@@ -451,7 +451,7 @@ export async function displayListView(path) {
             const listTabBtn = document.createElement('button');
             listTabBtn.id = 'list-tab-btn';
             listTabBtn.className = `inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isListActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}`;
-            listTabBtn.innerHTML = `${await loadIcon('list', { size: 'w-5 h-5 mr-2' })} Lista`;
+            listTabBtn.innerHTML = `${await loadIcon('lista', { size: 'w-5 h-5 mr-2' })} Lista`;
             listTabItem.appendChild(listTabBtn);
 
             const textTabItem = document.createElement('li');
@@ -459,7 +459,7 @@ export async function displayListView(path) {
             const textTabBtn = document.createElement('button');
             textTabBtn.id = 'text-tab-btn';
             textTabBtn.className = `inline-flex justify-center w-full items-center p-4 border-b-2 rounded-t-lg group ${isTextActive ? 'text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-700'}`;
-            textTabBtn.innerHTML = `${await loadIcon('code', { size: 'w-5 h-5 mr-2' })} Texto`;
+            textTabBtn.innerHTML = `${await loadIcon('codigo', { size: 'w-5 h-5 mr-2' })} Texto`;
             textTabItem.appendChild(textTabBtn);
 
             tabList.appendChild(listTabItem);

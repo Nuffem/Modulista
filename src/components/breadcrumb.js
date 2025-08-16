@@ -9,7 +9,7 @@ export async function createBreadcrumb() {
 
     const homeButton = document.createElement('button');
     homeButton.className = 'bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded';
-    homeButton.innerHTML = await loadIcon('home', { size: 'w-5 h-5' });
+    homeButton.innerHTML = await loadIcon('inicio', { size: 'w-5 h-5' });
     homeButton.onclick = () => location.hash = '/';
     container.appendChild(homeButton);
 

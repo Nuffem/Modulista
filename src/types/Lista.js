@@ -1,7 +1,7 @@
 export default {
     name: 'list',
     label: 'Lista',
-    icon: 'list-square',
+    icon: 'lista-quadrada',
     createEditControl: (item) => {
         const p = document.createElement('p');
         p.className = 'text-gray-500';
