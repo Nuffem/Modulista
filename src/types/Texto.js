@@ -1,25 +1,20 @@
-import { loadIcon } from '../icon-loader.js';
-
-export const NumberType = {
-    name: 'number',
-    label: 'Número',
-    icon: 'number',
+export default {
+    name: 'text',
+    label: 'Texto',
+    icon: 'text',
     createEditControl: (item) => {
         const input = document.createElement('input');
-        input.type = 'number';
+        input.type = 'text';
         input.id = 'item-value';
         input.name = 'value';
-        input.value = typeof item.value === 'number' ? item.value : 0;
+        input.value = item.value;
         input.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
         return input;
     },
     parseValue: (editControl) => {
-        return Number(editControl.value);
+        return editControl.value;
     },
     formatValueForDisplay: (item) => {
-        if (typeof item.value !== 'number' || isNaN(item.value)) {
-            return '0';
-        }
-        return String(item.value);
+        return item.value;
     },
 };

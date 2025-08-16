@@ -1,13 +1,13 @@
-import { ListType } from './types/ListType.js';
-import { TextType } from './types/TextType.js';
-import { NumberType } from './types/NumberType.js';
-import { BooleanType } from './types/BooleanType.js';
+import Lista from './types/Lista.js';
+import Texto from './types/Texto.js';
+import Número from './types/Número.js';
+import Lógico from './types/Lógico.js';
 
 const types = {
-    ListType,
-    TextType,
-    NumberType,
-    BooleanType,
+    Lista,
+    Texto,
+    Número,
+    Lógico,
 };
 
 export const itemTypes = Object.fromEntries(

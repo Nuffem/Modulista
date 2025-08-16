@@ -1,6 +1,4 @@
-import { loadIcon } from '../icon-loader.js';
-
-export const BooleanType = {
+export default  {
     name: 'boolean',
     label: 'Lógico',
     icon: 'boolean',
