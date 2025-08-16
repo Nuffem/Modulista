@@ -1,7 +1,7 @@
 export default {
     name: 'list',
     rótulo: 'Lista',
-    icon: 'list-square',
+    ícone: 'list-square',
     createEditControl: (item) => {
         const p = document.createElement('p');
         p.className = 'text-gray-500';
