@@ -1,6 +1,4 @@
-import { loadIcon } from '../icon-loader.js';
-
-export const ListType = {
+export default {
     name: 'list',
     label: 'Lista',
     icon: 'list-square',
