@@ -1,6 +1,6 @@
 import { loadIcon } from '../icon-loader.js';
 import { getItems, updateItemsOrder, updateItem, deleteItem } from '../db.js';
-import { itemTypes, TYPE_LIST, TYPE_BOOLEAN } from '../types/index.js';
+import { itemTypes, TYPE_LIST, TYPE_BOOLEAN } from '../types.js';
 import { createBreadcrumb } from './breadcrumb.js';
 import { displayTextContent } from './text-view.js';
 

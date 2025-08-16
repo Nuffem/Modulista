@@ -1,5 +1,5 @@
 import { getItems, addItem, updateItem, deleteItem } from '../db.js';
-import { TYPE_TEXT, TYPE_NUMBER, TYPE_BOOLEAN, TYPE_LIST } from '../types/index.js';
+import { TYPE_TEXT, TYPE_NUMBER, TYPE_BOOLEAN, TYPE_LIST } from '../types.js';
 
 export async function syncItems(path, parsedObject) {
     const existingItems = await getItems(path);

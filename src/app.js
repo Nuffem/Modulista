@@ -1,5 +1,5 @@
 import { initDB, getItems, addItem } from './db.js';
-import { TYPE_TEXT } from './types/index.js';
+import { TYPE_TEXT } from './types.js';
 import { router } from './components/router.js';
 import { showAddItemPopup } from './components/add-item-popup.js';
 

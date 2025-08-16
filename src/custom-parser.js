@@ -2,7 +2,7 @@
  * This file contains the logic for parsing and stringifying the custom text format.
  */
 import { getItems } from './db.js';
-import { itemTypes } from './types/index.js';
+import { itemTypes } from './types.js';
 
 class Parser {
   constructor(text) {

@@ -1,4 +1,4 @@
-import { itemTypes, availableTypes } from '../types/index.js';
+import { itemTypes, availableTypes } from '../types.js';
 import { loadIcon } from '../icon-loader.js';
 
 export function createTypeSelector(item) {

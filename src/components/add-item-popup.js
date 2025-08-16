@@ -1,5 +1,5 @@
 import { addItem } from '../db.js';
-import { itemTypes, TYPE_TEXT, TYPE_LIST } from '../types/index.js';
+import { itemTypes, TYPE_TEXT, TYPE_LIST } from '../types.js';
 import { createInlineTypeSelector } from './item-form.js';
 import { displayListView } from './list-view.js';
 
