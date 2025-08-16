@@ -1,7 +1,7 @@
-import { ListType } from './ListType.js';
-import { TextType } from './TextType.js';
-import { NumberType } from './NumberType.js';
-import { BooleanType } from './BooleanType.js';
+import { ListType } from './types/ListType.js';
+import { TextType } from './types/TextType.js';
+import { NumberType } from './types/NumberType.js';
+import { BooleanType } from './types/BooleanType.js';
 
 export const TYPE_LIST = 'list';
 export const TYPE_TEXT = 'text';
