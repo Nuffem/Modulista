@@ -1,6 +1,6 @@
 import { loadIcon } from '../icon-loader.js';
 import { getItems, updateItemsOrder, updateItem, deleteItem } from '../db.js';
-import { itemTypes, TYPE_LIST, TYPE_BOOLEAN } from '../types.js';
+import { itemTypes } from '../types.js';
 import { createBreadcrumb } from './breadcrumb.js';
 import { displayTextContent } from './text-view.js';
 
@@ -18,7 +18,7 @@ function debounce(func, wait) {
 }
 
 export async function createItemRow(item) {
-    const isList = item.type === TYPE_LIST;
+    const isList = item.type === 'list';
     const isTextOrNumber = item.type === 'text' || item.type === 'number';
     const type = itemTypes[item.type];
 
@@ -144,7 +144,7 @@ export async function createItemRow(item) {
         toggleContextMenu(e, item, li);
     });
 
-    if (item.type === TYPE_BOOLEAN) {
+    if (item.type === 'boolean') {
         li.addEventListener('click', (e) => {
             // Avoid interfering with other interactions like context menu
             if (e.button !== 0) return;

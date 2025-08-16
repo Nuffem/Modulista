@@ -1,5 +1,4 @@
 import { initDB, getItems, addItem } from './db.js';
-import { TYPE_TEXT } from './types.js';
 import { router } from './components/router.js';
 import { showAddItemPopup } from './components/add-item-popup.js';
 
@@ -38,7 +37,7 @@ export function createNewItem(path, items) {
     return {
         path,
         name: newName,
-        type: TYPE_TEXT,
+        type: 'text',
         value: ''
     };
 }
