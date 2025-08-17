@@ -140,9 +140,22 @@ Estruturas hierárquicas usando chaves:
 ```bash
 npm test
 ```
-- 31 testes automatizados
-- Cobertura: parser customizado, gerenciamento de itens, operações de banco
-- Ambiente: Jest com fake-indexeddb
+- **Jest**: 31 testes automatizados (parser customizado, gerenciamento de itens, operações de banco)
+- **Playwright**: 4 testes de screenshots e interface (quando browsers disponíveis)
+- **Ambiente**: Jest com fake-indexeddb, Playwright com Chromium
+- **Execução integrada**: Ambos os frameworks executam com um comando
+
+### Testes Individuais
+```bash
+# Apenas testes Jest
+npm run test:jest
+
+# Apenas testes Playwright (requer browsers instalados)
+npm run test:playwright
+
+# Instalar browsers Playwright manualmente
+npx playwright install chromium
+```
 
 ### Estrutura do Projeto
 ```
@@ -150,6 +163,8 @@ npm test
 ├── README.md
 ├── index.html              # Ponto de entrada
 ├── package.json            # Dependências e scripts
+├── scripts/
+│   └── run-all-tests.js   # Script integrado de testes
 ├── src/
 │   ├── app.js             # Lógica principal da aplicação
 │   ├── db.js              # Operações do IndexedDB
@@ -157,7 +172,9 @@ npm test
 │   ├── icon-loader.js     # Sistema de ícones SVG
 │   ├── types/             # Definições dos tipos de dados
 │   └── icons/             # Arquivos de ícone SVG
-├── tests/                 # Suíte de testes Jest
+├── tests/                 # Suíte de testes Jest e Playwright
+│   ├── playwright/        # Testes de interface e screenshots
+│   └── *.test.js         # Testes unitários Jest
 └── .github/
     └── workflows/ci.yml   # GitHub Actions
 ```
@@ -166,7 +183,7 @@ npm test
 - **Frontend**: JavaScript ES modules vanilla
 - **Styling**: Tailwind CSS
 - **Storage**: IndexedDB (navegador)
-- **Testes**: Jest com jsdom
+- **Testes**: Jest com jsdom + Playwright para interface
 - **Build**: Nenhum (executa diretamente do código fonte)
 
 ### Adicionando Novos Recursos
