@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test": "node scripts/run-all-tests.js",
+    "test:jest": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "screenshots": "playwright test tests/playwright/screenshots.spec.js",
