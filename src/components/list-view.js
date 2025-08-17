@@ -25,6 +25,14 @@ export async function createItemRow(item) {
     li.draggable = true;
     li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-start dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
 
+    if (type.navegavelEmLista) {
+        li.classList.replace('cursor-grab', 'cursor-pointer');
+        li.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.hash = `#${item.path}${item.name}/`;
+        });
+    }
+
     const iconContainer = document.createElement('div');
     iconContainer.className = 'mr-4 pt-1';
     iconContainer.innerHTML = await loadIcon(type.ícone);
