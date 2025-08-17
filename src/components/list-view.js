@@ -18,112 +18,46 @@ function debounce(func, wait) {
 }
 
 export async function createItemRow(item) {
-    const isList = item.type === 'list';
-    const isTextOrNumber = item.type === 'text' || item.type === 'number';
     const type = itemTypes[item.type];
 
     const li = document.createElement('li');
     li.dataset.id = item.id;
     li.draggable = true;
+    li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-start dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
 
-    let controlsContainer;
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'mr-4 pt-1';
+    iconContainer.innerHTML = await loadIcon(type.ícone);
+    li.appendChild(iconContainer);
 
-    if (isTextOrNumber) {
-        li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-start dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
+    const mainContent = document.createElement('div');
+    mainContent.className = 'flex-grow';
 
-        const iconContainer = document.createElement('div');
-        iconContainer.className = 'mr-4 pt-1';
-        iconContainer.innerHTML = await loadIcon(type.ícone);
-        li.appendChild(iconContainer);
-
-        const mainContent = document.createElement('div');
-        mainContent.className = 'flex-grow';
-
-        const nameLabel = document.createElement('label');
-        nameLabel.htmlFor = `item-value-${item.id}`;
-        nameLabel.className = 'block text-gray-700 text-sm font-bold mb-1 dark:text-gray-300';
-        nameLabel.textContent = item.name;
-        mainContent.appendChild(nameLabel);
-
-        const valueControl = type.createEditControl(item);
-        valueControl.id = `item-value-${item.id}`;
-        mainContent.appendChild(valueControl);
-
-        const handleUpdate = debounce(async () => {
-            const newValue = type.parseValue(valueControl);
-            if (JSON.stringify(item.value) !== JSON.stringify(newValue)) {
-                const updatedItem = { ...item, value: newValue };
-                try {
-                    await updateItem(updatedItem);
-                    item.value = newValue;
-                } catch (error) {
-                    console.error('Failed to update item:', error);
+    const handleUpdate = debounce(async (valueControl) => {
+        const newValue = type.parseValue(valueControl);
+        if (JSON.stringify(item.value) !== JSON.stringify(newValue)) {
+            const updatedItem = { ...item, value: newValue };
+            try {
+                await updateItem(updatedItem);
+                item.value = newValue;
+            } catch (error) {
+                console.error('Failed to update item:', error);
+                // Restore original value in UI
+                if (valueControl.type === 'checkbox') {
+                    valueControl.checked = item.value;
+                } else {
                     valueControl.value = item.value;
                 }
             }
-        }, 500);
-
-        valueControl.addEventListener('input', handleUpdate);
-        valueControl.addEventListener('click', (e) => e.stopPropagation());
-
-        li.appendChild(mainContent);
-
-        controlsContainer = document.createElement('div');
-        controlsContainer.className = 'flex items-center ml-2';
-        li.appendChild(controlsContainer);
-
-    } else {
-        li.className = 'p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition flex items-center justify-between dark:bg-gray-800 dark:hover:bg-gray-700 cursor-grab';
-
-        const itemUrl = isList ? `#${item.path}${item.name}/` : 'javascript:void(0);';
-
-        const a = document.createElement('a');
-        a.href = itemUrl;
-        a.className = 'flex items-center grow';
-        if (!isList) {
-            a.style.cursor = 'default';
         }
+    }, 500);
 
-        const iconContainer = document.createElement('div');
-        iconContainer.className = 'mr-4';
-        iconContainer.innerHTML = await loadIcon(type.ícone);
-        a.appendChild(iconContainer);
+    type.createListView(mainContent, item, handleUpdate);
+    li.appendChild(mainContent);
 
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'font-semibold';
-        nameSpan.textContent = item.name;
-        a.appendChild(nameSpan);
-
-        li.appendChild(a);
-
-        controlsContainer = document.createElement('div');
-        controlsContainer.className = 'flex items-center';
-
-        if (!isList) { // This is for Boolean
-            const valueControl = type.createEditControl(item);
-            valueControl.classList.add('w-32');
-            controlsContainer.appendChild(valueControl);
-
-            const handleUpdate = debounce(async () => {
-                const newValue = type.parseValue(valueControl);
-                if (JSON.stringify(item.value) !== JSON.stringify(newValue)) {
-                    const updatedItem = { ...item, value: newValue };
-                    try {
-                        await updateItem(updatedItem);
-                        item.value = newValue;
-                    } catch (error) {
-                        console.error('Failed to update item:', error);
-                        valueControl.value = item.value;
-                    }
-                }
-            }, 500);
-
-            const eventType = valueControl.type === 'checkbox' ? 'change' : 'input';
-            valueControl.addEventListener(eventType, handleUpdate);
-            valueControl.addEventListener('click', (e) => e.stopPropagation());
-        }
-        li.appendChild(controlsContainer);
-    }
+    const controlsContainer = document.createElement('div');
+    controlsContainer.className = 'flex items-center ml-2';
+    li.appendChild(controlsContainer);
 
     const isMobile = 'ontouchstart' in window;
     if (isMobile) {
@@ -143,21 +77,6 @@ export async function createItemRow(item) {
         e.stopPropagation();
         toggleContextMenu(e, item, li);
     });
-
-    if (item.type === 'boolean') {
-        li.addEventListener('click', (e) => {
-            // Avoid interfering with other interactions like context menu
-            if (e.button !== 0) return;
-
-            const checkbox = li.querySelector('input[type="checkbox"]');
-            if (checkbox && e.target.tagName !== 'INPUT') {
-                checkbox.checked = !checkbox.checked;
-                // Manually trigger the change event to save the new state
-                const changeEvent = new Event('change', { bubbles: true });
-                checkbox.dispatchEvent(changeEvent);
-            }
-        });
-    }
 
     return li;
 }
