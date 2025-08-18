@@ -8,7 +8,10 @@ test.describe('Modulista Screenshots for PR', () => {
     await page.waitForLoadState('networkidle');
     
     // Wait for any dynamic content to render
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
+    
+    // Wait for essential elements to be loaded
+    await page.waitForSelector('button[title="Adicionar item"]', { state: 'visible' });
     
     // Take full page screenshot with proper CSS styling
     await page.screenshot({ 
@@ -23,16 +26,25 @@ test.describe('Modulista Screenshots for PR', () => {
   test('capture list view with sample data', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
     
     // Add a test item to show functionality
     await page.click('button[title="Adicionar item"]');
+    
+    // Wait for popup to appear
+    await page.waitForSelector('#add-item-popup', { state: 'visible' });
+    
     await page.fill('input[placeholder="Nome do item"]', 'Screenshot Test Item');
-    // Select text type by clicking on the option
+    
+    // Select text type by clicking on the option - wait for it to be available
+    await page.waitForSelector('[data-type="text"]', { state: 'visible' });
     await page.click('[data-type="text"]');
+    
     await page.click('button:has-text("Salvar")');
     
-    // Wait for the item to be added and UI to update
-    await page.waitForTimeout(500);
+    // Wait for the item to be added and popup to close
+    await page.waitForSelector('#add-item-popup', { state: 'hidden' });
+    await page.waitForTimeout(1000);
     
     // Take screenshot of the list view with data
     await page.screenshot({ 
@@ -46,12 +58,21 @@ test.describe('Modulista Screenshots for PR', () => {
   test('capture text view with custom format', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
     
-    // Switch to text view
+    // Switch to text view - wait for tab buttons to be available
+    await page.waitForSelector('button:has-text("Texto")', { state: 'visible' });
     await page.click('button:has-text("Texto")');
     
+    // Wait for text view content to load
+    await page.waitForTimeout(1000);
+    
     // Click edit button to enter edit mode
+    await page.waitForSelector('#edit-text-btn-tab-content', { state: 'visible' });
     await page.click('#edit-text-btn-tab-content');
+    
+    // Wait for text editor to appear
+    await page.waitForSelector('#text-editor-tab-content', { state: 'visible' });
     
     // Add some sample custom format text
     const sampleText = `{
@@ -67,10 +88,13 @@ test.describe('Modulista Screenshots for PR', () => {
 }`;
     
     await page.fill('#text-editor-tab-content', sampleText);
+    
+    // Wait for save button to be available and click it
+    await page.waitForSelector('button[title="Aplicar alterações"]', { state: 'visible' });
     await page.click('button[title="Aplicar alterações"]');
     
-    // Wait for processing
-    await page.waitForTimeout(500);
+    // Wait for processing and view switch
+    await page.waitForTimeout(2000);
     
     // Take screenshot of text view
     await page.screenshot({ 
@@ -87,6 +111,12 @@ test.describe('Modulista Screenshots for PR', () => {
     
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    
+    // Wait for mobile layout to be applied and content to load
+    await page.waitForTimeout(2000);
+    
+    // Wait for essential elements to be loaded
+    await page.waitForSelector('button[title="Adicionar item"]', { state: 'visible' });
     
     // Take mobile screenshot
     await page.screenshot({ 
