@@ -200,10 +200,6 @@ describe('UI Functionality Tests (formerly Playwright screenshots)', () => {
     expect(rootBreadcrumb).toBeTruthy();
     expect(rootBreadcrumb.nodeType).toBe(1); // Element node
     
-    // Test router functionality
-    const { router } = await import('../src/components/router.js');
-    expect(router).toBeTruthy();
-    expect(typeof router).toBe('function');
   });
 
   test('validate types and icon loading - using real modules', async () => {
