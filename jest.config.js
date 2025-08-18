@@ -3,7 +3,6 @@ export default {
   setupFilesAfterEnv: ['./tests/setup-jest.js'],
   transform: {},
   testPathIgnorePatterns: [
-    '/node_modules/',
-    '/tests/playwright/'
+    '/node_modules/'
   ],
 };
