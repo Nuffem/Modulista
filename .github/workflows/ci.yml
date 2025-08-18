@@ -18,6 +18,11 @@ jobs:
         with:
           node-version: '18' # Or the version your project uses
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
       - name: Install dependencies
         run: npm install
 
