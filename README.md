@@ -140,9 +140,9 @@ Estruturas hierárquicas usando chaves:
 ```bash
 npm test
 ```
-- 31 testes automatizados
-- Cobertura: parser customizado, gerenciamento de itens, operações de banco
-- Ambiente: Jest com fake-indexeddb
+- 37 testes automatizados
+- Cobertura: parser customizado, gerenciamento de itens, operações de banco, funcionalidade de UI
+- Ambiente: Jest com fake-indexeddb e jsdom
 
 ### Estrutura do Projeto
 ```
