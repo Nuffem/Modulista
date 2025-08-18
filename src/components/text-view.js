@@ -60,6 +60,7 @@ export async function displayTextContent(path, items, containerId = 'text-conten
 
     const saveEditBtn = document.createElement('button');
     saveEditBtn.id = `save-text-btn-${containerId}`;
+    saveEditBtn.title = 'Aplicar alterações';
     saveEditBtn.className = 'bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded dark:bg-green-600 dark:hover:bg-green-700';
     saveEditBtn.innerHTML = await loadIcon('check', { size: 'w-6 h-6' });
     editButtons.appendChild(saveEditBtn);

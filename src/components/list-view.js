@@ -205,6 +205,7 @@ export async function displayListContent(path, items, containerId = 'list-conten
 
     const addButton = document.createElement('button');
     addButton.dataset.testid = 'add-item-button';
+    addButton.title = 'Adicionar item';
     addButton.className = 'fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800';
     addButton.innerHTML = await loadIcon('plus', { size: 'w-8 h-8' });
     addButton.onclick = () => handleAddItemClick(path);

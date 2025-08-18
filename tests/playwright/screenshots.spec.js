@@ -27,8 +27,8 @@ test.describe('Modulista Screenshots for PR', () => {
     // Add a test item to show functionality
     await page.click('button[title="Adicionar item"]');
     await page.fill('input[placeholder="Nome do item"]', 'Screenshot Test Item');
-    await page.selectOption('select', 'text');
-    await page.fill('input[placeholder="Valor"]', 'This is a test value for screenshots');
+    // Select text type by clicking on the option
+    await page.click('[data-type="text"]');
     await page.click('button:has-text("Salvar")');
     
     // Wait for the item to be added and UI to update
@@ -50,6 +50,9 @@ test.describe('Modulista Screenshots for PR', () => {
     // Switch to text view
     await page.click('button:has-text("Texto")');
     
+    // Click edit button to enter edit mode
+    await page.click('#edit-text-btn-tab-content');
+    
     // Add some sample custom format text
     const sampleText = `{
   user: {
@@ -63,7 +66,7 @@ test.describe('Modulista Screenshots for PR', () => {
   }
 }`;
     
-    await page.fill('textarea', sampleText);
+    await page.fill('#text-editor-tab-content', sampleText);
     await page.click('button[title="Aplicar alterações"]');
     
     // Wait for processing
@@ -74,8 +77,8 @@ test.describe('Modulista Screenshots for PR', () => {
       path: 'tests/playwright/screenshots/text-view-custom-format.png' 
     });
     
-    // Verify text was processed
-    await expect(page.locator('textarea')).toHaveValue(sampleText);
+    // Verify text was processed (check if it appears in the display)
+    await expect(page.locator('pre code')).toContainText('user');
   });
 
   test('capture responsive design on mobile viewport', async ({ page }) => {

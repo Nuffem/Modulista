@@ -44,6 +44,7 @@ export async function showAddItemPopup(path, suggestedName) {
     nameInput.id = 'new-item-name';
     nameInput.name = 'name';
     nameInput.value = suggestedName;
+    nameInput.placeholder = 'Nome do item';
     nameInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
     nameInput.required = true;
     nameContainer.appendChild(nameLabel);
