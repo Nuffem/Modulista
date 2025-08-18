@@ -2,6 +2,7 @@ const typeDefinition = {
     name: 'list',
     rótulo: 'Lista',
     ícone: 'list-square',
+    valueType: 'list', // This item type produces list values
     navegavelEmLista: true,
     createEditControl: (item) => {
         const p = document.createElement('p');

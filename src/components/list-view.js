@@ -4,6 +4,31 @@ import { itemTypes } from '../types.js';
 import { createBreadcrumb } from './breadcrumb.js';
 import { displayTextContent } from './text-view.js';
 
+// Function to evaluate all expressions in a set of items
+async function evaluateExpressions(items, path) {
+    const evaluatedItems = [];
+    
+    for (const item of items) {
+        const type = itemTypes[item.type];
+        const evaluatedItem = { ...item };
+        
+        // If this is an expression type, evaluate it
+        if (type && type.isExpression && type.evaluate) {
+            try {
+                const computedValue = await type.evaluate(item, path);
+                evaluatedItem.computedValue = computedValue;
+            } catch (error) {
+                console.error(`Error evaluating expression ${item.name}:`, error);
+                evaluatedItem.computedValue = 0;
+            }
+        }
+        
+        evaluatedItems.push(evaluatedItem);
+    }
+    
+    return evaluatedItems;
+}
+
 function isLandscapeMode() {
     return window.innerWidth > window.innerHeight && window.innerWidth >= 768;
 }
@@ -207,7 +232,10 @@ export async function displayListContent(path, items, containerId = 'list-conten
     addButton.dataset.testid = 'add-item-button';
     addButton.className = 'fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold w-16 h-16 rounded-full shadow-lg flex items-center justify-center dark:bg-blue-700 dark:hover:bg-blue-800';
     addButton.innerHTML = await loadIcon('plus', { size: 'w-8 h-8' });
-    addButton.onclick = () => handleAddItemClick(path);
+    addButton.onclick = async () => {
+        const { handleAddItemClick } = await import('../app.js');
+        handleAddItemClick(path);
+    };
     container.appendChild(addButton);
 }
 
@@ -321,6 +349,9 @@ export async function displayListView(path) {
 
     try {
         let items = await getItems(path);
+        
+        // Evaluate expressions before displaying
+        items = await evaluateExpressions(items, path);
 
         const { getCurrentView } = await import('../app.js');
         const currentView = getCurrentView();

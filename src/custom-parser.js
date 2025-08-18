@@ -247,6 +247,14 @@ function escapeText(text) {
 }
 
 function stringifyValue(item, indentLevel, currentPath) {
+    const type = itemTypes[item.type];
+    
+    // Handle expression types - they behave like lists in text format
+    if (type && type.isExpression) {
+        const listPath = `${currentPath}${item.name}/`;
+        return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
+    }
+    
     if (item.type === 'list') {
         const listPath = `${currentPath}${item.name}/`;
         return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
@@ -256,7 +264,6 @@ function stringifyValue(item, indentLevel, currentPath) {
         return `"${escapeText(item.value)}"`;
     }
 
-    const type = itemTypes[item.type];
     if (!type) {
         return '""';
     }

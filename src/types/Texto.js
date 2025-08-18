@@ -2,6 +2,7 @@ const typeDefinition = {
     name: 'text',
     rótulo: 'Texto',
     ícone: 'text',
+    valueType: 'text', // This item type produces text values
     createEditControl: (item) => {
         const input = document.createElement('input');
         input.type = 'text';
