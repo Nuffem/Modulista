@@ -2,6 +2,7 @@ const typeDefinition = {
     name: 'boolean',
     rótulo: 'Lógico',
     ícone: 'boolean',
+    valueType: 'boolean', // This item type produces boolean values
     createEditControl: (item) => {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';

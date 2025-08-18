@@ -2,6 +2,7 @@ const typeDefinition = {
     name: 'number',
     rótulo: 'Número',
     ícone: 'number',
+    valueType: 'number', // This item type produces number values
     createEditControl: (item) => {
         const input = document.createElement('input');
         input.type = 'number';
