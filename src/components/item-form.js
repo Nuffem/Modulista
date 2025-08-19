@@ -79,7 +79,7 @@ export function createTypeSelector(item, parentType = null) {
     return container;
 }
 
-export async function createInlineTypeSelector(parentType = null) {
+export async function createInlineTypeSelector(parentType = null, currentPath = '/') {
     const container = document.createElement('div');
     container.id = 'type-selector-container';
 
@@ -101,6 +101,25 @@ export async function createInlineTypeSelector(parentType = null) {
         typesToShow = availableTypes.filter(type => type.valueType === 'number');
     }
 
+    // Check if we have available properties and filter out reference type if so
+    let hasAvailableProperties = false;
+    if (parentType !== 'soma' && parentType !== 'subtracao') {
+        try {
+            const { getItems } = await import('../db.js');
+            const items = await getItems(currentPath);
+            hasAvailableProperties = items.length > 0;
+            
+            // Remove the "reference" type from standard types if we have available properties
+            // since properties will be shown directly as reference options
+            if (hasAvailableProperties) {
+                typesToShow = typesToShow.filter(type => type.name !== 'reference');
+            }
+        } catch (error) {
+            console.error('Error checking available properties:', error);
+        }
+    }
+
+    // Add standard types
     for (const type of typesToShow) {
         const option = document.createElement('div');
         option.className = 'flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
@@ -116,6 +135,42 @@ export async function createInlineTypeSelector(parentType = null) {
         option.appendChild(iconSpan);
         option.appendChild(labelSpan);
         typeList.appendChild(option);
+    }
+
+    // Add available properties as reference types (if not in soma/subtracao lists)
+    if (parentType !== 'soma' && parentType !== 'subtracao') {
+        try {
+            const { getItems } = await import('../db.js');
+            const items = await getItems(currentPath);
+            
+            if (items.length > 0) {
+                // Add separator if there are both types and properties
+                const separator = document.createElement('div');
+                separator.className = 'border-t border-gray-200 dark:border-gray-600 my-1';
+                typeList.appendChild(separator);
+
+                // Add each property as a reference type option
+                for (const item of items) {
+                    const option = document.createElement('div');
+                    option.className = 'flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
+                    option.dataset.type = `ref:${item.name}`;
+                    option.dataset.isReference = 'true';
+
+                    const iconSpan = document.createElement('span');
+                    iconSpan.className = 'mr-2';
+                    iconSpan.innerHTML = await loadIcon('link', { size: 'w-5 h-5', valueType: 'reference' });
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.textContent = item.name;
+
+                    option.appendChild(iconSpan);
+                    option.appendChild(labelSpan);
+                    typeList.appendChild(option);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading properties for type selector:', error);
+        }
     }
 
     container.appendChild(typeList);

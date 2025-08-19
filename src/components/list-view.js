@@ -42,7 +42,7 @@ function debounce(func, wait) {
     };
 }
 
-export async function createItemRow(item) {
+export async function createItemRow(item, allItems = []) {
     const type = itemTypes[item.type];
 
     const li = document.createElement('li');
@@ -85,7 +85,11 @@ export async function createItemRow(item) {
         }
     }, 500);
 
-    type.createListView(mainContent, item, handleUpdate);
+    // For reference type, pass available properties (exclude self)
+    const availableProperties = item.type === 'reference' ? 
+        allItems.filter(i => i.id !== item.id) : [];
+    
+    type.createListView(mainContent, item, handleUpdate, availableProperties);
     li.appendChild(mainContent);
 
     const controlsContainer = document.createElement('div');
@@ -221,7 +225,7 @@ export async function displayListContent(path, items, containerId = 'list-conten
         ul.id = 'item-list';
         ul.className = 'space-y-3';
 
-        const itemRows = await Promise.all(items.map(item => createItemRow(item)));
+        const itemRows = await Promise.all(items.map(item => createItemRow(item, items)));
         itemRows.forEach(row => ul.appendChild(row));
 
         container.appendChild(ul);

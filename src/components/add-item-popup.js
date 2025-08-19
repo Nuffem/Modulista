@@ -117,7 +117,7 @@ export async function showAddItemPopup(path, suggestedName) {
     const typeLabel = document.createElement('label');
     typeLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
     typeLabel.textContent = 'Tipo';
-    const typeSelector = await createInlineTypeSelector(parentType);
+    const typeSelector = await createInlineTypeSelector(parentType, path);
     typeContainer.appendChild(typeLabel);
     typeContainer.appendChild(typeSelector);
     form.appendChild(typeContainer);
@@ -151,6 +151,7 @@ export async function showAddItemPopup(path, suggestedName) {
 
     // Setup type selector handlers
     let selectedType = 'list';
+    let selectedReference = null; // For reference types
     
     // Default to 'number' type for soma/subtração lists since only numeric types are allowed
     if (parentType === 'soma' || parentType === 'subtracao') {
@@ -162,7 +163,15 @@ export async function showAddItemPopup(path, suggestedName) {
     const typeFilter = popup.querySelector('#type-filter');
 
     function selectType(type) {
-        selectedType = type;
+        // Check if this is a reference type
+        if (type.startsWith('ref:')) {
+            selectedType = 'reference';
+            selectedReference = type.substring(4); // Remove 'ref:' prefix
+        } else {
+            selectedType = type;
+            selectedReference = null;
+        }
+        
         typeOptions.forEach(option => {
             if (option.dataset.type === type) {
                 option.classList.add('bg-blue-100', 'dark:bg-blue-800');
@@ -214,8 +223,14 @@ export async function showAddItemPopup(path, suggestedName) {
             path,
             name: newName,
             type: selectedType,
-            value: ''
+            value: selectedType === 'reference' ? selectedReference : ''
         };
+
+        // Validate reference selection
+        if (selectedType === 'reference' && !selectedReference) {
+            alert('Por favor, selecione uma propriedade para referenciar.');
+            return;
+        }
 
         try {
             const newItem = await addItem(newItemData);
