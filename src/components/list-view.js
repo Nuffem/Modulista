@@ -60,7 +60,7 @@ export async function createItemRow(item) {
 
     const iconContainer = document.createElement('div');
     iconContainer.className = 'mr-4 pt-1';
-    iconContainer.innerHTML = await loadIcon(type.ícone);
+    iconContainer.innerHTML = await loadIcon(type.ícone, { size: 'w-5 h-5' });
     li.appendChild(iconContainer);
 
     const mainContent = document.createElement('div');
