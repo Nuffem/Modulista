@@ -63,9 +63,19 @@ class Parser {
       return this.parseList();
     } else if (char === '-' || (char >= '0' && char <= '9')) {
       return this.parseNumericExpression();
+    } else if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_') {
+      return this.parseReference();
     } else {
       this.throwError("Invalid value");
     }
+  }
+
+  parseReference() {
+    const match = this.match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
+    if (!match) {
+      this.throwError("Invalid reference");
+    }
+    return { type: 'reference', name: match[0] };
   }
 
   parseText() {
@@ -286,6 +296,10 @@ function stringifyValue(item, indentLevel, currentPath) {
 
     if (item.type === 'text') {
         return `"${escapeText(item.value)}"`;
+    }
+
+    if (item.type === 'reference') {
+        return item.value; // Return the reference name without quotes
     }
 
     if (!type) {

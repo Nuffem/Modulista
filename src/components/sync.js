@@ -17,7 +17,13 @@ export async function syncItems(path, parsedObject) {
         if (valueType === 'string') type = 'text';
         else if (valueType === 'number') type = 'number';
         else if (valueType === 'boolean') type = 'boolean';
-        else if (valueType === 'object' && value !== null) type = 'list';
+        else if (valueType === 'object' && value !== null) {
+            if (value.type === 'reference') {
+                type = 'reference';
+            } else {
+                type = 'list';
+            }
+        }
         else {
             console.warn(`Unsupported value type for ${name}: ${valueType}`);
             continue;
@@ -28,24 +34,32 @@ export async function syncItems(path, parsedObject) {
             if (existingItem.type === 'list' && type === 'list') {
                 // Recurse for lists
                 promises.push(syncItems(`${path}${name}/`, value));
-            } else if (existingItem.type !== 'list' && type !== 'list' && existingItem.value !== value) {
-                // Value changed, update it
-                const updatedItem = { ...existingItem, value, type };
-                promises.push(updateItem(updatedItem));
+            } else if (existingItem.type !== 'list' && type !== 'list') {
+                // For reference types, compare the reference name
+                const itemValue = type === 'reference' ? value.name : value;
+                const existingValue = existingItem.type === 'reference' ? existingItem.value : existingItem.value;
+                
+                if (existingValue !== itemValue) {
+                    // Value changed, update it
+                    const updatedItem = { ...existingItem, value: itemValue, type };
+                    promises.push(updateItem(updatedItem));
+                }
             } else if (existingItem.type !== type) {
                 // Type changed. This is more complex. For now, let's delete and re-add.
                 promises.push(deleteItem(existingItem.id).then(() => {
-                    const newItem = { path, name, type, value: type === 'list' ? '' : value };
+                    const itemValue = type === 'reference' ? value.name : (type === 'list' ? '' : value);
+                    const newItem = { path, name, type, value: itemValue };
                     return addItem(newItem);
                 }));
             }
         } else {
             // New item
+            const itemValue = type === 'reference' ? value.name : (type === 'list' ? '' : value);
             const newItem = {
                 path,
                 name,
                 type,
-                value: type === 'list' ? '' : value,
+                value: itemValue,
             };
             promises.push(addItem(newItem).then((id) => {
                 if (type === 'list') {

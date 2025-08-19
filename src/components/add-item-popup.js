@@ -122,6 +122,20 @@ export async function showAddItemPopup(path, suggestedName) {
     typeContainer.appendChild(typeSelector);
     form.appendChild(typeContainer);
 
+    // Reference field (initially hidden)
+    const referenceContainer = document.createElement('div');
+    referenceContainer.className = 'mb-4 hidden';
+    referenceContainer.id = 'reference-container';
+    const referenceLabel = document.createElement('label');
+    referenceLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
+    referenceLabel.textContent = 'Propriedade de Referência';
+    const referenceSelect = document.createElement('select');
+    referenceSelect.id = 'reference-select';
+    referenceSelect.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+    referenceContainer.appendChild(referenceLabel);
+    referenceContainer.appendChild(referenceSelect);
+    form.appendChild(referenceContainer);
+
     // Buttons
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'flex justify-end space-x-4';
@@ -170,6 +184,52 @@ export async function showAddItemPopup(path, suggestedName) {
                 option.classList.remove('bg-blue-100', 'dark:bg-blue-800');
             }
         });
+        
+        // Show/hide reference selector based on selected type
+        const referenceContainer = popup.querySelector('#reference-container');
+        if (type === 'reference') {
+            referenceContainer.classList.remove('hidden');
+            populateReferenceSelector();
+        } else {
+            referenceContainer.classList.add('hidden');
+        }
+    }
+
+    // Function to populate the reference selector with available properties
+    async function populateReferenceSelector() {
+        const referenceSelect = popup.querySelector('#reference-select');
+        const { getItems } = await import('../db.js');
+        
+        try {
+            // Get all items in the current path to show as reference options
+            const items = await getItems(path);
+            
+            // Clear existing options
+            referenceSelect.innerHTML = '';
+            
+            // Add placeholder option
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = 'Selecione uma propriedade...';
+            placeholderOption.disabled = true;
+            placeholderOption.selected = true;
+            referenceSelect.appendChild(placeholderOption);
+            
+            // Add options for each existing property
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = `${item.name} (${itemTypes[item.type]?.rótulo || item.type})`;
+                referenceSelect.appendChild(option);
+            });
+            
+            // If no properties available, show appropriate message
+            if (items.length === 0) {
+                placeholderOption.textContent = 'Nenhuma propriedade disponível para referência';
+            }
+        } catch (error) {
+            console.error('Error loading properties for reference:', error);
+        }
     }
 
     // Set initial selection
@@ -214,8 +274,18 @@ export async function showAddItemPopup(path, suggestedName) {
             path,
             name: newName,
             type: selectedType,
-            value: ''
+            value: selectedType === 'reference' ? 
+                popup.querySelector('#reference-select').value : ''
         };
+
+        // Validate reference selection
+        if (selectedType === 'reference') {
+            const referenceValue = popup.querySelector('#reference-select').value;
+            if (!referenceValue) {
+                alert('Por favor, selecione uma propriedade para referenciar.');
+                return;
+            }
+        }
 
         try {
             const newItem = await addItem(newItemData);

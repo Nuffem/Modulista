@@ -4,6 +4,7 @@ import Número from './types/Numero.js';
 import Lógico from './types/Logico.js';
 import Soma from './types/Soma.js';
 import Subtracao from './types/Subtracao.js';
+import Referencia from './types/Referencia.js';
 
 const types = {
     Lista,
@@ -12,6 +13,7 @@ const types = {
     Lógico,
     Soma,
     Subtracao,
+    Referencia,
 };
 
 export const itemTypes = Object.fromEntries(
