@@ -3,6 +3,14 @@ const iconCache = new Map();
 const iconColor = "text-gray-500 dark:text-gray-400";
 const iconSize = "w-6 h-6";
 
+// Color mapping based on valueType
+const valueTypeColors = {
+    'text': 'text-blue-600 dark:text-blue-400',
+    'number': 'text-green-600 dark:text-green-400', 
+    'boolean': 'text-purple-600 dark:text-purple-400',
+    'list': 'text-orange-600 dark:text-orange-400'
+};
+
 // Mapeamento de nomes de ícones personalizados para Material Icons
 const iconMapping = {
     'home': 'home',
@@ -28,9 +36,13 @@ const iconMapping = {
 
 export async function loadIcon(name, {
     size = iconSize,
-    color = iconColor
+    color = null,
+    valueType = null
 } = {}) {
-    const cacheKey = `${name}-${size}-${color}`;
+    // Use color priority: custom color > valueType color > default color
+    const finalColor = color || (valueType && valueTypeColors[valueType]) || iconColor;
+    
+    const cacheKey = `${name}-${size}-${finalColor}`;
     if (iconCache.has(cacheKey)) {
         return iconCache.get(cacheKey);
     }
@@ -44,8 +56,8 @@ export async function loadIcon(name, {
         if (size) {
             classes.push(...size.split(' '));
         }
-        if (color) {
-            classes.push(...color.split(' '));
+        if (finalColor) {
+            classes.push(...finalColor.split(' '));
         }
         
         const iconHtml = `<span class="${classes.join(' ')}">${materialIconName}</span>`;
