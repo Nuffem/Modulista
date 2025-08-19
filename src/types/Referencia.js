@@ -20,7 +20,15 @@ const typeDefinition = {
         availableProperties.forEach(prop => {
             const option = document.createElement('option');
             option.value = prop.name;
-            option.textContent = `${prop.name} (${prop.type})`;
+            const propType = prop.type === 'reference' ? 'Referência' : 
+                           prop.type === 'text' ? 'Texto' :
+                           prop.type === 'number' ? 'Número' :
+                           prop.type === 'boolean' ? 'Lógico' :
+                           prop.type === 'list' ? 'Lista' :
+                           prop.type === 'soma' ? 'Soma' :
+                           prop.type === 'subtracao' ? 'Subtração' :
+                           prop.type;
+            option.textContent = `${prop.name} (${propType})`;
             if (item.value === prop.name) {
                 option.selected = true;
             }
