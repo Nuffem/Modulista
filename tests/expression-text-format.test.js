@@ -18,8 +18,8 @@ describe('Expression types text formatting with mathematical operators', () => {
         const plan = stringify(items, 'root/');
         const result = await executePlan(plan, mockGetItems);
         
-        // Should format as "10 + 5 + 3" instead of nested structure
-        expect(result).toBe('{\n  MySum: "10 + 5 + 3"\n}');
+        // Should format as 10 + 5 + 3 instead of nested structure
+        expect(result).toBe('{\n  MySum: 10 + 5 + 3\n}');
     });
 
     test('Subtracao should format as mathematical expression with - operator', async () => {
@@ -38,8 +38,8 @@ describe('Expression types text formatting with mathematical operators', () => {
         const plan = stringify(items, 'root/');
         const result = await executePlan(plan, mockGetItems);
         
-        // Should format as "20 - 8 - 2" instead of nested structure
-        expect(result).toBe('{\n  MySubtraction: "20 - 8 - 2"\n}');
+        // Should format as 20 - 8 - 2 instead of nested structure
+        expect(result).toBe('{\n  MySubtraction: 20 - 8 - 2\n}');
     });
 
     test('Soma with single value should work correctly', async () => {
@@ -54,7 +54,7 @@ describe('Expression types text formatting with mathematical operators', () => {
         const plan = stringify(items, 'root/');
         const result = await executePlan(plan, mockGetItems);
         
-        expect(result).toBe('{\n  SingleSum: "42"\n}');
+        expect(result).toBe('{\n  SingleSum: 42\n}');
     });
 
     test('Subtracao with single value should work correctly', async () => {
@@ -69,7 +69,7 @@ describe('Expression types text formatting with mathematical operators', () => {
         const plan = stringify(items, 'root/');
         const result = await executePlan(plan, mockGetItems);
         
-        expect(result).toBe('{\n  SingleSub: "42"\n}');
+        expect(result).toBe('{\n  SingleSub: 42\n}');
     });
 
     test('Empty Soma should format as empty string', async () => {
@@ -84,7 +84,7 @@ describe('Expression types text formatting with mathematical operators', () => {
         const plan = stringify(items, 'root/');
         const result = await executePlan(plan, mockGetItems);
         
-        expect(result).toBe('{\n  EmptySum: ""\n}');
+        expect(result).toBe('{\n  EmptySum: \n}');
     });
 
     test('Empty Subtracao should format as empty string', async () => {
@@ -99,7 +99,7 @@ describe('Expression types text formatting with mathematical operators', () => {
         const plan = stringify(items, 'root/');
         const result = await executePlan(plan, mockGetItems);
         
-        expect(result).toBe('{\n  EmptySub: ""\n}');
+        expect(result).toBe('{\n  EmptySub: \n}');
     });
 
     test('Mixed types - should only include numbers in mathematical expression', async () => {
@@ -120,6 +120,6 @@ describe('Expression types text formatting with mathematical operators', () => {
         const result = await executePlan(plan, mockGetItems);
         
         // Should only include the numeric values
-        expect(result).toBe('{\n  MixedSum: "10 + 5"\n}');
+        expect(result).toBe('{\n  MixedSum: 10 + 5\n}');
     });
 });

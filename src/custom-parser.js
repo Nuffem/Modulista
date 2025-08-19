@@ -226,12 +226,12 @@ export async function executePlan(plan, getItems) {
         .map(child => child.value);
       
       if (numericValues.length === 0) {
-        result += '""';
+        result += '';
       } else if (numericValues.length === 1) {
-        result += `"${numericValues[0]}"`;
+        result += numericValues[0];
       } else {
         const expression = numericValues.join(` ${part.operator} `);
-        result += `"${expression}"`;
+        result += expression;
       }
     } else {
       // Handle primitive values (numbers, booleans, etc.)
