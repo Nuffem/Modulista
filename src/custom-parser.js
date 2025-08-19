@@ -218,6 +218,21 @@ export async function executePlan(plan, getItems) {
       const subItems = await getItems(part.path);
       const subPlan = stringify(subItems, part.path, part.indentLevel);
       result += await executePlan(subPlan, getItems);
+    } else if (part && typeof part === 'object' && part.type === 'EXPRESSION') {
+      // Handle mathematical expression formatting
+      const childItems = await getItems(part.path);
+      const numericValues = childItems
+        .filter(child => child.type === 'number' && typeof child.value === 'number')
+        .map(child => child.value);
+      
+      if (numericValues.length === 0) {
+        result += '';
+      } else if (numericValues.length === 1) {
+        result += numericValues[0];
+      } else {
+        const expression = numericValues.join(` ${part.operator} `);
+        result += expression;
+      }
     } else {
       // Handle primitive values (numbers, booleans, etc.)
       result += String(part);
@@ -249,10 +264,19 @@ function escapeText(text) {
 function stringifyValue(item, indentLevel, currentPath) {
     const type = itemTypes[item.type];
     
-    // Handle expression types - they behave like lists in text format
+    // Handle expression types with mathematical operators
     if (type && type.isExpression) {
-        const listPath = `${currentPath}${item.name}/`;
-        return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
+        if (item.type === 'soma') {
+            const listPath = `${currentPath}${item.name}/`;
+            return { type: 'EXPRESSION', operator: '+', path: listPath };
+        } else if (item.type === 'subtracao') {
+            const listPath = `${currentPath}${item.name}/`;
+            return { type: 'EXPRESSION', operator: '-', path: listPath };
+        } else {
+            // Fallback for other expression types
+            const listPath = `${currentPath}${item.name}/`;
+            return { type: 'LIST', path: listPath, indentLevel: indentLevel + 1 };
+        }
     }
     
     if (item.type === 'list') {
