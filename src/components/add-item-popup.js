@@ -4,6 +4,30 @@ import { createInlineTypeSelector } from './item-form.js';
 import { displayListView } from './list-view.js';
 
 /**
+ * Auto-generates a name for numeric items in soma/subtracao lists
+ * @param {string} path - The current path
+ * @returns {Promise<string>} The generated name
+ */
+async function generateNumericItemName(path) {
+    try {
+        const { getItems } = await import('../db.js');
+        const items = await getItems(path);
+        
+        // Generate simple numeric names: "1", "2", "3", etc.
+        const numericNames = items
+            .map(item => item.name)
+            .filter(name => /^\d+$/.test(name))
+            .map(name => parseInt(name, 10));
+        
+        const maxNumber = numericNames.length > 0 ? Math.max(...numericNames) : 0;
+        return String(maxNumber + 1);
+    } catch (error) {
+        console.error('Error generating numeric item name:', error);
+        return '1'; // fallback
+    }
+}
+
+/**
  * Gets the parent item type from a given path
  * @param {string} path - The current path (e.g., '/parentName/')
  * @returns {Promise<string|null>} The parent item type or null if no parent
@@ -66,23 +90,26 @@ export async function showAddItemPopup(path, suggestedName) {
     const form = document.createElement('form');
     form.id = 'add-item-form';
 
-    // Name field
-    const nameContainer = document.createElement('div');
-    nameContainer.className = 'mb-4';
-    const nameLabel = document.createElement('label');
-    nameLabel.htmlFor = 'new-item-name';
-    nameLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
-    nameLabel.textContent = 'Nome';
-    const nameInput = document.createElement('input');
-    nameInput.type = 'text';
-    nameInput.id = 'new-item-name';
-    nameInput.name = 'name';
-    nameInput.value = suggestedName;
-    nameInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
-    nameInput.required = true;
-    nameContainer.appendChild(nameLabel);
-    nameContainer.appendChild(nameInput);
-    form.appendChild(nameContainer);
+    // Name field - only show for non-expression parent types
+    let nameInput = null;
+    if (parentType !== 'soma' && parentType !== 'subtracao') {
+        const nameContainer = document.createElement('div');
+        nameContainer.className = 'mb-4';
+        const nameLabel = document.createElement('label');
+        nameLabel.htmlFor = 'new-item-name';
+        nameLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
+        nameLabel.textContent = 'Nome';
+        nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.id = 'new-item-name';
+        nameInput.name = 'name';
+        nameInput.value = suggestedName;
+        nameInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
+        nameInput.required = true;
+        nameContainer.appendChild(nameLabel);
+        nameContainer.appendChild(nameInput);
+        form.appendChild(nameContainer);
+    }
 
     // Type field
     const typeContainer = document.createElement('div');
@@ -169,10 +196,18 @@ export async function showAddItemPopup(path, suggestedName) {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const newName = nameInput.value.trim();
-        if (!newName) {
-            alert('O nome do item não pode estar vazio.');
-            return;
+        
+        let newName;
+        if (nameInput) {
+            // Regular case - get name from input
+            newName = nameInput.value.trim();
+            if (!newName) {
+                alert('O nome do item não pode estar vazio.');
+                return;
+            }
+        } else {
+            // Auto-generate name for soma/subtracao items
+            newName = await generateNumericItemName(path);
         }
 
         const newItemData = {
