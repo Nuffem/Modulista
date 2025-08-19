@@ -4,7 +4,11 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest",
+    "test:verbose": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --verbose",
+    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --watch",
+    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --coverage",
+    "test:silent": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --silent"
   },
   "keywords": [],
   "author": "",
