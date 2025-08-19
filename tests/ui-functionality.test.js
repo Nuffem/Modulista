@@ -223,10 +223,11 @@ describe('UI Functionality Tests (formerly Playwright screenshots)', () => {
     expect(loadIcon).toBeTruthy();
     expect(typeof loadIcon).toBe('function');
     
-    // Test loading an icon (should return the mocked SVG content)
+    // Test loading an icon (should return Material Icons HTML)
     const textIcon = await loadIcon(itemTypes.text.ícone);
     expect(typeof textIcon).toBe('string');
-    expect(textIcon).toContain('svg'); // Should contain SVG content from mock
+    expect(textIcon).toContain('material-icons'); // Should contain Material Icons class
+    expect(textIcon).toContain('text_fields'); // Should contain the Material Icon name
   });
 
   test('validate database integration - using real db module', async () => {
