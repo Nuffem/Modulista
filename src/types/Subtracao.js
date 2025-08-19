@@ -3,7 +3,7 @@ import { getItems } from '../db.js';
 const typeDefinition = {
     name: 'subtracao',
     rótulo: 'Subtração',
-    ícone: 'x',
+    ícone: 'subtracao',
     valueType: 'number', // This item type produces numeric values  
     isExpression: true, // Mark as expression type
     navegavelEmLista: true,

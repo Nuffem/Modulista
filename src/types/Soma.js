@@ -3,7 +3,7 @@ import { getItems } from '../db.js';
 const typeDefinition = {
     name: 'soma',
     rótulo: 'Soma',
-    ícone: 'plus',
+    ícone: 'soma',
     valueType: 'number', // This item type produces numeric values
     isExpression: true, // Mark as expression type
     navegavelEmLista: true,
