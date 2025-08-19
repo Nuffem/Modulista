@@ -1,7 +1,38 @@
 import { itemTypes, availableTypes } from '../types.js';
 import { loadIcon } from '../icon-loader.js';
+import { getItemByPathAndName } from '../db.js';
 
-export function createTypeSelector(item) {
+/**
+ * Gets the parent item type from a given path
+ * @param {string} path - The current path (e.g., '/parentName/')
+ * @returns {Promise<string|null>} The parent item type or null if no parent
+ */
+async function getParentItemType(path) {
+    if (path === '/' || !path) {
+        return null; // Root level, no parent
+    }
+    
+    // Parse path to get parent information
+    // Path format: '/parentName/' or '/grandparent/parentName/'
+    const pathParts = path.split('/').filter(p => p);
+    
+    if (pathParts.length === 0) {
+        return null; // Root level
+    }
+    
+    const parentName = pathParts[pathParts.length - 1];
+    const parentPath = pathParts.length === 1 ? '/' : '/' + pathParts.slice(0, -1).join('/') + '/';
+    
+    try {
+        const parentItem = await getItemByPathAndName(parentPath, parentName);
+        return parentItem ? parentItem.type : null;
+    } catch (error) {
+        console.error('Error getting parent item type:', error);
+        return null;
+    }
+}
+
+export function createTypeSelector(item, parentType = null) {
     const container = document.createElement('div');
     container.className = 'relative';
     container.id = 'type-selector-container';
@@ -27,7 +58,14 @@ export function createTypeSelector(item) {
     const typeList = document.createElement('div');
     typeList.id = 'type-list';
 
-    availableTypes.forEach(type => {
+    // Filter types based on parent type
+    let typesToShow = availableTypes;
+    if (parentType === 'soma' || parentType === 'subtracao') {
+        // Only show types with valueType 'number' in soma/subtração lists
+        typesToShow = availableTypes.filter(type => type.valueType === 'number');
+    }
+
+    typesToShow.forEach(type => {
         const option = document.createElement('div');
         option.className = 'p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
         option.dataset.type = type.name;
@@ -41,7 +79,7 @@ export function createTypeSelector(item) {
     return container;
 }
 
-export async function createInlineTypeSelector() {
+export async function createInlineTypeSelector(parentType = null) {
     const container = document.createElement('div');
     container.id = 'type-selector-container';
 
@@ -56,7 +94,14 @@ export async function createInlineTypeSelector() {
     typeList.id = 'type-list';
     typeList.className = 'border rounded-md max-h-40 overflow-y-auto dark:border-gray-600';
 
-    for (const type of availableTypes) {
+    // Filter types based on parent type
+    let typesToShow = availableTypes;
+    if (parentType === 'soma' || parentType === 'subtracao') {
+        // Only show types with valueType 'number' in soma/subtração lists
+        typesToShow = availableTypes.filter(type => type.valueType === 'number');
+    }
+
+    for (const type of typesToShow) {
         const option = document.createElement('div');
         option.className = 'flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer';
         option.dataset.type = type.name;

@@ -3,6 +3,37 @@ import { itemTypes } from '../types.js';
 import { createInlineTypeSelector } from './item-form.js';
 import { displayListView } from './list-view.js';
 
+/**
+ * Gets the parent item type from a given path
+ * @param {string} path - The current path (e.g., '/parentName/')
+ * @returns {Promise<string|null>} The parent item type or null if no parent
+ */
+async function getParentItemType(path) {
+    if (path === '/' || !path) {
+        return null; // Root level, no parent
+    }
+    
+    // Parse path to get parent information
+    // Path format: '/parentName/' or '/grandparent/parentName/'
+    const pathParts = path.split('/').filter(p => p);
+    
+    if (pathParts.length === 0) {
+        return null; // Root level
+    }
+    
+    const parentName = pathParts[pathParts.length - 1];
+    const parentPath = pathParts.length === 1 ? '/' : '/' + pathParts.slice(0, -1).join('/') + '/';
+    
+    try {
+        const { getItemByPathAndName } = await import('../db.js');
+        const parentItem = await getItemByPathAndName(parentPath, parentName);
+        return parentItem ? parentItem.type : null;
+    } catch (error) {
+        console.error('Error getting parent item type:', error);
+        return null;
+    }
+}
+
 let popupInstance = null;
 
 function closePopup() {
@@ -16,6 +47,9 @@ export async function showAddItemPopup(path, suggestedName) {
     if (popupInstance) {
         closePopup();
     }
+
+    // Get parent item type to filter types if needed
+    const parentType = await getParentItemType(path);
 
     const popup = document.createElement('div');
     popup.id = 'add-item-popup';
@@ -56,7 +90,7 @@ export async function showAddItemPopup(path, suggestedName) {
     const typeLabel = document.createElement('label');
     typeLabel.className = 'block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300';
     typeLabel.textContent = 'Tipo';
-    const typeSelector = await createInlineTypeSelector();
+    const typeSelector = await createInlineTypeSelector(parentType);
     typeContainer.appendChild(typeLabel);
     typeContainer.appendChild(typeSelector);
     form.appendChild(typeContainer);
@@ -90,6 +124,11 @@ export async function showAddItemPopup(path, suggestedName) {
 
     // Setup type selector handlers
     let selectedType = 'list';
+    
+    // Default to 'number' type for soma/subtração lists since only numeric types are allowed
+    if (parentType === 'soma' || parentType === 'subtracao') {
+        selectedType = 'number';
+    }
 
     const typeList = popup.querySelector('#type-list');
     const typeOptions = Array.from(typeList.children);
