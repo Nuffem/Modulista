@@ -6,24 +6,46 @@ import { displayTextContent } from './text-view.js';
 
 // Function to evaluate all expressions in a set of items
 async function evaluateExpressions(items, path) {
-    const evaluatedItems = [];
+    const evaluatedItems = [...items]; // Start with original items
     
-    for (const item of items) {
-        const type = itemTypes[item.type];
-        const evaluatedItem = { ...item };
+    // Multiple passes to handle dependencies
+    let hasChanges = true;
+    let maxIterations = 10; // Prevent infinite loops
+    let iteration = 0;
+    
+    while (hasChanges && iteration < maxIterations) {
+        hasChanges = false;
+        iteration++;
         
-        // If this is an expression type, evaluate it
-        if (type && type.isExpression && type.evaluate) {
-            try {
-                const computedValue = await type.evaluate(item, path);
-                evaluatedItem.computedValue = computedValue;
-            } catch (error) {
-                console.error(`Error evaluating expression ${item.name}:`, error);
-                evaluatedItem.computedValue = 0;
+        for (let i = 0; i < evaluatedItems.length; i++) {
+            const item = evaluatedItems[i];
+            const type = itemTypes[item.type];
+            
+            // If this is an expression type, evaluate it
+            if (type && type.isExpression && type.evaluate) {
+                try {
+                    const computedValue = await type.evaluate(item, path);
+                    
+                    // Check if the computed value has changed
+                    if (item.computedValue !== computedValue) {
+                        evaluatedItems[i] = { ...item, computedValue };
+                        hasChanges = true;
+                    }
+                } catch (error) {
+                    console.error(`Error evaluating expression ${item.name}:`, error);
+                    // Set default value based on type
+                    const defaultValue = type.valueType === 'number' ? 0 : undefined;
+                    if (item.computedValue !== defaultValue) {
+                        evaluatedItems[i] = { ...item, computedValue: defaultValue };
+                        hasChanges = true;
+                    }
+                }
             }
         }
-        
-        evaluatedItems.push(evaluatedItem);
+    }
+    
+    if (iteration >= maxIterations) {
+        console.warn('Expression evaluation reached maximum iterations - there may be circular dependencies');
     }
     
     return evaluatedItems;

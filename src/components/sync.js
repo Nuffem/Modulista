@@ -20,6 +20,8 @@ export async function syncItems(path, parsedObject) {
         else if (valueType === 'object' && value !== null) {
             if (value.type === 'reference') {
                 type = 'reference';
+            } else if (value.type === 'condicional') {
+                type = 'condicional';
             } else {
                 type = 'list';
             }
@@ -35,9 +37,18 @@ export async function syncItems(path, parsedObject) {
                 // Recurse for lists
                 promises.push(syncItems(`${path}${name}/`, value));
             } else if (existingItem.type !== 'list' && type !== 'list') {
-                // For reference types, compare the reference name
-                const itemValue = type === 'reference' ? value.name : value;
-                const existingValue = existingItem.type === 'reference' ? existingItem.value : existingItem.value;
+                // For reference and conditional types, compare appropriately
+                let itemValue, existingValue;
+                if (type === 'reference') {
+                    itemValue = value.name;
+                    existingValue = existingItem.value;
+                } else if (type === 'condicional') {
+                    itemValue = value.value;
+                    existingValue = existingItem.value;
+                } else {
+                    itemValue = value;
+                    existingValue = existingItem.value;
+                }
                 
                 if (existingValue !== itemValue) {
                     // Value changed, update it
@@ -47,14 +58,32 @@ export async function syncItems(path, parsedObject) {
             } else if (existingItem.type !== type) {
                 // Type changed. This is more complex. For now, let's delete and re-add.
                 promises.push(deleteItem(existingItem.id).then(() => {
-                    const itemValue = type === 'reference' ? value.name : (type === 'list' ? '' : value);
+                    let itemValue;
+                    if (type === 'reference') {
+                        itemValue = value.name;
+                    } else if (type === 'condicional') {
+                        itemValue = value.value;
+                    } else if (type === 'list') {
+                        itemValue = '';
+                    } else {
+                        itemValue = value;
+                    }
                     const newItem = { path, name, type, value: itemValue };
                     return addItem(newItem);
                 }));
             }
         } else {
             // New item
-            const itemValue = type === 'reference' ? value.name : (type === 'list' ? '' : value);
+            let itemValue;
+            if (type === 'reference') {
+                itemValue = value.name;
+            } else if (type === 'condicional') {
+                itemValue = value.value;
+            } else if (type === 'list') {
+                itemValue = '';
+            } else {
+                itemValue = value;
+            }
             const newItem = {
                 path,
                 name,

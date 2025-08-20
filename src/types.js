@@ -5,6 +5,7 @@ import Lógico from './types/Logico.js';
 import Soma from './types/Soma.js';
 import Subtracao from './types/Subtracao.js';
 import Referencia from './types/Referencia.js';
+import Condicional from './types/Condicional.js';
 
 const types = {
     Lista,
@@ -14,6 +15,7 @@ const types = {
     Soma,
     Subtracao,
     Referencia,
+    Condicional,
 };
 
 export const itemTypes = Object.fromEntries(
