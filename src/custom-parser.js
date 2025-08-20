@@ -130,7 +130,14 @@ class Parser {
   }
 
   parseConditional() {
-    // Parse everything until we reach a structural character or end
+    // Check if this is the new object format
+    this.skipWhitespace();
+    if (this.pos < this.text.length && this.peek() === '{') {
+      // Parse as object: { condition: "...", trueValue: "...", falseValue: "..." }
+      return this.parseConditionalObject();
+    }
+    
+    // Parse legacy format: everything until we reach a structural character or end
     let expression = '';
     let depth = 0;
     
@@ -164,6 +171,63 @@ class Parser {
     }
     
     return { type: 'condicional', value: expression };
+  }
+
+  parseConditionalObject() {
+    this.consume('{');
+    this.skipWhitespace();
+    
+    const conditionalObj = {
+      condition: '',
+      trueValue: '',
+      falseValue: ''
+    };
+    
+    while (this.pos < this.text.length && this.peek() !== '}') {
+      this.skipWhitespace();
+      
+      // Parse key
+      const key = this.parseIdentifier();
+      this.skipWhitespace();
+      this.consume(':');
+      this.skipWhitespace();
+      
+      // Parse value (can be string, number, boolean, or identifier)
+      let value = '';
+      if (this.peek() === '"') {
+        const parsed = this.parseText();
+        value = parsed.value;
+      } else if (this.peek() === '@') {
+        const parsed = this.parseBoolean();
+        value = parsed ? '@1' : '@0';
+      } else if (/\d/.test(this.peek()) || this.peek() === '-') {
+        const parsed = this.parseNumber();
+        value = String(parsed);
+      } else {
+        // Parse as identifier/reference
+        value = this.parseIdentifier();
+      }
+      
+      if (key === 'condition') {
+        conditionalObj.condition = value;
+      } else if (key === 'trueValue') {
+        conditionalObj.trueValue = value;
+      } else if (key === 'falseValue') {
+        conditionalObj.falseValue = value;
+      }
+      
+      this.skipWhitespace();
+      if (this.pos < this.text.length && this.peek() !== '}') {
+        // Optional comma or whitespace between fields
+        if (this.peek() === ',') {
+          this.pos++;
+        }
+      }
+    }
+    
+    this.consume('}');
+    
+    return { type: 'condicional', value: conditionalObj };
   }
 
   parseText() {
@@ -371,7 +435,11 @@ function stringifyValue(item, indentLevel, currentPath) {
             const listPath = `${currentPath}${item.name}/`;
             return { type: 'EXPRESSION', operator: '-', path: listPath };
         } else if (item.type === 'condicional') {
-            // For conditional expressions, return the expression directly
+            // For conditional expressions, return the structured format
+            if (typeof item.value === 'object' && item.value.condition !== undefined) {
+                return `{ condition: "${escapeText(item.value.condition || '')}" trueValue: "${escapeText(item.value.trueValue || '')}" falseValue: "${escapeText(item.value.falseValue || '')}" }`;
+            }
+            // Handle legacy format
             return item.value || '';
         } else {
             // Fallback for other expression types
