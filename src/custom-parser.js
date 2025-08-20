@@ -71,11 +71,99 @@ class Parser {
   }
 
   parseReference() {
+    // Look ahead to see if this might be a conditional expression
+    const startPos = this.pos;
+    
+    // Read until we find a delimiter or the end of the expression
+    let tempPos = this.pos;
+    let expression = '';
+    let depth = 0;
+    
+    while (tempPos < this.text.length) {
+      const char = this.text[tempPos];
+      
+      // Track nested structures
+      if (char === '{') depth++;
+      else if (char === '}') {
+        if (depth === 0) break; // We've reached the end of this value
+        depth--;
+      }
+      
+      // Check for key-value separators when not in nested structure
+      if (depth === 0) {
+        // Stop if we hit a newline or the start of next key
+        if (char === '\n' || char === '\r') {
+          // Look ahead for the next non-whitespace character
+          let nextPos = tempPos + 1;
+          while (nextPos < this.text.length && /\s/.test(this.text[nextPos])) {
+            nextPos++;
+          }
+          if (nextPos < this.text.length && /[a-zA-Z_]/.test(this.text[nextPos])) {
+            break; // This looks like the start of a new key
+          }
+        }
+        
+        // Stop if we hit a closing brace
+        if (char === '}') break;
+      }
+      
+      expression += char;
+      tempPos++;
+    }
+    
+    // Check if this contains a conditional operator (?)
+    const questionMarkIndex = expression.indexOf('?');
+    const colonIndex = expression.indexOf(':');
+    
+    if (questionMarkIndex !== -1 && colonIndex !== -1 && questionMarkIndex < colonIndex) {
+      // This is a conditional expression
+      this.pos = startPos;
+      return this.parseConditional();
+    }
+    
+    // Otherwise, parse as a simple reference
     const match = this.match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
     if (!match) {
       this.throwError("Invalid reference");
     }
     return { type: 'reference', name: match[0] };
+  }
+
+  parseConditional() {
+    // Parse everything until we reach a structural character or end
+    let expression = '';
+    let depth = 0;
+    
+    while (this.pos < this.text.length) {
+      const char = this.peek();
+      
+      // Track nested structures
+      if (char === '{') depth++;
+      else if (char === '}') {
+        if (depth === 0) break; // We've reached the end of this value
+        depth--;
+      }
+      
+      // Stop at newline if we're not in a nested structure
+      if ((char === '\n' || char === '\r') && depth === 0) {
+        break;
+      }
+      
+      expression += char;
+      this.pos++;
+    }
+    
+    expression = expression.trim();
+    
+    // Validate the conditional expression format
+    const questionIndex = expression.indexOf('?');
+    const colonIndex = expression.lastIndexOf(':');
+    
+    if (questionIndex === -1 || colonIndex === -1 || questionIndex >= colonIndex) {
+      this.throwError(`Invalid conditional expression: ${expression}`);
+    }
+    
+    return { type: 'condicional', value: expression };
   }
 
   parseText() {
@@ -282,6 +370,9 @@ function stringifyValue(item, indentLevel, currentPath) {
         } else if (item.type === 'subtracao') {
             const listPath = `${currentPath}${item.name}/`;
             return { type: 'EXPRESSION', operator: '-', path: listPath };
+        } else if (item.type === 'condicional') {
+            // For conditional expressions, return the expression directly
+            return item.value || '';
         } else {
             // Fallback for other expression types
             const listPath = `${currentPath}${item.name}/`;
