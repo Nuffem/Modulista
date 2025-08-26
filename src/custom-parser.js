@@ -82,7 +82,7 @@ class Parser {
   }
 
   parseReference() {
-    // Look ahead to see if this might be a conditional expression
+    // Look ahead to see if this might be a conditional expression or function
     const startPos = this.pos;
     
     // Read until we find a delimiter or the end of the expression
@@ -120,6 +120,14 @@ class Parser {
       
       expression += char;
       tempPos++;
+    }
+    
+    // Check if this contains a function arrow (=>)
+    const arrowIndex = expression.indexOf('=>');
+    if (arrowIndex !== -1) {
+      // This is a function expression
+      this.pos = startPos;
+      return this.parseFunction();
     }
     
     // Check if this contains a conditional operator (?)
@@ -182,6 +190,90 @@ class Parser {
     }
     
     return { type: 'condicional', value: expression };
+  }
+
+  parseFunction() {
+    // Parse function syntax: param => expression
+    let expression = '';
+    let depth = 0;
+    
+    while (this.pos < this.text.length) {
+      const char = this.peek();
+      
+      // Track nested structures
+      if (char === '{') depth++;
+      else if (char === '}') {
+        if (depth === 0) break; // We've reached the end of this value
+        depth--;
+      }
+      
+      // Check for key-value separators when not in nested structure
+      if (depth === 0) {
+        // Stop if we hit a newline or the start of next key
+        if (char === '\n' || char === '\r') {
+          // Look ahead for the next non-whitespace character
+          let nextPos = this.pos + 1;
+          while (nextPos < this.text.length && /\s/.test(this.text[nextPos])) {
+            nextPos++;
+          }
+          if (nextPos < this.text.length && /[a-zA-Z_]/.test(this.text[nextPos])) {
+            break; // This looks like the start of a new key
+          }
+        }
+        
+        // Stop if we hit whitespace followed by what looks like a new key
+        if (/\s/.test(char)) {
+          let nextPos = this.pos + 1;
+          while (nextPos < this.text.length && /\s/.test(this.text[nextPos])) {
+            nextPos++;
+          }
+          if (nextPos < this.text.length && /[a-zA-Z_]/.test(this.text[nextPos])) {
+            // Look further ahead to see if there's a colon (indicating a key)
+            let colonPos = nextPos;
+            while (colonPos < this.text.length && /[a-zA-Z0-9_]/.test(this.text[colonPos])) {
+              colonPos++;
+            }
+            while (colonPos < this.text.length && /\s/.test(this.text[colonPos])) {
+              colonPos++;
+            }
+            if (colonPos < this.text.length && this.text[colonPos] === ':') {
+              break; // This is the start of a new key:value pair
+            }
+          }
+        }
+        
+        // Stop if we hit a closing brace
+        if (char === '}') break;
+      }
+      
+      expression += char;
+      this.pos++;
+    }
+    
+    // Parse the function syntax
+    const arrowIndex = expression.indexOf('=>');
+    if (arrowIndex === -1) {
+      this.throwError("Invalid function syntax, expected '=>'");
+    }
+    
+    const param = expression.substring(0, arrowIndex).trim();
+    const funcExpression = expression.substring(arrowIndex + 2).trim();
+    
+    if (!param) {
+      this.throwError("Function parameter cannot be empty");
+    }
+    
+    if (!funcExpression) {
+      this.throwError("Function expression cannot be empty");
+    }
+    
+    return { 
+      type: 'function', 
+      value: { 
+        param: param, 
+        expression: funcExpression 
+      } 
+    };
   }
 
   parseConditionalObject() {
@@ -485,6 +577,13 @@ function stringifyValue(item, indentLevel, currentPath) {
 
     if (item.type === 'reference') {
         return item.value; // Return the reference name without quotes
+    }
+
+    if (item.type === 'function') {
+        if (typeof item.value === 'object' && item.value.param && item.value.expression) {
+            return `${item.value.param} => ${item.value.expression}`;
+        }
+        return item.value || '';
     }
 
     if (!type) {
