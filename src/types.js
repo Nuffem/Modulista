@@ -7,6 +7,7 @@ import Subtracao from './types/Subtracao.js';
 import Referencia from './types/Referencia.js';
 import Condicional from './types/Condicional.js';
 import Funcao from './types/Funcao.js';
+import Comentario from './types/Comentario.js';
 
 const types = {
     Lista,
@@ -18,6 +19,7 @@ const types = {
     Referencia,
     Condicional,
     Funcao,
+    Comentario,
 };
 
 export const itemTypes = Object.fromEntries(

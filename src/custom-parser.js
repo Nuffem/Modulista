@@ -24,7 +24,7 @@ class Parser {
     this.consume('{');
     const list = {};
     this.skipWhitespace();
-    while (this.peek() !== '}') {
+    while (this.safePeek() !== '}' && this.safePeek() !== null) {
       const [name, value] = this.parseItem();
       if (list.hasOwnProperty(name)) {
         this.throwError(`Duplicate key in list: ${name}`);
@@ -61,6 +61,8 @@ class Parser {
       return this.parseBoolean();
     } else if (char === '{') {
       return this.parseList();
+    } else if (char === '/' && this.pos + 1 < this.text.length && this.text[this.pos + 1] === '/') {
+      return this.parseComment();
     } else if (char === '-' || (char >= '0' && char <= '9')) {
       // For language 0 compatibility, only treat standalone 0/1 as booleans
       // when they are not followed by other digits and not in contexts where numbers are expected
@@ -276,6 +278,57 @@ class Parser {
     };
   }
 
+  parseComment() {
+    // Consume the '//' 
+    this.consume('/');
+    this.consume('/');
+    
+    // Skip any immediate whitespace after //
+    while (this.pos < this.text.length && this.text[this.pos] === ' ') {
+      this.pos++;
+    }
+    
+    // Read until end of line, closing brace, start of new key, or end of input
+    let comment = '';
+    while (this.pos < this.text.length) {
+      const char = this.text[this.pos];
+      
+      // Stop at newline or closing brace
+      if (char === '\n' || char === '\r' || char === '}') {
+        break;
+      }
+      
+      // Stop if we hit whitespace followed by what looks like a new key
+      if (/\s/.test(char)) {
+        let nextPos = this.pos + 1;
+        while (nextPos < this.text.length && /\s/.test(this.text[nextPos])) {
+          nextPos++;
+        }
+        if (nextPos < this.text.length && /[a-zA-Z_]/.test(this.text[nextPos])) {
+          // Look further ahead to see if there's a colon (indicating a key)
+          let colonPos = nextPos;
+          while (colonPos < this.text.length && /[a-zA-Z0-9_]/.test(this.text[colonPos])) {
+            colonPos++;
+          }
+          while (colonPos < this.text.length && /\s/.test(this.text[colonPos])) {
+            colonPos++;
+          }
+          if (colonPos < this.text.length && this.text[colonPos] === ':') {
+            break; // This is the start of a new key:value pair
+          }
+        }
+      }
+      
+      comment += char;
+      this.pos++;
+    }
+    
+    return { 
+      type: 'comment', 
+      value: comment.trim()
+    };
+  }
+
   parseConditionalObject() {
     this.consume('{');
     this.skipWhitespace();
@@ -403,6 +456,13 @@ class Parser {
   peek() {
     if (this.pos >= this.text.length) {
       this.throwError("Unexpected end of input");
+    }
+    return this.text[this.pos];
+  }
+
+  safePeek() {
+    if (this.pos >= this.text.length) {
+      return null;
     }
     return this.text[this.pos];
   }
@@ -584,6 +644,10 @@ function stringifyValue(item, indentLevel, currentPath) {
             return `${item.value.param} => ${item.value.expression}`;
         }
         return item.value || '';
+    }
+
+    if (item.type === 'comment') {
+        return `// ${item.value || ''}`;
     }
 
     if (!type) {
