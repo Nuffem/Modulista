@@ -62,6 +62,17 @@ class Parser {
     } else if (char === '{') {
       return this.parseList();
     } else if (char === '-' || (char >= '0' && char <= '9')) {
+      // For language 0 compatibility, only treat standalone 0/1 as booleans
+      // when they are not followed by other digits and not in contexts where numbers are expected
+      if ((char === '0' || char === '1') && this.pos + 1 < this.text.length) {
+        const nextChar = this.text[this.pos + 1];
+        // Only treat as boolean if followed by whitespace or structural characters, not digits
+        if (/[\s}]/.test(nextChar)) {
+          // This could be a boolean, but let's be conservative and parse as number
+          // The user can explicitly use @1/@0 if they want booleans
+          return this.parseNumericExpression();
+        }
+      }
       return this.parseNumericExpression();
     } else if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_') {
       return this.parseReference();
@@ -269,17 +280,32 @@ class Parser {
   }
 
   parseBoolean() {
-    this.consume('@');
-    const val = this.peek();
-    if (val === '1') {
-      this.pos++;
-      return true;
+    // Support both @1/@0 (old format) and 1/0 (language 0 format)
+    if (this.peek() === '@') {
+      this.consume('@');
+      const val = this.peek();
+      if (val === '1') {
+        this.pos++;
+        return true;
+      }
+      if (val === '0') {
+        this.pos++;
+        return false;
+      }
+      this.throwError("Invalid boolean");
+    } else {
+      // Language 0 format: just 1 or 0
+      const val = this.peek();
+      if (val === '1') {
+        this.pos++;
+        return true;
+      }
+      if (val === '0') {
+        this.pos++;
+        return false;
+      }
+      this.throwError("Invalid boolean");
     }
-    if (val === '0') {
-      this.pos++;
-      return false;
-    }
-    this.throwError("Invalid boolean");
   }
 
   peek() {
