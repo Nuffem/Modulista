@@ -1,40 +1,43 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modulista</title>
-    <meta name="description" content="Modulista é um web SPA para análise de dados.">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="app">
-        <header class="app-header">
-            <h1 class="logo">Modulista</h1>
-            <nav id="breadcrumbs" class="breadcrumbs"></nav>
-        </header>
-        
-        <main id="main-content" class="fade-in">
-            <!-- Dynamic Content -->
-        </main>
-        
-        <div id="modal-overlay" class="modal-overlay hidden">
-            <div class="modal-content glass-panel">
-                <div class="modal-header">
-                    <h2 id="modal-title">Novo Item</h2>
-                    <button id="modal-close" class="icon-btn">&times;</button>
-                </div>
-                <div id="modal-body"></div>
-            </div>
-        </div>
-    </div>
 
-    <script src="script.js" type="module"></script>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modulista</title>
+  <meta name="description" content="Modulista é um web SPA para análise de dados.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="app">
+    <header class="app-header">
+      <h1 class="logo">Modulista</h1>
+      <nav id="breadcrumbs" class="breadcrumbs"></nav>
+    </header>
+
+    <main id="main-content" class="fade-in">
+      <!-- Dynamic Content -->
+    </main>
+
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal-content glass-panel">
+        <div class="modal-header">
+          <h2 id="modal-title">Novo Item</h2>
+          <button id="modal-close" class="icon-btn">&times;</button>
+        </div>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/main.js" type="module"></script>
 </body>
+
 </html>
