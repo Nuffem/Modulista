@@ -57,5 +57,18 @@ export const store = {
     } else {
       this.init();
     }
+  },
+
+  validateName(parentId, name, excludedItemId = null) {
+    if (!name || name.trim() === '') return false;
+    const parent = this.get(parentId);
+    if (!parent || !parent.items) return true; // Should not happen for lists, but safe fallback
+
+    // items is an array of IDs
+    return !parent.items.some(id => {
+      if (id === excludedItemId) return false;
+      const item = this.get(id);
+      return item && item.name === name;
+    });
   }
 };

@@ -39,7 +39,7 @@ export const router = {
 
       let name = 'Início';
       if (index > 0) {
-        name = `${item.type} #${id.substr(0, 4)}`;
+        name = item.name || `${item.type} #${id.substr(0, 4)}`;
       }
 
       span.textContent = name;
@@ -129,7 +129,7 @@ export const router = {
     paramsContainer.style.borderRadius = 'var(--radius-md)';
 
     if (!func.paramsId) {
-      const paramsList = { id: generateId(), type: 'lista', items: [] };
+      const paramsList = { id: generateId(), type: 'lista', items: [], name: 'Parâmetros' };
       store.items[paramsList.id] = paramsList;
       func.paramsId = paramsList.id;
       store.save();
@@ -150,7 +150,7 @@ export const router = {
 
     const returnContainer = document.createElement('div');
     if (!func.returnId) {
-      const retItem = { id: generateId(), type: 'valor', selectedType: 'numero', value: 0 };
+      const retItem = { id: generateId(), type: 'valor', selectedType: 'numero', value: 0, name: 'Retorno' };
       store.items[retItem.id] = retItem;
       func.returnId = retItem.id;
       store.save();
@@ -192,7 +192,7 @@ export const router = {
     argsContainer.style.borderRadius = 'var(--radius-md)';
 
     if (!app.argsId) {
-      const argsList = { id: generateId(), type: 'lista', items: [] };
+      const argsList = { id: generateId(), type: 'lista', items: [], name: 'Argumentos' };
       store.items[argsList.id] = argsList;
       app.argsId = argsList.id;
       store.save();

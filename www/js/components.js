@@ -9,10 +9,24 @@ export const components = {
     const header = document.createElement('div');
     header.className = 'item-header';
 
+    const headerLeft = document.createElement('div');
+    headerLeft.style.display = 'flex';
+    headerLeft.style.alignItems = 'center';
+    headerLeft.style.gap = '0.75rem';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'item-name';
+    nameSpan.textContent = item.name || 'Sem nome';
+    nameSpan.style.fontWeight = '600';
+    nameSpan.style.fontSize = '1.1rem';
+
     const typeBadge = document.createElement('span');
     typeBadge.className = 'item-type';
     typeBadge.textContent = item.type;
-    header.appendChild(typeBadge);
+
+    headerLeft.appendChild(nameSpan);
+    headerLeft.appendChild(typeBadge);
+    header.appendChild(headerLeft);
 
     if (onDelete) {
       const deleteBtn = document.createElement('button');
