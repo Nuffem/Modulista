@@ -28,6 +28,14 @@ export const store = {
     this.save();
   },
 
+  remove(parentId, itemId) {
+    const parent = this.get(parentId);
+    if (parent && parent.items) {
+      parent.items = parent.items.filter(id => id !== itemId);
+      this.save();
+    }
+  },
+
   update(id, updates) {
     if (this.items[id]) {
       Object.assign(this.items[id], updates);

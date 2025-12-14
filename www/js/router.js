@@ -89,7 +89,11 @@ export const router = {
       list.items.forEach(itemId => {
         const item = store.get(itemId);
         if (item) {
-          const card = components.createCard(item);
+          const card = components.createCard(item, () => {
+            store.remove(list.id, item.id);
+            const currentId = this.history[this.history.length - 1];
+            this.render(currentId);
+          });
           grid.appendChild(card);
         }
       });

@@ -2,7 +2,7 @@ import { store } from './store.js';
 import { router } from './router.js';
 
 export const components = {
-  createCard(item) {
+  createCard(item, onDelete) {
     const card = document.createElement('div');
     card.className = 'item-card fade-in';
 
@@ -13,6 +13,23 @@ export const components = {
     typeBadge.className = 'item-type';
     typeBadge.textContent = item.type;
     header.appendChild(typeBadge);
+
+    if (onDelete) {
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'icon-btn';
+      deleteBtn.innerHTML = '×';
+      deleteBtn.style.fontSize = '1.5rem';
+      deleteBtn.style.padding = '0';
+      deleteBtn.style.width = '24px';
+      deleteBtn.style.height = '24px';
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm('Tem certeza que deseja remover este item?')) {
+          onDelete();
+        }
+      };
+      header.appendChild(deleteBtn);
+    }
 
     card.appendChild(header);
 
