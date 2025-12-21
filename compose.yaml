@@ -9,3 +9,4 @@ services:
       - .:/app
     environment:
       - HOME=/app
+      - CHOKIDAR_USEPOLLING=true
