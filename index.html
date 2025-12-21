@@ -23,6 +23,77 @@
     var app = Elm.Main.init({
       node: document.getElementById('app')
     });
+
+    let rootHandle = null;
+    let pendingHandle = null;
+
+    app.ports.requestFolderSelect.subscribe(async () => {
+      try {
+        pendingHandle = await window.showDirectoryPicker();
+        app.ports.folderPicked.send({ name: pendingHandle.name });
+      } catch (err) {
+        console.error("Error selecting folder:", err);
+      }
+    });
+
+    if (app.ports.confirmFolder) {
+      app.ports.confirmFolder.subscribe(async () => {
+        if (!pendingHandle) return;
+        rootHandle = pendingHandle;
+        pendingHandle = null;
+
+        try {
+          const files = await readDirectory(rootHandle);
+          app.ports.folderContentReceived.send({
+            path: [],
+            files: files,
+            rootName: rootHandle.name
+          });
+          // Reset location hash to root when a new folder is selected
+          history.pushState(null, "", "#/");
+        } catch (err) {
+          console.error("Error reading confirmed folder:", err);
+        }
+      });
+    }
+
+    app.ports.navigateToPath.subscribe(async (path) => {
+      if (!rootHandle) return;
+
+      try {
+        let currentDir = rootHandle;
+        for (const part of path) {
+          currentDir = await currentDir.getDirectoryHandle(part);
+        }
+        const files = await readDirectory(currentDir);
+        app.ports.folderContentReceived.send({
+          path: path,
+          files: files,
+          rootName: rootHandle.name
+        });
+      } catch (err) {
+        console.error("Navigation failed:", err);
+        // If path is invalid, maybe redirect to root?
+      }
+    });
+
+    async function readDirectory(dirHandle) {
+      const result = [];
+      for await (const entry of dirHandle.values()) {
+        result.push({
+          name: entry.name,
+          isFolder: entry.kind === 'directory'
+        });
+      }
+
+      // Sort: Folders first, then files, alphabetical
+      result.sort((a, b) => {
+        if (a.isFolder === b.isFolder) return a.name.localeCompare(b.name);
+        return a.isFolder ? -1 : 1;
+      });
+
+      return result;
+    }
   </script>
 </body>
 
