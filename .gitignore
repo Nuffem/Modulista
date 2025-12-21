@@ -1,0 +1,25 @@
+# Elm artifacts
+elm-stuff
+elm.js
+repl-temp-*
+
+# Dependency directories
+node_modules/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+.elm/
