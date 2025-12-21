@@ -55,6 +55,9 @@ view model =
                 [ style "padding" "2rem"
                 , style "flex" "1"
                 , style "background-color" "#F3F4F6"
+                , style "width" "100%"
+                , style "max-width" "80vh"
+                , style "margin" "0 auto"
                 ]
                 [ div [ style "background" "white", style "padding" "2rem", style "border-radius" "0.5rem", style "box-shadow" "0 1px 3px rgba(0,0,0,0.1)" ]
                     [ h1 [ style "margin-top" "0", style "color" "#111827" ] [ text "Bem-vindo ao Modulista (Elm)" ]
