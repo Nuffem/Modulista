@@ -90,24 +90,50 @@ view model =
 
 viewBreadcrumbs : Model -> Html Msg
 viewBreadcrumbs model =
-    div [ style "margin-bottom" "1rem", style "padding" "0.5rem", style "background" "#F9FAFB", style "border" "1px solid #D1D5DB", style "border-radius" "0.375rem", style "font-family" "monospace" ]
+    div [ style "margin-bottom" "1rem", style "display" "flex", style "align-items" "center", style "flex-wrap" "wrap", style "gap" "0.5rem" ]
         ( case model.rootFolderName of
-            Nothing -> [ text "Selecione uma pasta para começar." ]
+            Nothing -> 
+                [ div [ style "padding" "0.5rem 1rem", style "background" "#F9FAFB", style "border" "1px solid #D1D5DB", style "border-radius" "0.375rem", style "color" "#6B7280" ] 
+                    [ text "Selecione uma pasta para começar." ] 
+                ]
             Just root ->
                 let
-                    homeLink = a [ href "#/", style "color" "#2563EB", style "text-decoration" "none", style "font-weight" "bold" ] [ text root ]
+                    crumbStyle =
+                        [ style "display" "inline-flex"
+                        , style "align-items" "center"
+                        , style "padding" "0.5rem 1rem"
+                        , style "background-color" "white"
+                        , style "border" "1px solid #E5E7EB"
+                        , style "border-radius" "9999px"
+                        , style "color" "#374151"
+                        , style "text-decoration" "none"
+                        , style "font-size" "0.875rem"
+                        , style "font-weight" "500"
+                        , style "transition" "all 0.2s"
+                        , style "box-shadow" "0 1px 2px rgba(0,0,0,0.05)"
+                        , style "cursor" "pointer"
+                        ]
+
+                    separator =
+                        span [ class "material-symbols-outlined", style "color" "#9CA3AF", style "font-size" "1.25rem" ] 
+                            [ text "chevron_right" ]
+
+                    homeLink = 
+                        a (href "#/" :: crumbStyle)
+                            [ span [ class "material-symbols-outlined", style "font-size" "1.25rem", style "margin-right" "0.25rem" ] [ text "home" ]
+                            , text root 
+                            ]
                     
                     renderCrumb index name =
                         let
                             targetPath = List.take (index + 1) model.currentPath
                             hash = "#/" ++ String.join "/" targetPath
                         in
-                        span []
-                            [ text " / "
-                            , a [ href hash, style "color" "#2563EB", style "text-decoration" "none" ] [ text name ]
-                            ]
+                        [ separator
+                        , a (href hash :: crumbStyle) [ text name ]
+                        ]
                 in
-                homeLink :: List.indexedMap renderCrumb model.currentPath
+                homeLink :: List.concat (List.indexedMap renderCrumb model.currentPath)
         )
 
 viewFileList : Model -> Html Msg
