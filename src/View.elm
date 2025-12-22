@@ -52,56 +52,68 @@ view model =
                     [ viewBreadcrumbs model
                     , viewFileList model
                     , if List.isEmpty model.currentPath then
-                        div [ style "margin-top" "2rem", style "border-radius" "0.375rem", style "background" "#F3F4F6", style "padding" "1.5rem", style "display" "flex", style "align-items" "center", style "gap" "1rem" ]
-                            [ div [ style "display" "flex", style "flex-direction" "column", style "gap" "0.5rem" ]
-                                [ div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
-                                     [ button 
-                                        [ onClick RequestFolderSelect
-                                        , style "padding" "0.5rem 1rem"
-                                        , style "background-color" "white"
-                                        , style "color" "#374151"
-                                        , style "border" "1px solid #D1D5DB"
-                                        , style "border-radius" "0.375rem"
-                                        , style "cursor" "pointer"
-                                        , style "font-weight" "500"
-                                        ] 
-                                        [ text "Escolher..." ]
-                                     , span [ style "font-family" "monospace", style "color" "#4B5563" ]
-                                        [ text (Maybe.withDefault "Nenhum selecionado" model.pendingFolderName) ]
-                                     ]
-                                , div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
-                                     [ label [ style "font-weight" "500", style "color" "#374151" ] [ text "Nome:" ]
-                                     , input 
-                                        [ type_ "text"
-                                        , placeholder "Nome para a URL"
-                                        , value model.customNameInput
-                                        , onInput CustomNameChanged
-                                        , disabled (model.pendingFolderName == Nothing)
-                                        , style "padding" "0.5rem"
-                                        , style "border" "1px solid #D1D5DB"
-                                        , style "border-radius" "0.375rem"
-                                        ] 
-                                        []
-                                     ]
-                                ]
-                            , button 
-                                [ onClick ConfirmSelection
-                                , disabled (model.pendingFolderName == Nothing)
-                                , style "padding" "0.5rem"
-                                , style "display" "flex"
-                                , style "align-items" "center"
-                                , style "justify-content" "center"
-                                , style "background-color" (if model.pendingFolderName == Nothing then "#9CA3AF" else "#10B981")
-                                , style "color" "white"
-                                , style "border" "none"
-                                , style "border-radius" "50%"
-                                , style "width" "2.5rem"
-                                , style "height" "2.5rem"
-                                , style "cursor" (if model.pendingFolderName == Nothing then "not-allowed" else "pointer")
-                                , style "box-shadow" "0 2px 4px rgba(0,0,0,0.1)"
-                                , style "transition" "all 0.2s"
-                                ] 
-                                [ span [ class "material-symbols-outlined" ] [ text "add" ] ]
+                        div [ style "margin-top" "2rem", style "border-radius" "0.5rem", style "background" "#F3F4F6", style "padding" "1.5rem", style "display" "flex", style "flex-direction" "column", style "gap" "1rem" ]
+                            [ div [ style "display" "flex", style "align-items" "center", style "gap" "1rem" ]
+                                 [ button 
+                                    [ onClick RequestFolderSelect
+                                    , style "padding" "0.5rem"
+                                    , style "background-color" "white"
+                                    , style "color" "#374151"
+                                    , style "border" "1px solid #D1D5DB"
+                                    , style "border-radius" "0.375rem"
+                                    , style "cursor" "pointer"
+                                    , style "display" "flex"
+                                    , style "align-items" "center"
+                                    , style "justify-content" "center"
+                                    , style "width" "2.5rem"
+                                    , style "height" "2.5rem"
+                                    , style "box-shadow" "0 1px 2px rgba(0,0,0,0.05)"
+                                    , style "transition" "all 0.2s"
+                                    , style "flex-shrink" "0"
+                                    ] 
+                                    [ span [ class "material-symbols-outlined" ] [ text "folder_open" ] ]
+                                 , span [ style "font-family" "monospace", style "color" "#4B5563", style "font-size" "0.9rem" ]
+                                    [ text (Maybe.withDefault "Nenhum selecionado" model.pendingFolderName) ]
+                                 ]
+                            , case model.pendingFolderName of
+                                Just _ ->
+                                    div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem", style "width" "100%" ]
+                                        [ input 
+                                            [ type_ "text"
+                                            , placeholder "Nome do item"
+                                            , value model.customNameInput
+                                            , onInput CustomNameChanged
+                                            , style "flex" "1"
+                                            , style "padding" "0.75rem"
+                                            , style "border" "1px solid #D1D5DB"
+                                            , style "border-radius" "0.375rem"
+                                            , style "font-size" "1rem"
+                                            , style "font-family" "inherit"
+                                            , style "outline" "none"
+                                            , style "box-shadow" "0 1px 2px rgba(0,0,0,0.05)"
+                                            ] 
+                                            []
+                                        , button 
+                                            [ onClick ConfirmSelection
+                                            , style "padding" "0"
+                                            , style "display" "flex"
+                                            , style "align-items" "center"
+                                            , style "justify-content" "center"
+                                            , style "background-color" "#10B981"
+                                            , style "color" "white"
+                                            , style "border" "none"
+                                            , style "border-radius" "0.375rem"
+                                            , style "width" "3rem"
+                                            , style "height" "3rem"
+                                            , style "cursor" "pointer"
+                                            , style "box-shadow" "0 2px 4px rgba(0,0,0,0.1)"
+                                            , style "transition" "background-color 0.2s"
+                                            , style "flex-shrink" "0"
+                                            ] 
+                                            [ span [ class "material-symbols-outlined" ] [ text "add" ] ]
+                                        ]
+                                Nothing ->
+                                    text ""
                             ]
                       else
                         text ""
