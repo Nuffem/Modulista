@@ -11,7 +11,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Modulista SPA"
     , body =
-        [ div [ style "display" "flex", style "flex-direction" "column", style "min-height" "100vh", style "font-family" "sans-serif" ]
+        [ div [ style "display" "flex", style "flex-direction" "column", style "height" "100vh", style "overflow" "hidden", style "font-family" "sans-serif" ]
             [ header
                 [ style "background-color" "#2563EB" -- Royal Blue
                 , style "color" "white"
@@ -34,15 +34,17 @@ view model =
                 , style "width" "100%"
                 , style "max-width" "80vh"
                 , style "margin" "0 auto"
+                , style "display" "flex"
+                , style "flex-direction" "column"
+                , style "overflow" "hidden"
+                , style "box-sizing" "border-box"
                 ]
-                [ div [ style "background" "white", style "padding" "2rem", style "border-radius" "0.5rem", style "box-shadow" "0 1px 3px rgba(0,0,0,0.1)" ]
-                    [ h2 [ style "margin-top" "0", style "margin-bottom" "1rem", style "color" "#111827" ] [ text "Navegador de Pastas" ]
-                    , viewBreadcrumbs model
+                [ div [ style "background" "white", style "padding" "2rem", style "border-radius" "0.5rem", style "box-shadow" "0 1px 3px rgba(0,0,0,0.1)", style "display" "flex", style "flex-direction" "column", style "flex" "1", style "overflow" "hidden" ]
+                    [ viewBreadcrumbs model
                     , viewFileList model
                     , div [ style "margin-top" "2rem", style "border-radius" "0.375rem", style "background" "#F3F4F6", style "padding" "1.5rem", style "display" "flex", style "align-items" "center", style "gap" "1rem" ]
                         [ div [ style "display" "flex", style "flex-direction" "column", style "gap" "0.5rem" ]
-                            [ label [ style "font-weight" "500", style "font-size" "0.875rem" ] [ text "Selecionar Pasta:" ]
-                            , div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
+                            [ div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
                                  [ button 
                                     [ onClick RequestFolderSelect
                                     , style "padding" "0.5rem 1rem"
@@ -103,12 +105,12 @@ viewBreadcrumbs model =
 viewFileList : Model -> Html Msg
 viewFileList model =
     if model.rootFolderName == Nothing then
-        div [] []
+        div [ style "flex" "1" ] []
     else if List.isEmpty model.files then
-        div [ style "padding" "1rem", style "color" "#666", style "font-style" "italic", style "text-align" "center", style "background" "#f9f9f9", style "border-radius" "0.25rem" ] 
+        div [ style "padding" "1rem", style "color" "#666", style "font-style" "italic", style "text-align" "center", style "background" "#f9f9f9", style "border-radius" "0.25rem", style "flex" "1" ] 
             [ text "Pasta vazia." ]
     else
-        div [ style "border" "1px solid #E5E7EB", style "border-radius" "0.5rem", style "overflow" "hidden" ]
+        div [ style "border" "1px solid #E5E7EB", style "border-radius" "0.5rem", style "overflow-y" "auto", style "flex" "1", style "min-height" "0" ]
             (List.map (viewFileEntry model.currentPath) model.files)
 
 viewFileEntry : List String -> FileEntry -> Html Msg
