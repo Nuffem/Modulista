@@ -87,5 +87,9 @@ update msg model =
             )
 
 subscriptions : Model -> Sub Msg
+
 subscriptions _ =
-    folderContentReceived FolderContentReceived
+    Sub.batch
+        [ folderContentReceived FolderContentReceived
+        , folderPicked FolderPicked
+        ]

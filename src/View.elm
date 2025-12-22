@@ -2,7 +2,7 @@ module View exposing (view)
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (style, class, href, src, alt)
+import Html.Attributes exposing (style, class, href, src, alt, disabled)
 import Html.Events exposing (onClick)
 import Types exposing (Model, Msg(..))
 import Data.FileEntry exposing (FileEntry)
@@ -71,6 +71,7 @@ view model =
                                 ]
                             , button 
                                 [ onClick ConfirmSelection
+                                , disabled (model.pendingFolderName == Nothing)
                                 , style "padding" "0.5rem"
                                 , style "display" "flex"
                                 , style "align-items" "center"
