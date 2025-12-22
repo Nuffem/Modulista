@@ -13,6 +13,7 @@ type alias Model =
     , roots : List FileEntry
     , rootFolderName : Maybe String
     , pendingFolderName : Maybe String
+    , customNameInput : String
     , isLoading : Bool
     }
 
@@ -21,5 +22,6 @@ type Msg
     | UrlChanged Url.Url
     | RequestFolderSelect
     | FolderPicked { name : String }
+    | CustomNameChanged String
     | ConfirmSelection
     | FolderContentReceived { path : List String, files : List FileEntry, rootName : String }

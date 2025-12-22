@@ -58,10 +58,10 @@
     });
 
     if (app.ports.confirmFolder) {
-      app.ports.confirmFolder.subscribe(async () => {
+      app.ports.confirmFolder.subscribe(async (customName) => {
         if (!pendingHandle) return;
 
-        const name = pendingHandle.name;
+        const name = customName || pendingHandle.name;
         rootHandles[name] = pendingHandle;
         const tempHandle = pendingHandle;
         pendingHandle = null;

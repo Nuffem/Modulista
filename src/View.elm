@@ -2,8 +2,8 @@ module View exposing (view)
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (style, class, href, src, alt, disabled)
-import Html.Events exposing (onClick)
+import Html.Attributes exposing (style, class, href, src, alt, disabled, value, placeholder, type_)
+import Html.Events exposing (onClick, onInput)
 import Types exposing (Model, Msg(..))
 import Data.FileEntry exposing (FileEntry)
 
@@ -67,6 +67,20 @@ view model =
                                         [ text "Escolher..." ]
                                      , span [ style "font-family" "monospace", style "color" "#4B5563" ]
                                         [ text (Maybe.withDefault "Nenhum selecionado" model.pendingFolderName) ]
+                                     ]
+                                , div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
+                                     [ label [ style "font-weight" "500", style "color" "#374151" ] [ text "Nome:" ]
+                                     , input 
+                                        [ type_ "text"
+                                        , placeholder "Nome para a URL"
+                                        , value model.customNameInput
+                                        , onInput CustomNameChanged
+                                        , disabled (model.pendingFolderName == Nothing)
+                                        , style "padding" "0.5rem"
+                                        , style "border" "1px solid #D1D5DB"
+                                        , style "border-radius" "0.375rem"
+                                        ] 
+                                        []
                                      ]
                                 ]
                             , button 

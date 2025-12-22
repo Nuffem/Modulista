@@ -20,6 +20,7 @@ init _ url key =
       , roots = []
       , rootFolderName = Nothing
       , pendingFolderName = Nothing
+      , customNameInput = ""
       , isLoading = False
       }
     , navigateToPath path
@@ -55,10 +56,13 @@ update msg model =
             )
 
         FolderPicked { name } ->
-             ( { model | pendingFolderName = Just name, isLoading = False }, Cmd.none )
+             ( { model | pendingFolderName = Just name, customNameInput = name, isLoading = False }, Cmd.none )
+
+        CustomNameChanged newName ->
+            ( { model | customNameInput = newName }, Cmd.none )
 
         ConfirmSelection ->
-             ( { model | isLoading = True }, confirmFolder () )
+             ( { model | isLoading = True }, confirmFolder model.customNameInput )
 
         FolderContentReceived data ->
             let
