@@ -71,17 +71,21 @@ view model =
                                 ]
                             , button 
                                 [ onClick ConfirmSelection
-                                , style "padding" "0.75rem 1.5rem"
+                                , style "padding" "0.5rem"
+                                , style "display" "flex"
+                                , style "align-items" "center"
+                                , style "justify-content" "center"
                                 , style "background-color" (if model.pendingFolderName == Nothing then "#9CA3AF" else "#10B981")
                                 , style "color" "white"
                                 , style "border" "none"
-                                , style "border-radius" "0.375rem"
+                                , style "border-radius" "50%"
+                                , style "width" "2.5rem"
+                                , style "height" "2.5rem"
                                 , style "cursor" (if model.pendingFolderName == Nothing then "not-allowed" else "pointer")
-                                , style "font-weight" "600"
-                                , style "height" "fit-content"
-                                , style "align-self" "flex-end"
+                                , style "box-shadow" "0 2px 4px rgba(0,0,0,0.1)"
+                                , style "transition" "all 0.2s"
                                 ] 
-                                [ text "Incluir" ]
+                                [ span [ class "material-symbols-outlined" ] [ text "add" ] ]
                             ]
                       else
                         text ""
@@ -116,8 +120,7 @@ viewBreadcrumbs model =
 
         homeLink = 
             a (href "#/" :: crumbStyle)
-                [ span [ class "material-symbols-outlined", style "font-size" "1.25rem", style "margin-right" "0.25rem" ] [ text "home" ]
-                , text "Início" 
+                [ span [ class "material-symbols-outlined", style "font-size" "1.25rem" ] [ text "home" ]
                 ]
         
         renderCrumb index name =
