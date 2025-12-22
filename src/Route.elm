@@ -9,5 +9,6 @@ parsePath url =
             fragment
                 |> String.split "/"
                 |> List.filter (not << String.isEmpty)
+                |> List.filterMap Url.percentDecode
         Nothing ->
             []

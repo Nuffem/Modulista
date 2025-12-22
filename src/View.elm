@@ -6,6 +6,7 @@ import Html.Attributes exposing (style, class, href, src, alt, disabled, value, 
 import Html.Events exposing (onClick, onInput)
 import Types exposing (Model, Msg(..))
 import Data.FileEntry exposing (FileEntry)
+import Url
 
 view : Model -> Browser.Document Msg
 view model =
@@ -141,7 +142,7 @@ viewBreadcrumbs model =
         renderCrumb index name =
             let
                 targetPath = List.take (index + 1) model.currentPath
-                hash = "#/" ++ String.join "/" targetPath
+                hash = buildHash targetPath
             in
             [ separator
             , a (href hash :: crumbStyle) [ text name ]
@@ -169,7 +170,7 @@ viewFileEntry : List String -> FileEntry -> Html Msg
 viewFileEntry currentPath entry =
     let
          targetPath = currentPath ++ [ entry.name ]
-         hash = "#/" ++ String.join "/" targetPath
+         hash = buildHash targetPath
          
          iconName = if entry.isFolder then "folder" else "article"
          
@@ -197,3 +198,7 @@ viewFileEntry currentPath entry =
           , style "color" "#4B5563"
           ]
           [ content ]
+
+buildHash : List String -> String
+buildHash path =
+    "#/" ++ (path |> List.map Url.percentEncode |> String.join "/")
