@@ -9,7 +9,7 @@ import Data.FileEntry exposing (FileEntry)
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Modulista SPA"
+    { title = "Modulista"
     , body =
         [ div [ style "display" "flex", style "flex-direction" "column", style "height" "100vh", style "overflow" "hidden" ]
             [ header
