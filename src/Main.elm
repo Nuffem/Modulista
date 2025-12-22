@@ -38,7 +38,7 @@ type alias FileEntry =
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
-    , count : Int
+
     , currentPath : List String
     , files : List FileEntry
     , rootFolderName : Maybe String
@@ -53,7 +53,7 @@ init _ url key =
     in
     ( { key = key
       , url = url
-      , count = 0
+
       , currentPath = path
       , files = []
       , rootFolderName = Nothing
@@ -76,9 +76,7 @@ parsePath url =
 -- UPDATE
 
 type Msg
-    = Increment
-    | Decrement
-    | LinkClicked Browser.UrlRequest
+    = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | RequestFolderSelect
     | FolderPicked { name : String }
@@ -88,12 +86,6 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Increment ->
-            ( { model | count = model.count + 1 }, Cmd.none )
-
-        Decrement ->
-            ( { model | count = model.count - 1 }, Cmd.none )
-
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
@@ -163,74 +155,41 @@ view model =
                 , style "margin" "0 auto"
                 ]
                 [ div [ style "background" "white", style "padding" "2rem", style "border-radius" "0.5rem", style "box-shadow" "0 1px 3px rgba(0,0,0,0.1)" ]
-                    [ h1 [ style "margin-top" "0", style "color" "#111827" ] [ text "Bem-vindo ao Modulista (Elm)" ]
-                    , p [ style "color" "#4B5563" ] [ text "Este é um ambiente de desenvolvimento Elm configurado via Containerfile." ]
-                    , div [ style "margin-top" "1.5rem", style "display" "flex", style "align-items" "center", style "gap" "1rem" ]
-                        [ button
-                            [ onClick Decrement
-                            , style "padding" "0.5rem 1rem"
-                            , style "background-color" "#E5E7EB"
+                    [ h2 [ style "margin-top" "0", style "margin-bottom" "1rem", style "color" "#111827" ] [ text "Navegador de Pastas" ]
+                    , viewBreadcrumbs model
+                    , viewFileList model
+                    , div [ style "margin-top" "2rem", style "border-radius" "0.375rem", style "background" "#F3F4F6", style "padding" "1.5rem", style "display" "flex", style "align-items" "center", style "gap" "1rem" ]
+                        [ div [ style "display" "flex", style "flex-direction" "column", style "gap" "0.5rem" ]
+                            [ label [ style "font-weight" "500", style "font-size" "0.875rem" ] [ text "Selecionar Pasta:" ]
+                            , div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
+                                 [ button 
+                                    [ onClick RequestFolderSelect
+                                    , style "padding" "0.5rem 1rem"
+                                    , style "background-color" "white"
+                                    , style "color" "#374151"
+                                    , style "border" "1px solid #D1D5DB"
+                                    , style "border-radius" "0.375rem"
+                                    , style "cursor" "pointer"
+                                    , style "font-weight" "500"
+                                    ] 
+                                    [ text "Escolher..." ]
+                                 , span [ style "font-family" "monospace", style "color" "#4B5563" ]
+                                    [ text (Maybe.withDefault "Nenhum selecionado" model.pendingFolderName) ]
+                                 ]
+                            ]
+                        , button 
+                            [ onClick ConfirmSelection
+                            , style "padding" "0.75rem 1.5rem"
+                            , style "background-color" (if model.pendingFolderName == Nothing then "#9CA3AF" else "#10B981")
+                            , style "color" "white"
                             , style "border" "none"
-                            , style "border-radius" "0.25rem"
-                            , style "cursor" "pointer"
-                            , style "font-size" "1rem"
-                            , style "font-weight" "bold"
-                            , style "color" "#374151"
-                            ]
-                            [ text "-" ]
-                        , text (String.fromInt model.count)
-                        , button
-                            [ onClick Increment
-                            , style "padding" "0.5rem 1rem"
-                            , style "background-color" "#E5E7EB"
-                            , style "border" "none"
-                            , style "border-radius" "0.25rem"
-                            , style "cursor" "pointer"
-                            , style "font-size" "1rem"
-                            , style "font-weight" "bold"
-                            , style "color" "#374151"
-                            ]
-                            [ text "+" ]
-                        ]
-                    
-                    -- File System Section
-                    , div [ style "margin-top" "3rem", style "padding-top" "2rem", style "border-top" "2px solid #E5E7EB" ]
-                        [ h2 [ style "margin-bottom" "1rem", style "color" "#111827" ] [ text "Navegador de Pastas" ]
-                        , viewBreadcrumbs model
-                        , viewFileList model
-                        , div [ style "margin-top" "2rem", style "border-radius" "0.375rem", style "background" "#F3F4F6", style "padding" "1.5rem", style "display" "flex", style "align-items" "center", style "gap" "1rem" ]
-                            [ div [ style "display" "flex", style "flex-direction" "column", style "gap" "0.5rem" ]
-                                [ label [ style "font-weight" "500", style "font-size" "0.875rem" ] [ text "Selecionar Pasta:" ]
-                                , div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
-                                     [ button 
-                                        [ onClick RequestFolderSelect
-                                        , style "padding" "0.5rem 1rem"
-                                        , style "background-color" "white"
-                                        , style "color" "#374151"
-                                        , style "border" "1px solid #D1D5DB"
-                                        , style "border-radius" "0.375rem"
-                                        , style "cursor" "pointer"
-                                        , style "font-weight" "500"
-                                        ] 
-                                        [ text "Escolher..." ]
-                                     , span [ style "font-family" "monospace", style "color" "#4B5563" ]
-                                        [ text (Maybe.withDefault "Nenhum selecionado" model.pendingFolderName) ]
-                                     ]
-                                ]
-                            , button 
-                                [ onClick ConfirmSelection
-                                , style "padding" "0.75rem 1.5rem"
-                                , style "background-color" (if model.pendingFolderName == Nothing then "#9CA3AF" else "#10B981")
-                                , style "color" "white"
-                                , style "border" "none"
-                                , style "border-radius" "0.375rem"
-                                , style "cursor" (if model.pendingFolderName == Nothing then "not-allowed" else "pointer")
-                                , style "font-weight" "600"
-                                , style "height" "fit-content"
-                                , style "align-self" "flex-end"
-                                ] 
-                                [ text "Incluir" ]
-                            ]
+                            , style "border-radius" "0.375rem"
+                            , style "cursor" (if model.pendingFolderName == Nothing then "not-allowed" else "pointer")
+                            , style "font-weight" "600"
+                            , style "height" "fit-content"
+                            , style "align-self" "flex-end"
+                            ] 
+                            [ text "Incluir" ]
                         ]
                     ]
                 ]
