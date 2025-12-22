@@ -119,11 +119,11 @@ viewFileEntry currentPath entry =
          targetPath = currentPath ++ [ entry.name ]
          hash = "#/" ++ String.join "/" targetPath
          
-         icon = if entry.isFolder then "📁" else "📄"
+         iconName = if entry.isFolder then "folder" else "article"
          
          content = 
             div [ style "display" "flex", style "align-items" "center", style "width" "100%" ]
-                [ span [ style "margin-right" "0.75rem", style "font-size" "1.25rem" ] [ text icon ]
+                [ span [ class "material-symbols-outlined", style "margin-right" "0.75rem", style "font-size" "1.5rem", style "color" (if entry.isFolder then "#F59E0B" else "#9CA3AF") ] [ text iconName ]
                 , span [ style "font-weight" (if entry.isFolder then "600" else "400") ] [ text entry.name ]
                 ]
     in
