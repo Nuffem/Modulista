@@ -11,7 +11,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Modulista SPA"
     , body =
-        [ div [ style "display" "flex", style "flex-direction" "column", style "height" "100vh", style "overflow" "hidden", style "font-family" "sans-serif" ]
+        [ div [ style "display" "flex", style "flex-direction" "column", style "height" "100vh", style "overflow" "hidden" ]
             [ header
                 [ style "background-color" "#2563EB" -- Royal Blue
                 , style "color" "white"
