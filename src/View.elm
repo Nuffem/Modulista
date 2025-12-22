@@ -2,7 +2,7 @@ module View exposing (view)
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (style, class, href)
+import Html.Attributes exposing (style, class, href, src, alt)
 import Html.Events exposing (onClick)
 import Types exposing (Model, Msg(..))
 import Data.FileEntry exposing (FileEntry)
@@ -19,8 +19,16 @@ view model =
                 , style "box-shadow" "0 2px 4px rgba(0,0,0,0.1)"
                 , style "display" "flex"
                 , style "align-items" "center"
+                , style "gap" "1rem"
                 ]
-                [ h1
+                [ img
+                    [ src "logo.svg"
+                    , alt "Modulista Logo"
+                    , style "height" "32px"
+                    , style "width" "32px"
+                    ]
+                    []
+                , h1
                     [ style "margin" "0"
                     , style "font-size" "1.5rem"
                     , style "font-weight" "600"
