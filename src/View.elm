@@ -177,7 +177,17 @@ viewFileEntry currentPath entry =
          content = 
             div [ style "display" "flex", style "align-items" "center", style "width" "100%" ]
                 [ span [ class "material-symbols-outlined", style "margin-right" "0.75rem", style "font-size" "1.5rem", style "color" (if entry.isFolder then "#F59E0B" else "#9CA3AF") ] [ text iconName ]
-                , span [ style "font-weight" (if entry.isFolder then "600" else "400") ] [ text entry.name ]
+                , div [ style "display" "flex", style "flex-direction" "column" ]
+                    [ span [ style "font-weight" (if entry.isFolder then "600" else "400") ] [ text entry.name ]
+                    , case entry.realName of
+                        Just real ->
+                             if real /= entry.name then
+                                 span [ style "font-size" "0.75rem", style "color" "#6B7280" ] [ text real ]
+                             else
+                                 text ""
+                        Nothing ->
+                             text ""
+                    ]
                 ]
     in
     if entry.isFolder then

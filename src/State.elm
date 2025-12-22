@@ -67,7 +67,8 @@ update msg model =
         FolderContentReceived data ->
             let
                 -- Construct a FileEntry from the root name
-                newRoot = { name = data.rootName, isFolder = True }
+                -- Construct a FileEntry from the root name with the real name
+                newRoot = { name = data.rootName, isFolder = True, realName = Just data.rootRealName }
                 
                 -- Update roots list if this is a new root confirmed via "Include" workflow
                 -- or if we just navigated to a root we know?
@@ -77,7 +78,15 @@ update msg model =
                     if List.member newRoot model.roots then
                         model.roots
                     else
-                        model.roots ++ [newRoot]
+                        -- Check if we already have a root with the same name but maybe missing realName (if that was possible)
+                        -- or just update it. For now simple check.
+                        -- Actually if we update the definition of FileEntry, List.member checks structural equality.
+                        -- If realName is different, it will be added again. We might want to filter out old one with same name?
+                        let 
+                            others = List.filter (\r -> r.name /= newRoot.name) model.roots
+                        in
+                        others ++ [newRoot]
+
             in
             ( { model 
               | files = data.files

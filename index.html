@@ -75,7 +75,8 @@
           app.ports.folderContentReceived.send({
             path: newPath,
             files: files,
-            rootName: name
+            rootName: name,
+            rootRealName: tempHandle.name
           });
 
           // Update URL to the new folder
@@ -112,7 +113,8 @@
         app.ports.folderContentReceived.send({
           path: path,
           files: files,
-          rootName: rootName
+          rootName: rootName,
+          rootRealName: rootHandle.name
         });
       } catch (err) {
         console.error("Navigation failed:", err);
@@ -124,7 +126,8 @@
       for await (const entry of dirHandle.values()) {
         result.push({
           name: entry.name,
-          isFolder: entry.kind === 'directory'
+          isFolder: entry.kind === 'directory',
+          realName: null
         });
       }
 

@@ -24,4 +24,4 @@ type Msg
     | FolderPicked { name : String }
     | CustomNameChanged String
     | ConfirmSelection
-    | FolderContentReceived { path : List String, files : List FileEntry, rootName : String }
+    | FolderContentReceived { path : List String, files : List FileEntry, rootName : String, rootRealName : String }
