@@ -44,7 +44,8 @@
       node: document.getElementById('app')
     });
 
-    let rootHandle = null;
+    // Map: name -> FileSystemDirectoryHandle
+    let rootHandles = {};
     let pendingHandle = null;
 
     app.ports.requestFolderSelect.subscribe(async () => {
@@ -59,18 +60,26 @@
     if (app.ports.confirmFolder) {
       app.ports.confirmFolder.subscribe(async () => {
         if (!pendingHandle) return;
-        rootHandle = pendingHandle;
+
+        const name = pendingHandle.name;
+        rootHandles[name] = pendingHandle;
+        const tempHandle = pendingHandle;
         pendingHandle = null;
 
         try {
-          const files = await readDirectory(rootHandle);
+          const files = await readDirectory(tempHandle);
+
+          // Construct path: [rootName]
+          const newPath = [name];
+
           app.ports.folderContentReceived.send({
-            path: [],
+            path: newPath,
             files: files,
-            rootName: rootHandle.name
+            rootName: name
           });
-          // Reset location hash to root when a new folder is selected
-          history.pushState(null, "", "#/");
+
+          // Update URL to the new folder
+          history.pushState(null, "", "#/" + name);
         } catch (err) {
           console.error("Error reading confirmed folder:", err);
         }
@@ -78,22 +87,35 @@
     }
 
     app.ports.navigateToPath.subscribe(async (path) => {
-      if (!rootHandle) return;
+      // If path is empty, we are at root list (handled by Elm), 
+      // but if Elm asks for it, we return nothing or error?
+      // Actually Elm shouldn't ask for files at [] if [] is the virtual root list.
+      if (path.length === 0) return;
+
+      const rootName = path[0];
+      const rootHandle = rootHandles[rootName];
+
+      if (!rootHandle) {
+        console.error("Root handle not found for:", rootName);
+        // Maybe redirect to #/?
+        return;
+      }
 
       try {
         let currentDir = rootHandle;
-        for (const part of path) {
-          currentDir = await currentDir.getDirectoryHandle(part);
+        // Traverse path starting from index 1 (subfolders)
+        for (let i = 1; i < path.length; i++) {
+          currentDir = await currentDir.getDirectoryHandle(path[i]);
         }
+
         const files = await readDirectory(currentDir);
         app.ports.folderContentReceived.send({
           path: path,
           files: files,
-          rootName: rootHandle.name
+          rootName: rootName
         });
       } catch (err) {
         console.error("Navigation failed:", err);
-        // If path is invalid, maybe redirect to root?
       }
     });
 

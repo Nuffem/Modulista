@@ -17,6 +17,7 @@ init _ url key =
 
       , currentPath = path
       , files = []
+      , roots = []
       , rootFolderName = Nothing
       , pendingFolderName = Nothing
       , isLoading = False
@@ -39,9 +40,14 @@ update msg model =
             let
                 path = parsePath url
             in
-            ( { model | url = url, currentPath = path, isLoading = True }
-            , navigateToPath path
-            )
+            if List.isEmpty path then
+                 ( { model | url = url, currentPath = [], files = model.roots, isLoading = False }
+                 , Cmd.none
+                 )
+            else
+                 ( { model | url = url, currentPath = path, isLoading = True }
+                 , navigateToPath path
+                 )
 
         RequestFolderSelect ->
             ( { model | isLoading = True }
@@ -55,11 +61,26 @@ update msg model =
              ( { model | isLoading = True }, confirmFolder () )
 
         FolderContentReceived data ->
+            let
+                -- Construct a FileEntry from the root name
+                newRoot = { name = data.rootName, isFolder = True }
+                
+                -- Update roots list if this is a new root confirmed via "Include" workflow
+                -- or if we just navigated to a root we know?
+                -- Actually, simply ensuring it's in the list is safer.
+                -- We only really "add" it when confirmed. But here we can just "ensure" it.
+                updatedRoots = 
+                    if List.member newRoot model.roots then
+                        model.roots
+                    else
+                        model.roots ++ [newRoot]
+            in
             ( { model 
               | files = data.files
               , currentPath = data.path
               , rootFolderName = Just data.rootName
               , pendingFolderName = Nothing
+              , roots = updatedRoots
               , isLoading = False
               }
             , Cmd.none

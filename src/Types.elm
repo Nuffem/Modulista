@@ -10,6 +10,7 @@ type alias Model =
     , url : Url.Url
     , currentPath : List String
     , files : List FileEntry
+    , roots : List FileEntry
     , rootFolderName : Maybe String
     , pendingFolderName : Maybe String
     , isLoading : Bool

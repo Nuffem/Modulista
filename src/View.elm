@@ -50,38 +50,41 @@ view model =
                 [ div [ style "background" "white", style "padding" "2rem", style "border-radius" "0.5rem", style "box-shadow" "0 1px 3px rgba(0,0,0,0.1)", style "display" "flex", style "flex-direction" "column", style "flex" "1", style "overflow" "hidden" ]
                     [ viewBreadcrumbs model
                     , viewFileList model
-                    , div [ style "margin-top" "2rem", style "border-radius" "0.375rem", style "background" "#F3F4F6", style "padding" "1.5rem", style "display" "flex", style "align-items" "center", style "gap" "1rem" ]
-                        [ div [ style "display" "flex", style "flex-direction" "column", style "gap" "0.5rem" ]
-                            [ div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
-                                 [ button 
-                                    [ onClick RequestFolderSelect
-                                    , style "padding" "0.5rem 1rem"
-                                    , style "background-color" "white"
-                                    , style "color" "#374151"
-                                    , style "border" "1px solid #D1D5DB"
-                                    , style "border-radius" "0.375rem"
-                                    , style "cursor" "pointer"
-                                    , style "font-weight" "500"
-                                    ] 
-                                    [ text "Escolher..." ]
-                                 , span [ style "font-family" "monospace", style "color" "#4B5563" ]
-                                    [ text (Maybe.withDefault "Nenhum selecionado" model.pendingFolderName) ]
-                                 ]
+                    , if List.isEmpty model.currentPath then
+                        div [ style "margin-top" "2rem", style "border-radius" "0.375rem", style "background" "#F3F4F6", style "padding" "1.5rem", style "display" "flex", style "align-items" "center", style "gap" "1rem" ]
+                            [ div [ style "display" "flex", style "flex-direction" "column", style "gap" "0.5rem" ]
+                                [ div [ style "display" "flex", style "align-items" "center", style "gap" "0.5rem" ]
+                                     [ button 
+                                        [ onClick RequestFolderSelect
+                                        , style "padding" "0.5rem 1rem"
+                                        , style "background-color" "white"
+                                        , style "color" "#374151"
+                                        , style "border" "1px solid #D1D5DB"
+                                        , style "border-radius" "0.375rem"
+                                        , style "cursor" "pointer"
+                                        , style "font-weight" "500"
+                                        ] 
+                                        [ text "Escolher..." ]
+                                     , span [ style "font-family" "monospace", style "color" "#4B5563" ]
+                                        [ text (Maybe.withDefault "Nenhum selecionado" model.pendingFolderName) ]
+                                     ]
+                                ]
+                            , button 
+                                [ onClick ConfirmSelection
+                                , style "padding" "0.75rem 1.5rem"
+                                , style "background-color" (if model.pendingFolderName == Nothing then "#9CA3AF" else "#10B981")
+                                , style "color" "white"
+                                , style "border" "none"
+                                , style "border-radius" "0.375rem"
+                                , style "cursor" (if model.pendingFolderName == Nothing then "not-allowed" else "pointer")
+                                , style "font-weight" "600"
+                                , style "height" "fit-content"
+                                , style "align-self" "flex-end"
+                                ] 
+                                [ text "Incluir" ]
                             ]
-                        , button 
-                            [ onClick ConfirmSelection
-                            , style "padding" "0.75rem 1.5rem"
-                            , style "background-color" (if model.pendingFolderName == Nothing then "#9CA3AF" else "#10B981")
-                            , style "color" "white"
-                            , style "border" "none"
-                            , style "border-radius" "0.375rem"
-                            , style "cursor" (if model.pendingFolderName == Nothing then "not-allowed" else "pointer")
-                            , style "font-weight" "600"
-                            , style "height" "fit-content"
-                            , style "align-self" "flex-end"
-                            ] 
-                            [ text "Incluir" ]
-                        ]
+                      else
+                        text ""
                     ]
                 ]
             ]
@@ -90,59 +93,56 @@ view model =
 
 viewBreadcrumbs : Model -> Html Msg
 viewBreadcrumbs model =
-    div [ style "margin-bottom" "1rem", style "display" "flex", style "align-items" "center", style "flex-wrap" "wrap", style "gap" "0.5rem" ]
-        ( case model.rootFolderName of
-            Nothing -> 
-                [ div [ style "padding" "0.5rem 1rem", style "background" "#F9FAFB", style "border" "1px solid #D1D5DB", style "border-radius" "0.375rem", style "color" "#6B7280" ] 
-                    [ text "Selecione uma pasta para começar." ] 
+    let
+        crumbStyle =
+            [ style "display" "inline-flex"
+            , style "align-items" "center"
+            , style "padding" "0.5rem 1rem"
+            , style "background-color" "white"
+            , style "border" "1px solid #E5E7EB"
+            , style "border-radius" "9999px"
+            , style "color" "#374151"
+            , style "text-decoration" "none"
+            , style "font-size" "0.875rem"
+            , style "font-weight" "500"
+            , style "transition" "all 0.2s"
+            , style "box-shadow" "0 1px 2px rgba(0,0,0,0.05)"
+            , style "cursor" "pointer"
+            ]
+
+        separator =
+            span [ class "material-symbols-outlined", style "color" "#9CA3AF", style "font-size" "1.25rem" ] 
+                [ text "chevron_right" ]
+
+        homeLink = 
+            a (href "#/" :: crumbStyle)
+                [ span [ class "material-symbols-outlined", style "font-size" "1.25rem", style "margin-right" "0.25rem" ] [ text "home" ]
+                , text "Início" 
                 ]
-            Just root ->
-                let
-                    crumbStyle =
-                        [ style "display" "inline-flex"
-                        , style "align-items" "center"
-                        , style "padding" "0.5rem 1rem"
-                        , style "background-color" "white"
-                        , style "border" "1px solid #E5E7EB"
-                        , style "border-radius" "9999px"
-                        , style "color" "#374151"
-                        , style "text-decoration" "none"
-                        , style "font-size" "0.875rem"
-                        , style "font-weight" "500"
-                        , style "transition" "all 0.2s"
-                        , style "box-shadow" "0 1px 2px rgba(0,0,0,0.05)"
-                        , style "cursor" "pointer"
-                        ]
-
-                    separator =
-                        span [ class "material-symbols-outlined", style "color" "#9CA3AF", style "font-size" "1.25rem" ] 
-                            [ text "chevron_right" ]
-
-                    homeLink = 
-                        a (href "#/" :: crumbStyle)
-                            [ span [ class "material-symbols-outlined", style "font-size" "1.25rem", style "margin-right" "0.25rem" ] [ text "home" ]
-                            , text root 
-                            ]
-                    
-                    renderCrumb index name =
-                        let
-                            targetPath = List.take (index + 1) model.currentPath
-                            hash = "#/" ++ String.join "/" targetPath
-                        in
-                        [ separator
-                        , a (href hash :: crumbStyle) [ text name ]
-                        ]
-                in
-                homeLink :: List.concat (List.indexedMap renderCrumb model.currentPath)
-        )
+        
+        renderCrumb index name =
+            let
+                targetPath = List.take (index + 1) model.currentPath
+                hash = "#/" ++ String.join "/" targetPath
+            in
+            [ separator
+            , a (href hash :: crumbStyle) [ text name ]
+            ]
+    in
+    div [ style "margin-bottom" "1rem", style "display" "flex", style "align-items" "center", style "flex-wrap" "wrap", style "gap" "0.5rem" ]
+        (homeLink :: List.concat (List.indexedMap renderCrumb model.currentPath))
 
 viewFileList : Model -> Html Msg
 viewFileList model =
-    if model.rootFolderName == Nothing then
-        div [ style "flex" "1" ] []
-    else if List.isEmpty model.files then
-        div [ style "padding" "1rem", style "color" "#666", style "font-style" "italic", style "text-align" "center", style "background" "#f9f9f9", style "border-radius" "0.25rem", style "flex" "1" ] 
-            [ text "Pasta vazia." ]
+    if List.isEmpty model.files then
+        if List.isEmpty model.currentPath then
+             div [ style "padding" "2rem", style "color" "#6B7280", style "text-align" "center", style "background" "#F9FAFB", style "border" "1px dashed #D1D5DB", style "border-radius" "0.5rem", style "flex" "1" ] 
+                [ span [ class "material-symbols-outlined", style "font-size" "3rem", style "margin-bottom" "1rem", style "display" "block" ] [ text "folder_open" ]
+                , text "Selecione uma pasta para começar." 
+                ]
+        else
+             div [ style "padding" "1rem", style "color" "#666", style "font-style" "italic", style "text-align" "center", style "background" "#f9f9f9", style "border-radius" "0.25rem", style "flex" "1" ] 
+                [ text "Pasta vazia." ]
     else
         div [ style "border" "1px solid #E5E7EB", style "border-radius" "0.5rem", style "overflow-y" "auto", style "flex" "1", style "min-height" "0" ]
             (List.map (viewFileEntry model.currentPath) model.files)
