@@ -1,0 +1,15 @@
+{
+	"name": "Elm Application",
+	"dockerComposeFile": "../compose.yaml",
+	"service": "app",
+	"workspaceFolder": "/app",
+	"forwardPorts": [8000],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"Elmtooling.elm-ls-vscode"
+			]
+		}
+	},
+	"shutdownAction": "stopCompose"
+}
