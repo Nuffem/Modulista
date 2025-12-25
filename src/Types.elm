@@ -1,4 +1,4 @@
-module Types exposing (Model, Msg(..))
+module Types exposing (Model, Msg(..), ApplicationForm)
 
 import Browser
 import Browser.Navigation as Nav
@@ -15,6 +15,14 @@ type alias Model =
     , pendingFolderName : Maybe String
     , customNameInput : String
     , isLoading : Bool
+    , applicationForm : ApplicationForm
+    }
+
+type alias ApplicationForm =
+    { name : String
+    , functionType : String
+    , arguments : String
+    , isOpen : Bool
     }
 
 type Msg
@@ -25,3 +33,10 @@ type Msg
     | CustomNameChanged String
     | ConfirmSelection
     | FolderContentReceived { path : List String, files : List FileEntry, rootName : String, rootRealName : String }
+    | OpenApplicationForm
+    | CloseApplicationForm
+    | UpdateApplicationFormName String
+    | UpdateApplicationFormFunction String
+    | UpdateApplicationFormArguments String
+    | SubmitApplicationForm
+    | ApplicationCreated Bool

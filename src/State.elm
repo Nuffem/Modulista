@@ -3,7 +3,7 @@ module State exposing (init, update, subscriptions)
 import Browser
 import Browser.Navigation as Nav
 import Url
-import Types exposing (Model, Msg(..))
+import Types exposing (Model, Msg(..), ApplicationForm)
 import Ports exposing (..)
 import Route exposing (parsePath)
 
@@ -22,6 +22,7 @@ init _ url key =
       , pendingFolderName = Nothing
       , customNameInput = ""
       , isLoading = False
+      , applicationForm = { name = "", functionType = "Soma", arguments = "", isOpen = False }
       }
     , navigateToPath path
     )
@@ -99,10 +100,74 @@ update msg model =
             , Cmd.none
             )
 
+        OpenApplicationForm ->
+            let
+                currentForm = model.applicationForm
+                newForm = { currentForm | isOpen = True, name = "", arguments = "" }
+            in
+            ( { model | applicationForm = newForm }, Cmd.none )
+
+        CloseApplicationForm ->
+            let
+                currentForm = model.applicationForm
+                newForm = { currentForm | isOpen = False }
+            in
+            ( { model | applicationForm = newForm }, Cmd.none )
+
+        UpdateApplicationFormName name ->
+            let
+                currentForm = model.applicationForm
+                newForm = { currentForm | name = name }
+            in
+            ( { model | applicationForm = newForm }, Cmd.none )
+
+        UpdateApplicationFormFunction func ->
+            let
+                currentForm = model.applicationForm
+                newForm = { currentForm | functionType = func }
+            in
+            ( { model | applicationForm = newForm }, Cmd.none )
+
+        UpdateApplicationFormArguments args ->
+            let
+                currentForm = model.applicationForm
+                newForm = { currentForm | arguments = args }
+            in
+            ( { model | applicationForm = newForm }, Cmd.none )
+
+        SubmitApplicationForm ->
+            let
+                argsListString =
+                    model.applicationForm.arguments
+                    |> String.split ","
+                    |> List.map String.trim
+                    |> List.filter (not << String.isEmpty)
+                    |> String.join ","
+
+                -- Construct simplistic JSON for now
+                jsonContent =
+                    "{\"type\": \"Application\", \"function\": \"" ++ model.applicationForm.functionType ++ "\", \"arguments\": [" ++ argsListString ++ "]}"
+
+                cmd = createApplicationItem
+                        { path = model.currentPath
+                        , filename = model.applicationForm.name ++ ".json"
+                        , content = jsonContent
+                        }
+            in
+            ( { model | isLoading = True }, cmd )
+
+        ApplicationCreated success ->
+            let
+                 currentForm = model.applicationForm
+                 newForm = { currentForm | isOpen = not success } -- Close if success
+            in
+            ( { model | isLoading = False, applicationForm = newForm }, Cmd.none )
+
 subscriptions : Model -> Sub Msg
 
 subscriptions _ =
     Sub.batch
         [ folderContentReceived FolderContentReceived
         , folderPicked FolderPicked
+        , applicationItemCreated ApplicationCreated
         ]

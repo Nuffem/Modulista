@@ -121,6 +121,51 @@
       }
     });
 
+    if (app.ports.createApplicationItem) {
+      app.ports.createApplicationItem.subscribe(async ({ path, filename, content }) => {
+         if (path.length === 0) {
+            console.error("Cannot create item in root list.");
+            app.ports.applicationItemCreated.send(false);
+            return;
+         }
+
+         const rootName = path[0];
+         const rootHandle = rootHandles[rootName];
+
+         if (!rootHandle) {
+           console.error("Root handle not found.");
+           app.ports.applicationItemCreated.send(false);
+           return;
+         }
+
+         try {
+           let currentDir = rootHandle;
+           for (let i = 1; i < path.length; i++) {
+             currentDir = await currentDir.getDirectoryHandle(path[i]);
+           }
+
+           const fileHandle = await currentDir.getFileHandle(filename, { create: true });
+           const writable = await fileHandle.createWritable();
+           await writable.write(content);
+           await writable.close();
+
+           app.ports.applicationItemCreated.send(true);
+
+           // Refresh directory
+           const files = await readDirectory(currentDir);
+           app.ports.folderContentReceived.send({
+             path: path,
+             files: files,
+             rootName: rootName,
+             rootRealName: rootHandle.name
+           });
+         } catch (err) {
+           console.error("Failed to create file:", err);
+           app.ports.applicationItemCreated.send(false);
+         }
+      });
+    }
+
     async function readDirectory(dirHandle) {
       const result = [];
       for await (const entry of dirHandle.values()) {
