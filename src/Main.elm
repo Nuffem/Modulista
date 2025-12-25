@@ -4,8 +4,9 @@ import Browser
 import Types exposing (Model, Msg)
 import State
 import View
+import Json.Decode exposing (Value)
 
-main : Program () Model Msg
+main : Program Value Model Msg
 main =
     Browser.application
         { init = State.init

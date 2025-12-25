@@ -6,18 +6,30 @@ import Url
 import Types exposing (Model, Msg(..))
 import Ports exposing (..)
 import Route exposing (parsePath)
+import Json.Decode as Decode
+import Data.FileEntry exposing (FileEntry)
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init _ url key =
+init : Decode.Value -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
     let
         path = parsePath url
+        roots =
+            case Decode.decodeValue rootsDecoder flags of
+                Ok r -> r
+                Err _ -> []
+
+        initialFiles =
+             if List.isEmpty path then
+                 roots
+             else
+                 [] -- If we are deep, files will be loaded via navigateToPath
     in
     ( { key = key
       , url = url
 
       , currentPath = path
-      , files = []
-      , roots = []
+      , files = initialFiles
+      , roots = roots
       , rootFolderName = Nothing
       , pendingFolderName = Nothing
       , customNameInput = ""
@@ -25,6 +37,16 @@ init _ url key =
       }
     , navigateToPath path
     )
+
+rootsDecoder : Decode.Decoder (List FileEntry)
+rootsDecoder =
+    Decode.list rootDecoder
+
+rootDecoder : Decode.Decoder FileEntry
+rootDecoder =
+    Decode.map2 (\name realName -> { name = name, isFolder = True, realName = Just realName })
+        (Decode.field "name" Decode.string)
+        (Decode.field "realName" Decode.string)
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -66,7 +88,6 @@ update msg model =
 
         FolderContentReceived data ->
             let
-                -- Construct a FileEntry from the root name
                 -- Construct a FileEntry from the root name with the real name
                 newRoot = { name = data.rootName, isFolder = True, realName = Just data.rootRealName }
                 

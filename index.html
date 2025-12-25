@@ -40,13 +40,29 @@
   <div id="app"></div>
   <script src="elm.js"></script>
   <script>
+    // Load persisted roots from localStorage
+    let storedRoots = [];
+    try {
+      const stored = localStorage.getItem('raiz');
+      if (stored) {
+        storedRoots = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error("Failed to parse localStorage.raiz", e);
+    }
+
     var app = Elm.Main.init({
-      node: document.getElementById('app')
+      node: document.getElementById('app'),
+      flags: storedRoots
     });
 
     // Map: name -> FileSystemDirectoryHandle
     let rootHandles = {};
     let pendingHandle = null;
+
+    // We can't restore handles from localStorage, so rootHandles will be empty initially.
+    // However, Elm will know about the "names" and might display them.
+    // If user clicks on them, we'd need to re-acquire access or handle the missing handle case.
 
     app.ports.requestFolderSelect.subscribe(async () => {
       try {
@@ -63,6 +79,28 @@
 
         const name = customName || pendingHandle.name;
         rootHandles[name] = pendingHandle;
+
+        // Save to localStorage
+        try {
+          // Read current list to ensure we are up to date (though we just loaded it)
+          // We can also maintain a 'roots' array in memory.
+          const newRoot = { name: name, realName: pendingHandle.name };
+
+          let currentRoots = [];
+          const stored = localStorage.getItem('raiz');
+          if (stored) {
+             currentRoots = JSON.parse(stored);
+          }
+
+          // Remove existing with same name if any
+          currentRoots = currentRoots.filter(r => r.name !== name);
+          currentRoots.push(newRoot);
+
+          localStorage.setItem('raiz', JSON.stringify(currentRoots));
+        } catch (e) {
+          console.error("Failed to save to localStorage.raiz", e);
+        }
+
         const tempHandle = pendingHandle;
         pendingHandle = null;
 
@@ -98,6 +136,8 @@
 
       if (!rootHandle) {
         console.error("Root handle not found for:", rootName);
+        // Here we could prompt user to re-open the folder if we wanted to support restoration.
+        // For now, we just fail or log.
         // Maybe redirect to #/?
         return;
       }
