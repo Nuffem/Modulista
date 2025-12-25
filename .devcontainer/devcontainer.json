@@ -1,0 +1,22 @@
+{
+  "name": "Elm",
+  "image": "mcr.microsoft.com/devcontainers/base:noble",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "containerEnv": {
+    "CHOKIDAR_USEPOLLING": "true"
+  },
+  "forwardPorts": [
+	  8000
+  ],
+  "postCreateCommand": "npm install -g elm elm-live elm-test elm-format",
+  "postStartCommand": "elm-live src/Main.elm --start-page=index.html --host=0.0.0.0 --pushstate -- --output=elm.js",
+  "customizations": {
+	  "vscode": {
+	    "extensions": [
+		    "Elmtooling.elm-ls-vscode"
+	    ]
+	  }
+  }
+}
