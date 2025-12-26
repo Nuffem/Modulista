@@ -4,7 +4,7 @@
     {
       "label": "Elm Live Server",
       "type": "shell",
-      "command": "elm-live src/Main.elm --start-page=index.html --host=0.0.0.0 --pushstate -- --output=elm.js",
+      "command": "elm-live src/Main.elm --dir=www --start-page=index.html --host=0.0.0.0 --pushstate -- --output=www/elm.js",
       "isBackground": true,
       "problemMatcher": [],
       "presentation": {
