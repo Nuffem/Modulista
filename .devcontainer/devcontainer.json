@@ -11,7 +11,6 @@
 	  8000
   ],
   "postCreateCommand": "npm install -g elm elm-live elm-test elm-format",
-  "postStartCommand": "elm-live src/Main.elm --start-page=index.html --host=0.0.0.0 --pushstate -- --output=elm.js",
   "customizations": {
 	  "vscode": {
 	    "extensions": [

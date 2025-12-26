@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Elm Live Server",
+      "type": "shell",
+      "command": "elm-live src/Main.elm --start-page=index.html --host=0.0.0.0 --pushstate -- --output=elm.js",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
