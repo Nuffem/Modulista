@@ -1,0 +1,9 @@
+export const app = document.getElementById('app');
+export const pickerView = document.getElementById('pickerView');
+export const mainView = document.getElementById('mainView');
+export const openBtn = document.getElementById('openBtn');
+export const closeFolderBtn = document.getElementById('closeFolderBtn');
+export const treeContainer = document.getElementById('treeContainer');
+export const contentArea = document.getElementById('contentArea');
+export const contentTitle = document.getElementById('contentTitle');
+export const renameBtn = document.getElementById('renameBtn');

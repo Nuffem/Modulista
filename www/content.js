@@ -1,0 +1,82 @@
+import { contentArea, contentTitle } from './ui.js';
+import { getSelected, setSelected } from './state.js';
+
+export async function showSelectedDirectory(handle, name){
+  contentTitle.textContent = name + '/';
+  contentArea.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'space-y-1';
+  for await (const [entryName, entryHandle] of handle.entries()){
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between p-2 border rounded';
+    const left = document.createElement('div');
+    left.textContent = entryName + (entryHandle.kind === 'directory' ? '/' : '');
+    row.appendChild(left);
+    list.appendChild(row);
+  }
+  contentArea.appendChild(list);
+}
+
+export async function showSelectedFile(handle, name){
+  contentTitle.textContent = name;
+  contentArea.innerHTML = '';
+  try{
+    const file = await handle.getFile();
+    const text = await file.text();
+    const pre = document.createElement('pre');
+    pre.className = 'whitespace-pre-wrap text-sm';
+    pre.textContent = text;
+    contentArea.appendChild(pre);
+  }catch(e){
+    contentArea.textContent = 'Não foi possível ler o arquivo.';
+  }
+}
+
+export async function renameSelected(){
+  const selected = getSelected();
+  if(!selected) return alert('Nenhum item selecionado');
+  const newName = prompt('Novo nome:', selected.name);
+  if(!newName || newName === selected.name) return false;
+  if(!selected.parent){
+    alert('Renomear a raiz não é suportado.');
+    return false;
+  }
+  try{
+    if(selected.kind === 'file'){
+      const oldHandle = selected.handle;
+      const file = await oldHandle.getFile();
+      const newHandle = await selected.parent.getFileHandle(newName, {create: true});
+      const writable = await newHandle.createWritable();
+      await writable.write(await file.arrayBuffer());
+      await writable.close();
+      await selected.parent.removeEntry(selected.name);
+    } else {
+      const source = await selected.parent.getDirectoryHandle(selected.name);
+      const target = await selected.parent.getDirectoryHandle(newName, {create:true});
+      await copyDirectory(source, target);
+      await selected.parent.removeEntry(selected.name, {recursive: true});
+    }
+    // clear selection after rename
+    setSelected(null);
+    return true;
+  }catch(e){
+    alert('Falha ao renomear: ' + (e && e.message));
+    return false;
+  }
+}
+
+export async function copyDirectory(sourceDir, targetDir){
+  for await (const [name, handle] of sourceDir.entries()){
+    if(handle.kind === 'file'){
+      const f = await handle.getFile();
+      const newF = await targetDir.getFileHandle(name, {create:true});
+      const w = await newF.createWritable();
+      await w.write(await f.arrayBuffer());
+      await w.close();
+    } else {
+      const srcSub = await sourceDir.getDirectoryHandle(name);
+      const tgtSub = await targetDir.getDirectoryHandle(name, {create:true});
+      await copyDirectory(srcSub, tgtSub);
+    }
+  }
+}
