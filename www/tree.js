@@ -13,8 +13,12 @@ export async function renderApp(){
 export async function buildAndRender(dirHandle, container, displayName){
   const node = document.createElement('div');
   const btn = document.createElement('button');
-  btn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
-  btn.textContent = displayName;
+  btn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
+  const icon = document.createElement('span');
+  icon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
+  icon.textContent = 'folder';
+  btn.appendChild(icon);
+  btn.appendChild(document.createTextNode(displayName));
   btn.addEventListener('click', ()=>{
     setSelected({handle: dirHandle, name: displayName, parent: null, kind: 'directory'});
     showSelectedDirectory(dirHandle, displayName);
@@ -26,8 +30,12 @@ export async function buildAndRender(dirHandle, container, displayName){
     if(handle.kind === 'directory'){
       const sub = document.createElement('div');
       const subBtn = document.createElement('button');
-      subBtn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
-      subBtn.textContent = name + '/';
+      subBtn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
+      const sIcon = document.createElement('span');
+      sIcon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
+      sIcon.textContent = 'folder';
+      subBtn.appendChild(sIcon);
+      subBtn.appendChild(document.createTextNode(name + '/'));
       subBtn.addEventListener('click', async (e)=>{
         e.stopPropagation();
         setSelected({handle, name, parent: dirHandle, kind: 'directory'});
@@ -38,8 +46,12 @@ export async function buildAndRender(dirHandle, container, displayName){
     } else {
       const fileDiv = document.createElement('div');
       const fBtn = document.createElement('button');
-      fBtn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
-      fBtn.textContent = name;
+      fBtn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
+      const fIcon = document.createElement('span');
+      fIcon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
+      fIcon.textContent = 'insert_drive_file';
+      fBtn.appendChild(fIcon);
+      fBtn.appendChild(document.createTextNode(name));
       fBtn.addEventListener('click', async ()=>{
         setSelected({handle, name, parent: dirHandle, kind: 'file'});
         await showSelectedFile(handle, name);
