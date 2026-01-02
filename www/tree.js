@@ -26,7 +26,20 @@ export async function buildAndRender(dirHandle, container, displayName){
   node.appendChild(btn);
   const childrenCont = document.createElement('div');
   childrenCont.className = 'ml-3 mt-1 space-y-1';
+  // Collect entries, then sort: directories first, then files; both alphabetically
+  const entries = [];
   for await (const [name, handle] of dirHandle.entries()){
+    entries.push([name, handle]);
+  }
+  entries.sort((a, b) => {
+    const [nameA, handleA] = a;
+    const [nameB, handleB] = b;
+    if (handleA.kind !== handleB.kind){
+      return handleA.kind === 'directory' ? -1 : 1;
+    }
+    return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
+  });
+  for (const [name, handle] of entries){
     if(handle.kind === 'directory'){
       const sub = document.createElement('div');
       const subBtn = document.createElement('button');
