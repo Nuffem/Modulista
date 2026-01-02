@@ -1,4 +1,5 @@
 import './picker.js';
+import './theme.js';
 import { setRootHandle, clearState, getSelected } from './state.js';
 import { openBtn, closeFolderBtn, renameBtn, treeContainer, contentArea, contentTitle } from './ui.js';
 import { setHash, renderByHash } from './picker.js';

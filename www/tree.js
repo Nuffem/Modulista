@@ -13,7 +13,7 @@ export async function renderApp(){
 export async function buildAndRender(dirHandle, container, displayName){
   const node = document.createElement('div');
   const btn = document.createElement('button');
-  btn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50';
+  btn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
   btn.textContent = displayName;
   btn.addEventListener('click', ()=>{
     setSelected({handle: dirHandle, name: displayName, parent: null, kind: 'directory'});
@@ -26,7 +26,7 @@ export async function buildAndRender(dirHandle, container, displayName){
     if(handle.kind === 'directory'){
       const sub = document.createElement('div');
       const subBtn = document.createElement('button');
-      subBtn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50';
+      subBtn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
       subBtn.textContent = name + '/';
       subBtn.addEventListener('click', async (e)=>{
         e.stopPropagation();
@@ -38,7 +38,7 @@ export async function buildAndRender(dirHandle, container, displayName){
     } else {
       const fileDiv = document.createElement('div');
       const fBtn = document.createElement('button');
-      fBtn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50';
+      fBtn.className = 'w-full text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
       fBtn.textContent = name;
       fBtn.addEventListener('click', async ()=>{
         setSelected({handle, name, parent: dirHandle, kind: 'file'});
