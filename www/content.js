@@ -2,6 +2,19 @@ import { contentArea, contentTitle } from './ui.js';
 import { getSelected, setSelected } from './state.js';
 import { getIconForFile } from './icons.js';
 
+const allowedTextExtensions = new Set([
+  'txt','md','markdown','js','ts','css','html','json','csv','xml','log',
+  'py','java','c','cpp','rs','go','sh'
+]);
+
+function isTextFileByName(name){
+  if(!name || typeof name !== 'string') return false;
+  const idx = name.lastIndexOf('.');
+  if(idx === -1) return false;
+  const ext = name.slice(idx+1).toLowerCase();
+  return allowedTextExtensions.has(ext);
+}
+
 export async function showSelectedDirectory(handle, name){
   contentTitle.textContent = name;
   contentArea.innerHTML = '';
@@ -45,6 +58,10 @@ export async function showSelectedFile(handle, name){
   contentTitle.textContent = name;
   contentArea.innerHTML = '';
   try{
+    if(!isTextFileByName(name)){
+      contentArea.textContent = 'Não foi possível ler o arquivo.';
+      return;
+    }
     const file = await handle.getFile();
     const text = await file.text();
     const pre = document.createElement('pre');
