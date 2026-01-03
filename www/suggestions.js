@@ -75,25 +75,68 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
     const temperature = 0.2;
     const max_tokens = 64;
     try{
-      if(commands){
-        const detailItem = document.createElement('div');
-        detailItem.className = 'p-2 bg-slate-50 dark:bg-slate-700 rounded shadow text-sm text-slate-700 dark:text-slate-100';
-        const header = document.createElement('div');
-        header.className = 'flex items-center gap-2 mb-1';
-        header.innerHTML = '<span class="material-symbols-outlined mr-2">info</span><strong>Parâmetros IA</strong>';
-        const body = document.createElement('pre');
-        body.className = 'whitespace-pre-wrap text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-auto';
-        try{
-          let msgs = JSON.stringify(messages, null, 2);
-          if(msgs.length > 800) msgs = msgs.slice(0, 800) + '\n... (truncado)';
-          body.textContent = `temperature: ${temperature}\nmax_tokens: ${max_tokens}\n\nmessages:\n${msgs}`;
-        }catch(_){
-          body.textContent = `temperature: ${temperature}\nmax_tokens: ${max_tokens}\n\nmessages: (não pôde serializar)`;
+        if(commands){
+          const detailItem = document.createElement('div');
+          detailItem.className = 'p-2 bg-slate-50 dark:bg-slate-700 rounded shadow text-sm text-slate-700 dark:text-slate-100';
+          const header = document.createElement('div');
+          header.className = 'flex items-center gap-2 mb-1';
+          header.innerHTML = '<span class="material-symbols-outlined mr-2">info</span><strong>Parâmetros IA</strong>';
+
+          const form = document.createElement('div');
+          form.className = 'grid grid-cols-1 gap-2';
+
+          const makeRow = (labelText, el) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'flex flex-col';
+            const lbl = document.createElement('label');
+            lbl.className = 'text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1';
+            lbl.textContent = labelText;
+            wrap.appendChild(lbl);
+            wrap.appendChild(el);
+            return wrap;
+          };
+
+          const tempInput = document.createElement('input');
+          tempInput.className = 'text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 w-full';
+          tempInput.type = 'text';
+          tempInput.value = String(temperature);
+          tempInput.readOnly = true;
+
+          const maxInput = document.createElement('input');
+          maxInput.className = tempInput.className;
+          maxInput.type = 'text';
+          maxInput.value = String(max_tokens);
+          maxInput.readOnly = true;
+
+          const systemTextarea = document.createElement('textarea');
+          systemTextarea.className = 'whitespace-pre-wrap text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-auto';
+          systemTextarea.rows = 3;
+          systemTextarea.readOnly = true;
+
+          const userTextarea = document.createElement('textarea');
+          userTextarea.className = systemTextarea.className;
+          userTextarea.rows = 3;
+          userTextarea.readOnly = true;
+
+          try{
+            const systemMsg = messages.find(m => m.role === 'system')?.content || '(sem mensagem)';
+            const userMsg = messages.find(m => m.role === 'user')?.content || '(sem mensagem)';
+            systemTextarea.value = systemMsg.length > 800 ? systemMsg.slice(0,800) + '\n... (truncado)' : systemMsg;
+            userTextarea.value = userMsg.length > 800 ? userMsg.slice(0,800) + '\n... (truncado)' : userMsg;
+          }catch(_){
+            systemTextarea.value = '(não pôde serializar)';
+            userTextarea.value = '(não pôde serializar)';
+          }
+
+          form.appendChild(makeRow('temperature', tempInput));
+          form.appendChild(makeRow('max_tokens', maxInput));
+          form.appendChild(makeRow('Mensagem do sistema', systemTextarea));
+          form.appendChild(makeRow('Mensagem do usuário', userTextarea));
+
+          detailItem.appendChild(header);
+          detailItem.appendChild(form);
+          commands.appendChild(detailItem);
         }
-        detailItem.appendChild(header);
-        detailItem.appendChild(body);
-        commands.appendChild(detailItem);
-      }
     }catch(_){ }
 
     const resp = await engine.chat.completions.create({ messages, temperature, max_tokens });
