@@ -15,6 +15,20 @@ function isTextFileByName(name){
   return allowedTextExtensions.has(ext);
 }
 
+function formatBytes(bytes){
+  if(!bytes && bytes !== 0) return '—';
+  if(bytes < 1024) return bytes + ' B';
+  const units = ['KB','MB','GB','TB'];
+  let i = -1;
+  do { bytes = bytes / 1024; i++; } while(bytes >= 1024 && i < units.length-1);
+  return bytes.toFixed(1) + ' ' + units[i];
+}
+
+function formatDate(ms){
+  if(!ms && ms !== 0) return '—';
+  return new Date(ms).toLocaleString();
+}
+
 export async function showSelectedDirectory(handle, name){
   contentTitle.textContent = name;
   contentArea.innerHTML = '';
@@ -33,6 +47,23 @@ export async function showSelectedDirectory(handle, name){
     if(aIsDir !== bIsDir) return aIsDir ? -1 : 1;
     return nameA.localeCompare(nameB, undefined, {sensitivity: 'base', numeric: true});
   });
+
+  // calcular metadados (contagem e tamanho total dos arquivos)
+  const dirCount = entries.filter(([,h]) => h.kind === 'directory').length;
+  const fileEntries = entries.filter(([,h]) => h.kind === 'file');
+  let totalSize = 0;
+  if(fileEntries.length > 0){
+    try{
+      const sizes = await Promise.all(fileEntries.map(([,h]) => h.getFile().then(f => f.size).catch(() => 0)));
+      totalSize = sizes.reduce((a,b) => a + b, 0);
+    }catch(e){
+      totalSize = 0;
+    }
+  }
+  const meta = document.createElement('div');
+  meta.className = 'text-xs text-gray-500 mb-2';
+  meta.textContent = `${dirCount} pastas • ${fileEntries.length} arquivos • ${formatBytes(totalSize)}`;
+  contentArea.appendChild(meta);
 
   for (const [entryName, entryHandle] of entries){
     const row = document.createElement('div');
@@ -72,11 +103,20 @@ export async function showSelectedFile(handle, name){
   contentTitle.textContent = name;
   contentArea.innerHTML = '';
   try{
+    const file = await handle.getFile();
+    const meta = document.createElement('div');
+    meta.className = 'text-xs text-gray-500 mb-2';
+    const mime = file.type || '—';
+    meta.textContent = `${mime} • ${formatBytes(file.size)} • ${formatDate(file.lastModified)}`;
+    contentArea.appendChild(meta);
+
     if(!isTextFileByName(name)){
-      contentArea.textContent = 'Não foi possível ler o arquivo.';
+      const msg = document.createElement('div');
+      msg.textContent = 'Não foi possível ler o arquivo.';
+      contentArea.appendChild(msg);
       return;
     }
-    const file = await handle.getFile();
+
     const text = await file.text();
     const pre = document.createElement('pre');
     pre.className = 'whitespace-pre-wrap text-sm';
