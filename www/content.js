@@ -54,11 +54,12 @@ export async function showSelectedDirectory(handle, name, path = ''){
   contentArea.appendChild(meta);
 
   for (const [entryName, entryHandle] of entries){
-    const row = document.createElement('div');
-    row.className = 'flex items-center justify-between p-2 border rounded';
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'flex items-center justify-between p-2 border rounded w-full text-left';
 
-    const leftBtn = document.createElement('button');
-    leftBtn.className = 'flex items-center w-full text-left';
+    const leftBtn = document.createElement('div');
+    leftBtn.className = 'flex items-center w-full';
 
     const icon = document.createElement('span');
     icon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
@@ -72,7 +73,8 @@ export async function showSelectedDirectory(handle, name, path = ''){
     leftBtn.appendChild(icon);
     leftBtn.appendChild(document.createTextNode(entryName));
 
-    leftBtn.addEventListener('click', async ()=>{
+    // tornar a linha inteira clicável
+    row.addEventListener('click', async (e)=>{
       const entryPath = path ? (path + '/' + entryName) : ('/' + entryName);
       const nodePath = entryPath.startsWith('/') ? entryPath : ('/' + entryPath);
       setSelected({handle: entryHandle, name: entryName, parent: handle, kind: entryHandle.kind, path: nodePath});
