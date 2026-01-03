@@ -41,6 +41,17 @@ function isImageFile(mime, name){
   return allowedImageExtensions.has(ext);
 }
 
+function isPdfFile(mime, name){
+  if(mime && typeof mime === 'string'){
+    return mime === 'application/pdf';
+  }
+  if(!name || typeof name !== 'string') return false;
+  const idx = name.lastIndexOf('.');
+  if(idx === -1) return false;
+  const ext = name.slice(idx+1).toLowerCase();
+  return ext === 'pdf';
+}
+
 function formatBytes(bytes){
   if(!bytes && bytes !== 0) return '—';
   if(bytes < 1024) return bytes + ' B';
@@ -155,6 +166,28 @@ export async function showSelectedFile(handle, name){
         contentArea.appendChild(imgWrap);
         return;
       }
+
+      // se for PDF, embutir usando <object>
+      if(isPdfFile(mime, name)){
+        const url = URL.createObjectURL(file);
+        const wrap = document.createElement('div');
+        wrap.className = 'w-full';
+        const obj = document.createElement('object');
+        obj.data = url;
+        obj.type = 'application/pdf';
+        obj.className = 'w-full h-[80vh] border rounded';
+        obj.innerHTML = 'Seu navegador não suporta exibir PDFs. <a href="' + url + '" target="_blank" rel="noopener">Abrir em nova aba</a>.';
+        // tentar liberar o blob URL quando possível
+        obj.addEventListener && obj.addEventListener('load', ()=> URL.revokeObjectURL(url));
+        obj.addEventListener && obj.addEventListener('error', ()=> {
+          URL.revokeObjectURL(url);
+          contentArea.textContent = 'Não foi possível exibir o PDF.';
+        });
+        wrap.appendChild(obj);
+        contentArea.appendChild(wrap);
+        return;
+      }
+
       const msg = document.createElement('div');
       msg.textContent = 'Não foi possível ler o arquivo.';
       contentArea.appendChild(msg);
