@@ -1,5 +1,5 @@
 import { treeContainer } from './ui.js';
-import { getRootHandle, setSelected } from './state.js';
+import { getRootHandle, setSelected, getSelected } from './state.js';
 import { showSelectedDirectory, showSelectedFile } from './content.js';
 
 export async function renderApp(){
@@ -19,9 +19,10 @@ export async function buildAndRender(dirHandle, container, displayName){
   icon.textContent = 'folder';
   btn.appendChild(icon);
   btn.appendChild(document.createTextNode(displayName));
-  btn.addEventListener('click', ()=>{
+  btn.addEventListener('click', async ()=>{
     setSelected({handle: dirHandle, name: displayName, parent: null, kind: 'directory'});
-    showSelectedDirectory(dirHandle, displayName);
+    markSelected(btn);
+    await showSelectedDirectory(dirHandle, displayName);
   });
   node.appendChild(btn);
   const childrenCont = document.createElement('div');
@@ -52,6 +53,7 @@ export async function buildAndRender(dirHandle, container, displayName){
       subBtn.addEventListener('click', async (e)=>{
         e.stopPropagation();
         setSelected({handle, name, parent: dirHandle, kind: 'directory'});
+        markSelected(subBtn);
         await showSelectedDirectory(handle, name);
       });
       sub.appendChild(subBtn);
@@ -67,6 +69,7 @@ export async function buildAndRender(dirHandle, container, displayName){
       fBtn.appendChild(document.createTextNode(name));
       fBtn.addEventListener('click', async ()=>{
         setSelected({handle, name, parent: dirHandle, kind: 'file'});
+        markSelected(fBtn);
         await showSelectedFile(handle, name);
       });
       fileDiv.appendChild(fBtn);
@@ -76,3 +79,18 @@ export async function buildAndRender(dirHandle, container, displayName){
   node.appendChild(childrenCont);
   container.appendChild(node);
 }
+
+function clearSelectedClasses(){
+  const btns = treeContainer.querySelectorAll('button');
+  btns.forEach(b=>{
+    b.classList.remove('bg-slate-200','text-slate-900','dark:bg-slate-700','dark:text-slate-100','font-semibold');
+    b.removeAttribute('aria-selected');
+  });
+}
+
+function markSelected(btn){
+  clearSelectedClasses();
+  btn.classList.add('bg-slate-200','text-slate-900','dark:bg-slate-700','dark:text-slate-100','font-semibold');
+  btn.setAttribute('aria-selected','true');
+}
+
