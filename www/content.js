@@ -1,17 +1,41 @@
 import { contentArea, contentTitle } from './ui.js';
 import { getSelected, setSelected } from './state.js';
+import { getIconForFile } from './icons.js';
 
 export async function showSelectedDirectory(handle, name){
-  contentTitle.textContent = name + '/';
+  contentTitle.textContent = name;
   contentArea.innerHTML = '';
   const list = document.createElement('div');
   list.className = 'space-y-1';
   for await (const [entryName, entryHandle] of handle.entries()){
     const row = document.createElement('div');
     row.className = 'flex items-center justify-between p-2 border rounded';
-    const left = document.createElement('div');
-    left.textContent = entryName + (entryHandle.kind === 'directory' ? '/' : '');
-    row.appendChild(left);
+
+    const leftBtn = document.createElement('button');
+    leftBtn.className = 'flex items-center w-full text-left';
+
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
+    icon.setAttribute('aria-hidden','true');
+    if(entryHandle.kind === 'directory'){
+      icon.textContent = 'folder';
+    } else {
+      icon.textContent = getIconForFile(entryName);
+    }
+
+    leftBtn.appendChild(icon);
+    leftBtn.appendChild(document.createTextNode(entryName));
+
+    leftBtn.addEventListener('click', async ()=>{
+      setSelected({handle: entryHandle, name: entryName, parent: handle, kind: entryHandle.kind});
+      if(entryHandle.kind === 'directory'){
+        await showSelectedDirectory(entryHandle, entryName);
+      } else {
+        await showSelectedFile(entryHandle, entryName);
+      }
+    });
+
+    row.appendChild(leftBtn);
     list.appendChild(row);
   }
   contentArea.appendChild(list);
