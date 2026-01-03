@@ -49,7 +49,7 @@ export async function buildAndRender(dirHandle, container, displayName){
       sIcon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
       sIcon.textContent = 'folder';
       subBtn.appendChild(sIcon);
-      subBtn.appendChild(document.createTextNode(name + '/'));
+      subBtn.appendChild(document.createTextNode(name));
       subBtn.addEventListener('click', async (e)=>{
         e.stopPropagation();
         setSelected({handle, name, parent: dirHandle, kind: 'directory'});
