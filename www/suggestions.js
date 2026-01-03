@@ -1,13 +1,19 @@
 import { commands } from './ui.js';
 
 // Módulo responsável por gerar sugestões usando WebLLM
-export async function generateSuggestion(kind, current, content = '', mime = '', listing = ''){
+export async function generateSuggestion(kind, current, content = '', mime = '', listing = '', mode = 'name', subfolders = ''){
   // Limitar o conteúdo incluído no prompt para evitar payloads enormes
   const contentSnippet = (content || '').slice(0, 4000);
   const listingSnippet = (listing || '').slice(0, 2000);
   const mimePart = mime ? `Tipo MIME: ${mime}\n` : '';
   const listingPart = listingSnippet ? `Conteúdo da pasta (nomes): ${listingSnippet}\n\n` : '';
-  const prompt = `${contentSnippet ? 'Conteúdo do arquivo (trecho):\n' + contentSnippet + '\n\n' : ''}${mimePart}${listingPart}Sugira um nome curto e descritivo para ${kind === 'file' ? 'o arquivo' : 'a pasta'} com nome atual "${current}". Retorne apenas o nome sugerido, sem explicações.`;
+  let promptBody = '';
+  if(mode === 'move'){
+    promptBody = '';
+  }else{
+    promptBody = `Sugira um nome curto e descritivo para ${kind === 'file' ? 'o arquivo' : 'a pasta'} com nome atual "${current}". Retorne apenas o nome sugerido, sem explicações.`;
+  }
+  const prompt = `${contentSnippet ? 'Conteúdo do arquivo (trecho):\n' + contentSnippet + '\n\n' : ''}${mimePart}${listingPart}${promptBody}`;
   try{
     const url = 'https://esm.run/@mlc-ai/web-llm';
     let mod;
@@ -67,8 +73,16 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
     }
 
     const engine = window._webllm_engine;
+    let systemMsg;
+    if(mode === 'move'){
+      const subList = subfolders ? `Subpastas existentes: ${subfolders}\n\n` : '';
+      systemMsg = `Você é um assistente que sugere destinos para mover itens dentro de uma pasta. Prefira sugerir o nome de uma subpasta existente (retorne apenas o NOME da subpasta, sem caminho). Se não houver subpasta adequada, proponha um NOME para criar uma nova pasta. ${subList}Responda somente com o nome sugerido, sem explicações, sem pontuação extra.`;
+    }else{
+      systemMsg = 'Você é um assistente que sugere nomes curtos para arquivos e pastas. Responda apenas com o nome sugerido, sem pontuação extra.';
+    }
+
     const messages = [
-      { role: 'system', content: 'Você é um assistente que sugere nomes curtos para arquivos e pastas. Responda apenas com o nome sugerido, sem pontuação extra.' },
+      { role: 'system', content: systemMsg },
       { role: 'user', content: prompt }
     ];
 
@@ -172,7 +186,7 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
 }
 
 // Liga o event listener do botão de sugestão ao fluxo de geração.
-export function attachSuggestHandler(button, selected, input){
+export function attachSuggestHandler(button, selected, input, mode = 'name'){
   if(!button) return;
   button.addEventListener('click', async ()=>{
     const old = button.innerHTML;
@@ -214,6 +228,7 @@ export function attachSuggestHandler(button, selected, input){
       let fileContent = '';
       let mimeType = '';
       let listing = '';
+      let subfolders = '';
       if(selected && selected.kind === 'file' && selected.handle){
         try{
           const f = await selected.handle.getFile();
@@ -240,7 +255,21 @@ export function attachSuggestHandler(button, selected, input){
         }
       }
 
-      const suggestion = await generateSuggestion(selected ? selected.kind : 'file', input ? input.value || '' : '', fileContent, mimeType, listing);
+      // Para o modo 'move' queremos a lista de subpastas da pasta pai (selected.parent)
+      try{
+        if(selected && selected.parent){
+          const dirs = [];
+          for await (const [name, handle] of selected.parent.entries()){
+            try{ if(handle && handle.kind === 'directory') dirs.push(name); }catch(_){ }
+            if(dirs.length >= 500) break;
+          }
+          subfolders = dirs.join(', ');
+        }
+      }catch(e){
+        subfolders = '';
+      }
+
+      const suggestion = await generateSuggestion(selected ? selected.kind : 'file', input ? input.value || '' : '', fileContent, mimeType, listing, mode, subfolders);
       if(suggestion && input) input.value = suggestion;
     }catch(e){
       alert('Erro ao gerar sugestão: ' + (e && e.message));

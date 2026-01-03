@@ -114,8 +114,8 @@ export async function renameSelected(){
     }
   });
 
-  // Attach suggestion handler from suggestions.js
-  attachSuggestHandler(suggestBtn, selected, input);
+  // Attach suggestion handler from suggestions.js (nome)
+  attachSuggestHandler(suggestBtn, selected, input, 'name');
   return true;
 }
 
@@ -154,7 +154,15 @@ export async function renameSelected(){
     cancelBtn.setAttribute('aria-label', 'Cancelar');
     cancelBtn.innerHTML = '<span class="material-symbols-outlined">close</span>';
 
+    const suggestBtn = document.createElement('button');
+    suggestBtn.type = 'button';
+    suggestBtn.className = 'p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400';
+    suggestBtn.setAttribute('title', 'Sugerir com IA');
+    suggestBtn.setAttribute('aria-label', 'Sugerir com IA');
+    suggestBtn.innerHTML = '<span class="material-symbols-outlined">smart_toy</span>';
+
     form.appendChild(input);
+    form.appendChild(suggestBtn);
     form.appendChild(confirmBtn);
     form.appendChild(cancelBtn);
 
@@ -216,6 +224,9 @@ export async function renameSelected(){
         return false;
       }
     });
+
+    // Attach suggestion handler from suggestions.js (mover)
+    attachSuggestHandler(suggestBtn, selected, input, 'move');
 
     return true;
   }
