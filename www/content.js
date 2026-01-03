@@ -20,7 +20,21 @@ export async function showSelectedDirectory(handle, name){
   contentArea.innerHTML = '';
   const list = document.createElement('div');
   list.className = 'space-y-1';
+  // coletar entradas, ordenar (pastas primeiro, depois arquivos), ambas alfabeticamente
+  const entries = [];
   for await (const [entryName, entryHandle] of handle.entries()){
+    entries.push([entryName, entryHandle]);
+  }
+  entries.sort((a, b) => {
+    const [nameA, handleA] = a;
+    const [nameB, handleB] = b;
+    const aIsDir = handleA.kind === 'directory';
+    const bIsDir = handleB.kind === 'directory';
+    if(aIsDir !== bIsDir) return aIsDir ? -1 : 1;
+    return nameA.localeCompare(nameB, undefined, {sensitivity: 'base', numeric: true});
+  });
+
+  for (const [entryName, entryHandle] of entries){
     const row = document.createElement('div');
     row.className = 'flex items-center justify-between p-2 border rounded';
 
