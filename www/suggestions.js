@@ -141,6 +141,22 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
 
     const resp = await engine.chat.completions.create({ messages, temperature, max_tokens });
     const text = resp?.choices?.[0]?.message?.content || '';
+    try{
+      if(commands){
+        const resultItem = document.createElement('div');
+        resultItem.className = 'p-2 bg-slate-50 dark:bg-slate-700 rounded shadow text-sm text-slate-700 dark:text-slate-100';
+        const header = document.createElement('div');
+        header.className = 'flex items-center gap-2 mb-1';
+        header.innerHTML = '<span class="material-symbols-outlined mr-2">smart_toy</span><strong>Resposta</strong>';
+        const body = document.createElement('div');
+        body.className = 'whitespace-pre-wrap text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-auto';
+        body.style.maxHeight = '6rem';
+        body.textContent = (text || '').length > 800 ? (text || '').slice(0,800) + '\n... (truncado)' : (text || '');
+        resultItem.appendChild(header);
+        resultItem.appendChild(body);
+        commands.appendChild(resultItem);
+      }
+    }catch(_){ }
     return (text || '').toString().trim();
   }catch(e){
     console.error('generateSuggestion: erro usando webllm', e);
