@@ -1,5 +1,6 @@
 import { commands } from './ui.js';
 import { getSelected, setSelected } from './state.js';
+import { attachSuggestHandler } from './suggestions.js';
 
 export async function copyDirectory(sourceDir, targetDir){
   for await (const [name, handle] of sourceDir.entries()){
@@ -53,7 +54,15 @@ export async function renameSelected(){
   cancelBtn.setAttribute('aria-label', 'Cancelar');
   cancelBtn.innerHTML = '<span class="material-symbols-outlined">close</span>';
 
+  const suggestBtn = document.createElement('button');
+  suggestBtn.type = 'button';
+  suggestBtn.className = 'p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400';
+  suggestBtn.setAttribute('title', 'Sugerir com IA');
+  suggestBtn.setAttribute('aria-label', 'Sugerir com IA');
+  suggestBtn.innerHTML = '<span class="material-symbols-outlined">smart_toy</span>';
+
   form.appendChild(input);
+  form.appendChild(suggestBtn);
   form.appendChild(confirmBtn);
   form.appendChild(cancelBtn);
 
@@ -75,6 +84,8 @@ export async function renameSelected(){
     if(e.key === 'Enter') confirmBtn.click();
     if(e.key === 'Escape') cleanup();
   });
+
+  // generateSuggestion moved to ./suggestions.js
 
   confirmBtn.addEventListener('click', async ()=>{
     const newName = (input.value || '').trim();
@@ -102,5 +113,8 @@ export async function renameSelected(){
       return false;
     }
   });
+
+  // Attach suggestion handler from suggestions.js
+  attachSuggestHandler(suggestBtn, selected, input);
   return true;
 }
