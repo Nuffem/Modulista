@@ -19,6 +19,7 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
     }
 
     const modelName = 'Llama-3.2-3B-Instruct-q4f32_1-MLC';
+    try{ window.__webllm_model_name = modelName; }catch(_){ }
 
     // Cache do engine na janela para evitar recarregar sempre
     if(!window._webllm_engine){
@@ -33,8 +34,10 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
               if(lbl){
                 const text = (p && typeof p.text === 'string') ? p.text : 'Sugerindo com IA...';
                 const time = (p && (typeof p.timeElapsed !== 'undefined')) ? String(p.timeElapsed) : '';
-                lbl.innerHTML = '<span class="material-symbols-outlined mr-2">smart_toy</span>' +
-                  (text || '') + (time ? ' — ' + time : '') + ' ' + Math.round(pct) + '%';
+                const statusEl = lbl.querySelector('.webllm-status-text');
+                const modelEl = lbl.querySelector('.webllm-model-name');
+                if(statusEl) statusEl.textContent = (text || '') + (time ? ' — ' + time : '') + ' ' + Math.round(pct) + '%';
+                if(modelEl && modelName) modelEl.textContent = modelName;
               }
             }catch(_){ }
           }
@@ -99,8 +102,15 @@ export function attachSuggestHandler(button, selected, input){
         cmdItem = document.createElement('div');
         cmdItem.className = 'p-2 bg-slate-50 dark:bg-slate-700 rounded shadow flex flex-col space-y-2';
         const label = document.createElement('div');
-        label.className = 'text-sm text-slate-700 dark:text-slate-100 flex items-center gap-2';
-        label.innerHTML = '<span class="material-symbols-outlined mr-2">smart_toy</span>Sugerindo com IA...';
+        label.className = 'text-sm text-slate-700 dark:text-slate-100 flex flex-col gap-1';
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-center gap-2';
+        topRow.innerHTML = '<span class="material-symbols-outlined mr-2">smart_toy</span><span class="webllm-status-text">Sugerindo com IA...</span>';
+        const modelField = document.createElement('div');
+        modelField.className = 'webllm-model-name text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 w-full truncate';
+        modelField.textContent = window.__webllm_model_name || '';
+        label.appendChild(topRow);
+        label.appendChild(modelField);
         const progressOuter = document.createElement('div');
         progressOuter.className = 'w-full bg-slate-200 dark:bg-slate-600 rounded h-3 overflow-hidden';
         const progressInner = document.createElement('div');
