@@ -1,4 +1,4 @@
-import { contentArea, contentTitle } from './ui.js';
+import { contentArea, contentTitle, commands } from './ui.js';
 import { getSelected, setSelected } from './state.js';
 import { setHash } from './picker.js';
 import { getIconForFile } from './icons.js';
@@ -122,39 +122,6 @@ export async function showSelectedFile(handle, name, path = ''){
     contentArea.appendChild(wrap);
   }catch(e){
     contentArea.textContent = 'Não foi possível ler o arquivo.';
-  }
-}
-
-export async function renameSelected(){
-  const selected = getSelected();
-  if(!selected) return alert('Nenhum item selecionado');
-  const newName = prompt('Novo nome:', selected.name);
-  if(!newName || newName === selected.name) return false;
-  if(!selected.parent){
-    alert('Renomear a raiz não é suportado.');
-    return false;
-  }
-  try{
-    if(selected.kind === 'file'){
-      const oldHandle = selected.handle;
-      const file = await oldHandle.getFile();
-      const newHandle = await selected.parent.getFileHandle(newName, {create: true});
-      const writable = await newHandle.createWritable();
-      await writable.write(await file.arrayBuffer());
-      await writable.close();
-      await selected.parent.removeEntry(selected.name);
-    } else {
-      const source = await selected.parent.getDirectoryHandle(selected.name);
-      const target = await selected.parent.getDirectoryHandle(newName, {create:true});
-      await copyDirectory(source, target);
-      await selected.parent.removeEntry(selected.name, {recursive: true});
-    }
-    // clear selection after rename
-    setSelected(null);
-    return true;
-  }catch(e){
-    alert('Falha ao renomear: ' + (e && e.message));
-    return false;
   }
 }
 

@@ -9,11 +9,11 @@ export async function renderApp(selectPath = '/'){
   const rootName = getRootHandle().name || 'root';
   const rootCont = document.createElement('div');
   const normSelect = selectPath || '/';
-  await buildAndRender(getRootHandle(), rootCont, rootName, '/', normSelect);
+  await buildAndRender(getRootHandle(), rootCont, rootName, '/', normSelect, null);
   treeContainer.appendChild(rootCont);
 }
 
-export async function buildAndRender(dirHandle, container, displayName, path, selectPath = '/'){
+export async function buildAndRender(dirHandle, container, displayName, path, selectPath = '/', parentHandle = null){
   const node = document.createElement('div');
 
   const row = document.createElement('div');
@@ -58,7 +58,7 @@ export async function buildAndRender(dirHandle, container, displayName, path, se
   btn.appendChild(document.createTextNode(displayName));
   btn.addEventListener('click', async ()=>{
     const nodePath = path === '/' ? '/' : (path.startsWith('/') ? path : ('/' + path));
-    setSelected({handle: dirHandle, name: displayName, parent: null, kind: 'directory', path: nodePath});
+    setSelected({handle: dirHandle, name: displayName, parent: parentHandle, kind: 'directory', path: nodePath});
     markSelected(btn);
     setHash(nodePath);
     await showSelectedDirectory(dirHandle, displayName, nodePath);
@@ -88,8 +88,8 @@ export async function buildAndRender(dirHandle, container, displayName, path, se
   }
 
   // If this node is the one to select
-  if(selectPath === nodePath){
-    setSelected({handle: dirHandle, name: displayName, parent: null, kind: 'directory', path: nodePath});
+    if(selectPath === nodePath){
+    setSelected({handle: dirHandle, name: displayName, parent: parentHandle, kind: 'directory', path: nodePath});
     markSelected(btn);
     await showSelectedDirectory(dirHandle, displayName, nodePath);
   }
@@ -117,7 +117,7 @@ async function populateChildren(dirHandle, childrenCont, parentPath, selectPath 
     if(handle.kind === 'directory'){
       // Render a directory node (collapsed by default)
       const childPath = parentPath === '/' ? ('/' + name) : (`${parentPath}/${name}`);
-      await buildAndRender(handle, childrenCont, name, childPath, selectPath);
+      await buildAndRender(handle, childrenCont, name, childPath, selectPath, dirHandle);
     } else {
       const fileDiv = document.createElement('div');
       const fBtn = document.createElement('button');

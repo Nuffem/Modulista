@@ -4,7 +4,7 @@ import { setRootHandle, clearState, getSelected, getRootHandle, persistRootHandl
 import { openBtn, closeFolderBtn, renameBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn } from './ui.js';
 import { setHash, renderByHash } from './picker.js';
 import { renderApp } from './tree.js';
-import { renameSelected } from './content.js';
+import { renameSelected } from './command.js';
 
 async function openFolder(){
   try{
