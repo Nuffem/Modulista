@@ -1,3 +1,5 @@
+import { commands } from './ui.js';
+
 // Módulo responsável por gerar sugestões usando WebLLM
 export async function generateSuggestion(kind, current, content = '', mime = '', listing = ''){
   // Limitar o conteúdo incluído no prompt para evitar payloads enormes
@@ -21,6 +23,22 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
     // Cache do engine na janela para evitar recarregar sempre
     if(!window._webllm_engine){
       const initProgressCallback = (p)=>{
+        try{
+          const prog = (p && typeof p.progress === 'number') ? Number(p.progress) : null;
+          if(window.__webllm_progress_element && prog !== null){
+            try{
+              const pct = Math.max(0, Math.min(1, prog)) * 100;
+              window.__webllm_progress_element.style.width = pct + '%';
+              const lbl = window.__webllm_progress_label;
+              if(lbl){
+                const text = (p && typeof p.text === 'string') ? p.text : 'Sugerindo com IA...';
+                const time = (p && (typeof p.timeElapsed !== 'undefined')) ? String(p.timeElapsed) : '';
+                lbl.innerHTML = '<span class="material-symbols-outlined mr-2">smart_toy</span>' +
+                  (text || '') + (time ? ' — ' + time : '') + ' ' + Math.round(pct) + '%';
+              }
+            }catch(_){ }
+          }
+        }catch(_){ }
         console.debug && console.debug('webllm load progress', p);
       };
       if(typeof mod.CreateMLCEngine === 'function'){
@@ -74,6 +92,31 @@ export function attachSuggestHandler(button, selected, input){
     const old = button.innerHTML;
     button.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
     button.disabled = true;
+    // Inserir item de comando com barra de progresso
+    let cmdItem;
+    try{
+      if(commands){
+        cmdItem = document.createElement('div');
+        cmdItem.className = 'p-2 bg-slate-50 dark:bg-slate-700 rounded shadow flex flex-col space-y-2';
+        const label = document.createElement('div');
+        label.className = 'text-sm text-slate-700 dark:text-slate-100 flex items-center gap-2';
+        label.innerHTML = '<span class="material-symbols-outlined mr-2">smart_toy</span>Sugerindo com IA...';
+        const progressOuter = document.createElement('div');
+        progressOuter.className = 'w-full bg-slate-200 dark:bg-slate-600 rounded h-3 overflow-hidden';
+        const progressInner = document.createElement('div');
+        progressInner.className = 'bg-indigo-500 h-3';
+        progressInner.style.width = '0%';
+        progressInner.style.transition = 'width 200ms linear';
+        progressOuter.appendChild(progressInner);
+        cmdItem.appendChild(label);
+        cmdItem.appendChild(progressOuter);
+        commands.appendChild(cmdItem);
+        // Expor o elemento para que o callback de init possa atualizá-lo
+        try{ window.__webllm_progress_element = progressInner; window.__webllm_progress_label = label; }catch(_){ }
+      }
+    }catch(e){
+      console.error('Erro ao inserir item de comando:', e);
+    }
     try{
       let fileContent = '';
       let mimeType = '';
@@ -111,6 +154,7 @@ export function attachSuggestHandler(button, selected, input){
     }finally{
       button.disabled = false;
       button.innerHTML = old;
+      // manter o elemento de progresso na coluna de comandos após conclusão
     }
   });
 }
