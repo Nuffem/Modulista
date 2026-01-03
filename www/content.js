@@ -11,7 +11,17 @@ const allowedImageExtensions = new Set([
   'png','jpg','jpeg','gif','webp','svg','ico','avif','bmp'
 ]);
 
-function isTextFileByName(name){
+function isTextFile(mime, name){
+  if(mime && typeof mime === 'string'){
+    if(mime.startsWith('text/')) return true;
+    const textual = new Set([
+      'application/json','application/javascript','application/xml',
+      'application/xhtml+xml','application/atom+xml','application/rss+xml',
+      'application/ld+json','application/sql'
+    ]);
+    return textual.has(mime);
+  }
+  // fallback para casos onde o MIME não está disponível: usar extensão
   if(!name || typeof name !== 'string') return false;
   const idx = name.lastIndexOf('.');
   if(idx === -1) return false;
@@ -19,7 +29,11 @@ function isTextFileByName(name){
   return allowedTextExtensions.has(ext);
 }
 
-function isImageFileByName(name){
+function isImageFile(mime, name){
+  if(mime && typeof mime === 'string'){
+    return mime.startsWith('image/');
+  }
+  // fallback por extensão
   if(!name || typeof name !== 'string') return false;
   const idx = name.lastIndexOf('.');
   if(idx === -1) return false;
@@ -122,9 +136,9 @@ export async function showSelectedFile(handle, name){
     meta.textContent = `${mime} • ${formatBytes(file.size)} • ${formatDate(file.lastModified)}`;
     contentArea.appendChild(meta);
 
-    if(!isTextFileByName(name)){
+    if(!isTextFile(mime, name)){
       // se for imagem, exibir preview
-      if(isImageFileByName(name) || (mime && mime.startsWith('image/'))){
+      if(isImageFile(mime, name)){
         const url = URL.createObjectURL(file);
         const imgWrap = document.createElement('div');
         imgWrap.className = 'w-full flex justify-center';
