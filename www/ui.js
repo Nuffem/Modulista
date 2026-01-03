@@ -7,3 +7,6 @@ export const treeContainer = document.getElementById('treeContainer');
 export const contentArea = document.getElementById('contentArea');
 export const contentTitle = document.getElementById('contentTitle');
 export const renameBtn = document.getElementById('renameBtn');
+export const restoreModal = document.getElementById('restoreModal');
+export const restoreBtn = document.getElementById('restoreBtn');
+export const openNewBtn = document.getElementById('openNewBtn');

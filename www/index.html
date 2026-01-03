@@ -64,6 +64,20 @@
     </div>
   </div>
 
+  <!-- Modal para restauração de pasta anterior -->
+  <div id="restoreModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded shadow p-6 w-full max-w-md">
+      <h4 class="text-lg font-semibold mb-2">Pasta anterior encontrada</h4>
+      <p class="mb-4">Há uma pasta usada na sessão anterior. Deseja reabrir essa pasta ou escolher uma nova?</p>
+      <div class="flex justify-end gap-2">
+        <button id="openNewBtn" class="px-3 py-2 bg-slate-200 rounded hover:bg-slate-300">Abrir nova</button>
+        <button id="restoreBtn" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Reabrir pasta anterior</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="modulista-main.js" defer></script>
 </body>
 </html>
+
+
