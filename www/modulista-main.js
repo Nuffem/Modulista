@@ -1,6 +1,6 @@
 import './picker.js';
 import './theme.js';
-import { setRootHandle, clearState, getSelected, persistRootHandle, restoreRootHandle, deletePersistedRoot, ensureHandlePermission } from './state.js';
+import { setRootHandle, clearState, getSelected, getRootHandle, persistRootHandle, restoreRootHandle, deletePersistedRoot, ensureHandlePermission } from './state.js';
 import { openBtn, closeFolderBtn, renameBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn } from './ui.js';
 import { setHash, renderByHash } from './picker.js';
 import { renderApp } from './tree.js';
@@ -11,8 +11,8 @@ async function openFolder(){
     const root = await window.showDirectoryPicker();
     setRootHandle(root);
     await persistRootHandle();
-    setHash('/open');
-    await renderApp();
+    setHash('/');
+    await renderApp(location.hash.replace('#','') || '/');
   }catch(e){
     console.warn('picker cancelled', e);
   }
@@ -31,7 +31,7 @@ closeFolderBtn.addEventListener('click', async ()=>{
 
 renameBtn.addEventListener('click', async ()=>{
   const ok = await renameSelected();
-  if(ok) await renderApp();
+  if(ok) await renderApp(location.hash.replace('#','') || '/');
 });
 
 (async function init(){
@@ -42,15 +42,15 @@ renameBtn.addEventListener('click', async ()=>{
     try{ q = await (typeof restored.queryPermission === 'function' ? restored.queryPermission({ mode: 'readwrite' }) : 'granted'); }catch(e){ q = null; }
     if(q === 'granted'){
       setRootHandle(restored);
-      setHash('/open');
+      setHash('/');
       renderByHash();
-      await renderApp();
+      await renderApp(location.hash.replace('#','') || '/');
       return;
     }
 
     // show modal to let user decide (requestPermission requires user activation)
     // ensure main view is visible first (avoids picker remaining visible under modal)
-    setHash('/open');
+    setHash('/');
     if(restoreModal){
       restoreModal.classList.remove('hidden');
     }
@@ -62,9 +62,9 @@ renameBtn.addEventListener('click', async ()=>{
       const ok = await ensureHandlePermission(restored, 'readwrite').catch(()=>false);
       if(ok){
         setRootHandle(restored);
-        setHash('/open');
+        setHash('/');
         renderByHash();
-        await renderApp();
+        await renderApp(location.hash.replace('#','') || '/');
         return;
       }
       await deletePersistedRoot();
@@ -188,3 +188,17 @@ function setupSplitters(){
 }
 
 setupSplitters();
+// keep UI and tree in sync when user navigates with back/forward or changes hash
+let lastHandledHash = null;
+function handleNavigation(){
+  const hash = location.hash.replace('#','') || '/';
+  if(hash === lastHandledHash) return; // ignore duplicate events
+  lastHandledHash = hash;
+  renderByHash();
+  if(getRootHandle()){
+    // renderApp is async; return the promise to allow callers to await if needed
+    renderApp(hash).catch(console.warn);
+  }
+}
+window.addEventListener('popstate', handleNavigation);
+window.addEventListener('hashchange', handleNavigation);

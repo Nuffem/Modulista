@@ -1,5 +1,6 @@
 import { contentArea, contentTitle } from './ui.js';
 import { getSelected, setSelected } from './state.js';
+import { setHash } from './picker.js';
 import { getIconForFile } from './icons.js';
 
 function formatBytes(bytes){
@@ -16,7 +17,7 @@ function formatDate(ms){
   return new Date(ms).toLocaleString();
 }
 
-export async function showSelectedDirectory(handle, name){
+export async function showSelectedDirectory(handle, name, path = ''){
   contentTitle.textContent = name;
   contentArea.innerHTML = '';
   const list = document.createElement('div');
@@ -72,11 +73,14 @@ export async function showSelectedDirectory(handle, name){
     leftBtn.appendChild(document.createTextNode(entryName));
 
     leftBtn.addEventListener('click', async ()=>{
-      setSelected({handle: entryHandle, name: entryName, parent: handle, kind: entryHandle.kind});
+      const entryPath = path ? (path + '/' + entryName) : ('/' + entryName);
+      const nodePath = entryPath.startsWith('/') ? entryPath : ('/' + entryPath);
+      setSelected({handle: entryHandle, name: entryName, parent: handle, kind: entryHandle.kind, path: nodePath});
+      setHash(nodePath);
       if(entryHandle.kind === 'directory'){
-        await showSelectedDirectory(entryHandle, entryName);
+        await showSelectedDirectory(entryHandle, entryName, nodePath);
       } else {
-        await showSelectedFile(entryHandle, entryName);
+        await showSelectedFile(entryHandle, entryName, nodePath);
       }
     });
 
@@ -86,7 +90,7 @@ export async function showSelectedDirectory(handle, name){
   contentArea.appendChild(list);
 }
 
-export async function showSelectedFile(handle, name){
+export async function showSelectedFile(handle, name, path = ''){
   contentTitle.textContent = name;
   contentArea.innerHTML = '';
   try{
