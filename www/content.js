@@ -2,56 +2,6 @@ import { contentArea, contentTitle } from './ui.js';
 import { getSelected, setSelected } from './state.js';
 import { getIconForFile } from './icons.js';
 
-const allowedTextExtensions = new Set([
-  'txt','md','markdown','js','ts','css','html','json','csv','xml','log',
-  'py','java','c','cpp','rs','go','sh'
-]);
-
-const allowedImageExtensions = new Set([
-  'png','jpg','jpeg','gif','webp','svg','ico','avif','bmp'
-]);
-
-function isTextFile(mime, name){
-  if(mime && typeof mime === 'string'){
-    if(mime.startsWith('text/')) return true;
-    const textual = new Set([
-      'application/json','application/javascript','application/xml',
-      'application/xhtml+xml','application/atom+xml','application/rss+xml',
-      'application/ld+json','application/sql'
-    ]);
-    return textual.has(mime);
-  }
-  // fallback para casos onde o MIME não está disponível: usar extensão
-  if(!name || typeof name !== 'string') return false;
-  const idx = name.lastIndexOf('.');
-  if(idx === -1) return false;
-  const ext = name.slice(idx+1).toLowerCase();
-  return allowedTextExtensions.has(ext);
-}
-
-function isImageFile(mime, name){
-  if(mime && typeof mime === 'string'){
-    return mime.startsWith('image/');
-  }
-  // fallback por extensão
-  if(!name || typeof name !== 'string') return false;
-  const idx = name.lastIndexOf('.');
-  if(idx === -1) return false;
-  const ext = name.slice(idx+1).toLowerCase();
-  return allowedImageExtensions.has(ext);
-}
-
-function isPdfFile(mime, name){
-  if(mime && typeof mime === 'string'){
-    return mime === 'application/pdf';
-  }
-  if(!name || typeof name !== 'string') return false;
-  const idx = name.lastIndexOf('.');
-  if(idx === -1) return false;
-  const ext = name.slice(idx+1).toLowerCase();
-  return ext === 'pdf';
-}
-
 function formatBytes(bytes){
   if(!bytes && bytes !== 0) return '—';
   if(bytes < 1024) return bytes + ' B';
@@ -143,62 +93,27 @@ export async function showSelectedFile(handle, name){
     const file = await handle.getFile();
     const meta = document.createElement('div');
     meta.className = 'text-xs text-gray-500 mb-2';
-    const mime = file.type || '—';
+    const mime = file.type || 'application/octet-stream';
     meta.textContent = `${mime} • ${formatBytes(file.size)} • ${formatDate(file.lastModified)}`;
     contentArea.appendChild(meta);
 
-    if(!isTextFile(mime, name)){
-      // se for imagem, exibir preview
-      if(isImageFile(mime, name)){
-        const url = URL.createObjectURL(file);
-        const imgWrap = document.createElement('div');
-        imgWrap.className = 'w-full flex justify-center';
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = name;
-        img.className = 'max-w-full max-h-[60vh] object-contain border rounded';
-        img.addEventListener('load', ()=> URL.revokeObjectURL(url));
-        img.addEventListener('error', ()=> {
-          URL.revokeObjectURL(url);
-          contentArea.textContent = 'Não foi possível exibir a imagem.';
-        });
-        imgWrap.appendChild(img);
-        contentArea.appendChild(imgWrap);
-        return;
-      }
-
-      // se for PDF, embutir usando <object>
-      if(isPdfFile(mime, name)){
-        const url = URL.createObjectURL(file);
-        const wrap = document.createElement('div');
-        wrap.className = 'w-full';
-        const obj = document.createElement('object');
-        obj.data = url;
-        obj.type = 'application/pdf';
-        obj.className = 'w-full h-[80vh] border rounded';
-        obj.innerHTML = 'Seu navegador não suporta exibir PDFs. <a href="' + url + '" target="_blank" rel="noopener">Abrir em nova aba</a>.';
-        // tentar liberar o blob URL quando possível
-        obj.addEventListener && obj.addEventListener('load', ()=> URL.revokeObjectURL(url));
-        obj.addEventListener && obj.addEventListener('error', ()=> {
-          URL.revokeObjectURL(url);
-          contentArea.textContent = 'Não foi possível exibir o PDF.';
-        });
-        wrap.appendChild(obj);
-        contentArea.appendChild(wrap);
-        return;
-      }
-
-      const msg = document.createElement('div');
-      msg.textContent = 'Não foi possível ler o arquivo.';
-      contentArea.appendChild(msg);
-      return;
-    }
-
-    const text = await file.text();
-    const pre = document.createElement('pre');
-    pre.className = 'whitespace-pre-wrap text-sm';
-    pre.textContent = text;
-    contentArea.appendChild(pre);
+    // Sempre usar <object> para embutir o conteúdo, passando o MIME type
+    const url = URL.createObjectURL(file);
+    const wrap = document.createElement('div');
+    wrap.className = 'w-full';
+    const obj = document.createElement('object');
+    obj.data = url;
+    obj.type = mime;
+    obj.className = 'w-full h-[80vh] border rounded';
+    obj.innerHTML = 'Não é possível exibir o conteúdo. <a href="' + url + '" target="_blank" rel="noopener">Abrir em nova aba</a>.';
+    // tentar liberar o blob URL quando possível
+    obj.addEventListener && obj.addEventListener('load', ()=> URL.revokeObjectURL(url));
+    obj.addEventListener && obj.addEventListener('error', ()=> {
+      URL.revokeObjectURL(url);
+      contentArea.textContent = 'Não foi possível exibir o arquivo.';
+    });
+    wrap.appendChild(obj);
+    contentArea.appendChild(wrap);
   }catch(e){
     contentArea.textContent = 'Não foi possível ler o arquivo.';
   }
