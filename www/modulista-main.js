@@ -1,10 +1,11 @@
 import './picker.js';
 import './theme.js';
 import { setRootHandle, clearState, getSelected, getRootHandle, persistRootHandle, restoreRootHandle, deletePersistedRoot, ensureHandlePermission } from './state.js';
-import { openBtn, closeFolderBtn, renameBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn } from './ui.js';
+import { openBtn, closeFolderBtn, renameBtn, moveBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn } from './ui.js';
 import { setHash, renderByHash } from './picker.js';
 import { renderApp } from './tree.js';
-import { renameSelected } from './command.js';
+import { renameSelected } from './commands.js';
+import { moveSelected } from './commands.js';
 
 async function openFolder(){
   try{
@@ -31,6 +32,11 @@ closeFolderBtn.addEventListener('click', async ()=>{
 
 renameBtn.addEventListener('click', async ()=>{
   const ok = await renameSelected();
+  if(ok) await renderApp(location.hash.replace('#','') || '/');
+});
+
+moveBtn?.addEventListener('click', async ()=>{
+  const ok = await moveSelected();
   if(ok) await renderApp(location.hash.replace('#','') || '/');
 });
 
