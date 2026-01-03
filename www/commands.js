@@ -161,7 +161,15 @@ export async function renameSelected(){
     suggestBtn.setAttribute('aria-label', 'Sugerir com IA');
     suggestBtn.innerHTML = '<span class="material-symbols-outlined">smart_toy</span>';
 
+    const upBtn = document.createElement('button');
+    upBtn.type = 'button';
+    upBtn.className = 'p-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-400';
+    upBtn.setAttribute('title', 'Um nível acima');
+    upBtn.setAttribute('aria-label', 'Um nível acima');
+    upBtn.innerHTML = '<span class="material-symbols-outlined">arrow_upward</span>';
+
     form.appendChild(input);
+    form.appendChild(upBtn);
     form.appendChild(suggestBtn);
     form.appendChild(confirmBtn);
     form.appendChild(cancelBtn);
@@ -173,6 +181,20 @@ export async function renameSelected(){
 
     cancelBtn.addEventListener('click', ()=>{ cleanup(); });
     input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') confirmBtn.click(); if(e.key === 'Escape') cleanup(); });
+
+    upBtn.addEventListener('click', ()=>{
+      try{
+        const path = (selected && selected.path) ? selected.path : '/';
+        const parts = path.split('/').filter(Boolean);
+        if(parts.length <= 1){
+          input.value = '/';
+        } else {
+          const newParts = parts.slice(0, Math.max(0, parts.length - 2));
+          input.value = newParts.length ? ('/' + newParts.join('/')) : '/';
+        }
+        input.focus();
+      }catch(_){ input.value = '/'; }
+    });
 
     async function getDirByPath(rootHandle, path){
       if(!path) return null;
