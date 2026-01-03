@@ -7,12 +7,24 @@ const allowedTextExtensions = new Set([
   'py','java','c','cpp','rs','go','sh'
 ]);
 
+const allowedImageExtensions = new Set([
+  'png','jpg','jpeg','gif','webp','svg','ico','avif','bmp'
+]);
+
 function isTextFileByName(name){
   if(!name || typeof name !== 'string') return false;
   const idx = name.lastIndexOf('.');
   if(idx === -1) return false;
   const ext = name.slice(idx+1).toLowerCase();
   return allowedTextExtensions.has(ext);
+}
+
+function isImageFileByName(name){
+  if(!name || typeof name !== 'string') return false;
+  const idx = name.lastIndexOf('.');
+  if(idx === -1) return false;
+  const ext = name.slice(idx+1).toLowerCase();
+  return allowedImageExtensions.has(ext);
 }
 
 function formatBytes(bytes){
@@ -111,6 +123,24 @@ export async function showSelectedFile(handle, name){
     contentArea.appendChild(meta);
 
     if(!isTextFileByName(name)){
+      // se for imagem, exibir preview
+      if(isImageFileByName(name) || (mime && mime.startsWith('image/'))){
+        const url = URL.createObjectURL(file);
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'w-full flex justify-center';
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = name;
+        img.className = 'max-w-full max-h-[60vh] object-contain border rounded';
+        img.addEventListener('load', ()=> URL.revokeObjectURL(url));
+        img.addEventListener('error', ()=> {
+          URL.revokeObjectURL(url);
+          contentArea.textContent = 'Não foi possível exibir a imagem.';
+        });
+        imgWrap.appendChild(img);
+        contentArea.appendChild(imgWrap);
+        return;
+      }
       const msg = document.createElement('div');
       msg.textContent = 'Não foi possível ler o arquivo.';
       contentArea.appendChild(msg);
