@@ -72,7 +72,31 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
       { role: 'user', content: prompt }
     ];
 
-    const resp = await engine.chat.completions.create({ messages, temperature: 0.2, max_tokens: 64 });
+    const temperature = 0.2;
+    const max_tokens = 64;
+    try{
+      if(commands){
+        const detailItem = document.createElement('div');
+        detailItem.className = 'p-2 bg-slate-50 dark:bg-slate-700 rounded shadow text-sm text-slate-700 dark:text-slate-100';
+        const header = document.createElement('div');
+        header.className = 'flex items-center gap-2 mb-1';
+        header.innerHTML = '<span class="material-symbols-outlined mr-2">info</span><strong>Parâmetros IA</strong>';
+        const body = document.createElement('pre');
+        body.className = 'whitespace-pre-wrap text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-auto';
+        try{
+          let msgs = JSON.stringify(messages, null, 2);
+          if(msgs.length > 800) msgs = msgs.slice(0, 800) + '\n... (truncado)';
+          body.textContent = `temperature: ${temperature}\nmax_tokens: ${max_tokens}\n\nmessages:\n${msgs}`;
+        }catch(_){
+          body.textContent = `temperature: ${temperature}\nmax_tokens: ${max_tokens}\n\nmessages: (não pôde serializar)`;
+        }
+        detailItem.appendChild(header);
+        detailItem.appendChild(body);
+        commands.appendChild(detailItem);
+      }
+    }catch(_){ }
+
+    const resp = await engine.chat.completions.create({ messages, temperature, max_tokens });
     const text = resp?.choices?.[0]?.message?.content || '';
     return (text || '').toString().trim();
   }catch(e){
