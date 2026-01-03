@@ -86,3 +86,105 @@ renameBtn.addEventListener('click', async ()=>{
   }
   renderByHash();
 })();
+
+// --- Splitter / column resize logic ---
+function setupSplitters(){
+  const container = document.getElementById('splitContainer');
+  const treePane = document.getElementById('treePane');
+  const contentPane = document.getElementById('contentPane');
+  const commandsPane = document.getElementById('commandsPane');
+  const resizerLeft = document.getElementById('resizerLeft');
+  const resizerRight = document.getElementById('resizerRight');
+  if(!container || !treePane || !contentPane || !commandsPane) return;
+
+  const MIN_TREE = 180;
+  const MIN_COMMANDS = 160;
+  const MIN_CONTENT = 300;
+
+  // Apply persisted sizes if present
+  const savedTree = localStorage.getItem('modulista.treeWidth');
+  const savedCommands = localStorage.getItem('modulista.commandsWidth');
+  if(savedTree) treePane.style.width = savedTree + 'px';
+  if(savedCommands) commandsPane.style.width = savedCommands + 'px';
+
+  function setTreeWidth(px){
+    const containerRect = container.getBoundingClientRect();
+    const commandsWidth = commandsPane.getBoundingClientRect().width;
+    const max = Math.max(MIN_TREE, containerRect.width - commandsWidth - MIN_CONTENT);
+    const w = Math.max(MIN_TREE, Math.min(px, max));
+    treePane.style.width = w + 'px';
+    localStorage.setItem('modulista.treeWidth', String(w));
+  }
+
+  function setCommandsWidth(px){
+    const containerRect = container.getBoundingClientRect();
+    const treeWidth = treePane.getBoundingClientRect().width;
+    const max = Math.max(MIN_COMMANDS, containerRect.width - treeWidth - MIN_CONTENT);
+    const w = Math.max(MIN_COMMANDS, Math.min(px, max));
+    commandsPane.style.width = w + 'px';
+    localStorage.setItem('modulista.commandsWidth', String(w));
+  }
+
+  // Left resizer: drag horizontally to change treePane width
+  if(resizerLeft){
+    const onPointerDown = (e)=>{
+      e.preventDefault();
+      const move = (ev)=>{
+        const rect = container.getBoundingClientRect();
+        const px = ev.clientX - rect.left;
+        setTreeWidth(px);
+      };
+      const up = ()=>{ window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up, { once: true });
+    };
+    resizerLeft.addEventListener('pointerdown', onPointerDown);
+    // keyboard accessibility
+    resizerLeft.addEventListener('keydown', (e)=>{
+      const step = e.shiftKey ? 20 : 8;
+      const current = treePane.getBoundingClientRect().width;
+      if(e.key === 'ArrowLeft') setTreeWidth(current - step);
+      if(e.key === 'ArrowRight') setTreeWidth(current + step);
+    });
+  }
+
+  // Right resizer: drag to change commandsPane width
+  if(resizerRight){
+    const onPointerDown = (e)=>{
+      e.preventDefault();
+      const move = (ev)=>{
+        const rect = container.getBoundingClientRect();
+        const pxFromRight = rect.right - ev.clientX;
+        setCommandsWidth(pxFromRight);
+      };
+      const up = ()=>{ window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up, { once: true });
+    };
+    resizerRight.addEventListener('pointerdown', onPointerDown);
+    resizerRight.addEventListener('keydown', (e)=>{
+      const step = e.shiftKey ? 20 : 8;
+      const current = commandsPane.getBoundingClientRect().width;
+      if(e.key === 'ArrowLeft') setCommandsWidth(current + step);
+      if(e.key === 'ArrowRight') setCommandsWidth(current - step);
+    });
+  }
+
+  // Adjust on window resize to ensure constraints remain valid
+  window.addEventListener('resize', ()=>{
+    const treeW = treePane.getBoundingClientRect().width;
+    const cmdW = commandsPane.getBoundingClientRect().width;
+    const containerRect = container.getBoundingClientRect();
+    // ensure content has at least MIN_CONTENT
+    const available = containerRect.width - treeW - cmdW;
+    if(available < MIN_CONTENT){
+      // try to shrink commands first, then tree
+      const deficit = MIN_CONTENT - available;
+      const newCmd = Math.max(MIN_COMMANDS, cmdW - deficit);
+      commandsPane.style.width = newCmd + 'px';
+      localStorage.setItem('modulista.commandsWidth', String(newCmd));
+    }
+  });
+}
+
+setupSplitters();
