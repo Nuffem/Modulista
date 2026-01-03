@@ -1,6 +1,31 @@
 import { treeContainer } from './ui.js';
 import { getRootHandle, setSelected, getSelected, isExpanded, toggleExpanded, setExpanded } from './state.js';
 import { showSelectedDirectory, showSelectedFile } from './content.js';
+
+// Retorna o ícone Material Symbols apropriado para um arquivo, baseado na extensão
+function getIconForFile(name){
+  const parts = name.split('.');
+  if(parts.length === 1) return 'insert_drive_file';
+  const ext = parts.pop().toLowerCase();
+  switch(ext){
+    case 'js': return 'code';
+    case 'ts': return 'code';
+    case 'html': return 'html';
+    case 'css': return 'style';
+    case 'json': return 'data_object';
+    case 'md': return 'description';
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+    case 'gif': return 'image';
+    case 'svg': return 'image';
+    case 'pdf': return 'picture_as_pdf';
+    case 'zip':
+    case 'tar':
+    case 'gz': return 'folder_zip';
+    default: return 'insert_drive_file';
+  }
+}
 export async function renderApp(){
   treeContainer.innerHTML = '';
   if(!getRootHandle()) return;
@@ -29,6 +54,8 @@ export async function buildAndRender(dirHandle, container, displayName, path){
     if(expanded){
       childrenCont.style.display = 'none';
       toggleIcon.textContent = 'chevron_right';
+      // marcar ícone de pasta como fechado
+      icon.textContent = 'folder';
       setExpanded(path, false);
     } else {
       // populate lazily if empty
@@ -37,6 +64,8 @@ export async function buildAndRender(dirHandle, container, displayName, path){
       }
       childrenCont.style.display = 'block';
       toggleIcon.textContent = 'expand_more';
+      // marcar ícone de pasta como aberto
+      icon.textContent = 'folder_open';
       setExpanded(path, true);
     }
   });
@@ -97,7 +126,8 @@ async function populateChildren(dirHandle, childrenCont, parentPath){
       fBtn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
       const fIcon = document.createElement('span');
       fIcon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
-      fIcon.textContent = 'insert_drive_file';
+      fIcon.setAttribute('aria-hidden','true');
+      fIcon.textContent = getIconForFile(name);
       fBtn.appendChild(fIcon);
       fBtn.appendChild(document.createTextNode(name));
       fBtn.addEventListener('click', async ()=>{
