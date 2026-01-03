@@ -61,9 +61,9 @@
 
         <div id="resizerRight" class="resizer" role="separator" aria-orientation="vertical" tabindex="0"></div>
 
-        <aside id="commandsPane" class="w-64 min-w-[200px] border-l bg-white dark:bg-slate-800 dark:border-slate-700 p-4" style="flex: none;">
+        <aside id="commandsPane" class="w-64 min-w-[200px] border-l bg-white dark:bg-slate-800 dark:border-slate-700 p-4 h-full flex flex-col" style="flex: none; min-height: 0;">
           <h3 class="text-sm font-medium mb-2">Comandos</h3>
-          <div id="commands" class="space-y-2">
+          <div id="commands" class="space-y-2 overflow-auto flex-1 min-h-0">
             <button id="renameBtn" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
               <span class="material-symbols-outlined">edit</span>
               Renomear
