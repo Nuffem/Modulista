@@ -1,17 +1,47 @@
 import { treeContainer } from './ui.js';
-import { getRootHandle, setSelected, getSelected } from './state.js';
+import { getRootHandle, setSelected, getSelected, isExpanded, toggleExpanded, setExpanded } from './state.js';
 import { showSelectedDirectory, showSelectedFile } from './content.js';
-
 export async function renderApp(){
   treeContainer.innerHTML = '';
   if(!getRootHandle()) return;
-  const ul = document.createElement('div');
-  await buildAndRender(getRootHandle(), ul, getRootHandle().name || 'root');
-  treeContainer.appendChild(ul);
+  const rootName = getRootHandle().name || 'root';
+  const rootCont = document.createElement('div');
+  await buildAndRender(getRootHandle(), rootCont, rootName, rootName);
+  treeContainer.appendChild(rootCont);
 }
 
-export async function buildAndRender(dirHandle, container, displayName){
+export async function buildAndRender(dirHandle, container, displayName, path){
   const node = document.createElement('div');
+
+  const row = document.createElement('div');
+  row.className = 'flex items-center';
+
+  // Toggle button (chevron)
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'p-0 mr-1 text-[18px]';
+  const toggleIcon = document.createElement('span');
+  toggleIcon.className = 'material-symbols-outlined';
+  toggleIcon.textContent = isExpanded(path) ? 'expand_more' : 'chevron_right';
+  toggleBtn.appendChild(toggleIcon);
+  toggleBtn.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    const expanded = isExpanded(path);
+    if(expanded){
+      childrenCont.style.display = 'none';
+      toggleIcon.textContent = 'chevron_right';
+      setExpanded(path, false);
+    } else {
+      // populate lazily if empty
+      if(!childrenCont.hasChildNodes()){
+        await populateChildren(dirHandle, childrenCont, path);
+      }
+      childrenCont.style.display = 'block';
+      toggleIcon.textContent = 'expand_more';
+      setExpanded(path, true);
+    }
+  });
+
+  // Folder icon + name button
   const btn = document.createElement('button');
   btn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
   const icon = document.createElement('span');
@@ -24,9 +54,25 @@ export async function buildAndRender(dirHandle, container, displayName){
     markSelected(btn);
     await showSelectedDirectory(dirHandle, displayName);
   });
-  node.appendChild(btn);
+
+  row.appendChild(toggleBtn);
+  row.appendChild(btn);
+  node.appendChild(row);
+
   const childrenCont = document.createElement('div');
   childrenCont.className = 'ml-3 mt-1 space-y-1';
+  childrenCont.style.display = isExpanded(path) ? 'block' : 'none';
+
+  // If the directory is already expanded in state, populate now
+  if(isExpanded(path)){
+    await populateChildren(dirHandle, childrenCont, path);
+  }
+
+  node.appendChild(childrenCont);
+  container.appendChild(node);
+}
+
+async function populateChildren(dirHandle, childrenCont, parentPath){
   // Collect entries, then sort: directories first, then files; both alphabetically
   const entries = [];
   for await (const [name, handle] of dirHandle.entries()){
@@ -40,24 +86,11 @@ export async function buildAndRender(dirHandle, container, displayName){
     }
     return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
   });
+
   for (const [name, handle] of entries){
     if(handle.kind === 'directory'){
-      const sub = document.createElement('div');
-      const subBtn = document.createElement('button');
-      subBtn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
-      const sIcon = document.createElement('span');
-      sIcon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
-      sIcon.textContent = 'folder';
-      subBtn.appendChild(sIcon);
-      subBtn.appendChild(document.createTextNode(name));
-      subBtn.addEventListener('click', async (e)=>{
-        e.stopPropagation();
-        setSelected({handle, name, parent: dirHandle, kind: 'directory'});
-        markSelected(subBtn);
-        await showSelectedDirectory(handle, name);
-      });
-      sub.appendChild(subBtn);
-      childrenCont.appendChild(sub);
+      // Render a directory node (collapsed by default)
+      await buildAndRender(handle, childrenCont, name, `${parentPath}/${name}`);
     } else {
       const fileDiv = document.createElement('div');
       const fBtn = document.createElement('button');
@@ -76,8 +109,6 @@ export async function buildAndRender(dirHandle, container, displayName){
       childrenCont.appendChild(fileDiv);
     }
   }
-  node.appendChild(childrenCont);
-  container.appendChild(node);
 }
 
 function clearSelectedClasses(){

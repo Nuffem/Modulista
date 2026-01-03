@@ -7,6 +7,19 @@ export function getRootHandle(){ return rootHandle; }
 export function setSelected(s){ selected = s; }
 export function getSelected(){ return selected; }
 
+// Expanded directory paths tracking (in-memory)
+export const expandedPaths = new Set();
+
+export function isExpanded(path){ return expandedPaths.has(path); }
+export function toggleExpanded(path){
+	if(expandedPaths.has(path)) expandedPaths.delete(path);
+	else expandedPaths.add(path);
+}
+export function setExpanded(path, val){
+	if(val) expandedPaths.add(path); else expandedPaths.delete(path);
+}
+export function clearExpanded(){ expandedPaths.clear(); }
+
 export function clearState(){ rootHandle = null; selected = null; }
 
 const DB_NAME = 'modulista-db';
