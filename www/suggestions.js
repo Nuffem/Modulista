@@ -80,7 +80,7 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
           detailItem.className = 'p-2 bg-slate-50 dark:bg-slate-700 rounded shadow text-sm text-slate-700 dark:text-slate-100';
           const header = document.createElement('div');
           header.className = 'flex items-center gap-2 mb-1';
-          header.innerHTML = '<span class="material-symbols-outlined mr-2">info</span><strong>Parâmetros IA</strong>';
+          header.innerHTML = '<span class="material-symbols-outlined mr-2">description</span><strong>Detalhes da solicitação</strong>';
 
           const form = document.createElement('div');
           form.className = 'grid grid-cols-1 gap-2';
