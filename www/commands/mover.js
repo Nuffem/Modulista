@@ -164,7 +164,6 @@ export async function moveSelected(){
     }finally{
       suggestBtn.disabled = false;
       suggestBtn.innerHTML = old;
-      if(progressCard && progressCard.remove) progressCard.remove();
     }
   });
 

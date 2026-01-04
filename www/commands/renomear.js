@@ -135,7 +135,6 @@ export async function renameSelected(){
     }finally{
       suggestBtn.disabled = false;
       suggestBtn.innerHTML = old;
-      if(progressCard && progressCard.remove) progressCard.remove();
     }
   });
   return true;
