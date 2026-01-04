@@ -161,7 +161,7 @@ export async function moveToExisting(){
                 const suggestionRow = document.createElement('div'); suggestionRow.className = 'mt-2';
                 suggestionRow.appendChild(aiLabel);
                 suggestionRow.appendChild(aiSelect);
-                container.appendChild(suggestionRow);
+                commands.appendChild(suggestionRow);
               }
             }
           }catch(_){ /* silencioso */ }
