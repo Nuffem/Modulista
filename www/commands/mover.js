@@ -22,14 +22,22 @@ export async function moveSelected(){
   const makePrimaryBtn = (text)=>{
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'w-full text-left p-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400';
-    b.textContent = text;
+    b.className = 'w-full flex items-center justify-start gap-2 px-3 py-2 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 dark:border-slate-600 border bg-indigo-600 text-white rounded hover:bg-indigo-700';
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined align-middle text-[18px]';
+    icon.setAttribute('aria-hidden','true');
+    icon.textContent = '';
+    b.appendChild(icon);
+    b.appendChild(document.createTextNode(text));
     return b;
   };
 
   const btnUp = makePrimaryBtn('Um nível acima');
+  btnUp.querySelector('span').textContent = 'arrow_upward';
   const btnExisting = makePrimaryBtn('Subpasta existente');
+  btnExisting.querySelector('span').textContent = 'folder';
   const btnNew = makePrimaryBtn('Nova subpasta');
+  btnNew.querySelector('span').textContent = 'create_new_folder';
 
   const contentArea = document.createElement('div');
   contentArea.className = 'mt-2';
@@ -126,8 +134,13 @@ export async function moveSelected(){
           for(const name of dirs){
             const itemBtn = document.createElement('button');
             itemBtn.type = 'button';
-            itemBtn.className = 'w-full text-left p-2 bg-white dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600 focus:outline-none';
-            itemBtn.textContent = name;
+            itemBtn.className = 'w-full flex items-center justify-start gap-2 px-3 py-2 bg-indigo-50 dark:bg-slate-700 text-indigo-700 dark:text-slate-100 rounded border border-indigo-100 dark:border-slate-600 focus:outline-none hover:bg-indigo-100 dark:hover:bg-slate-600';
+            const itemIcon = document.createElement('span');
+            itemIcon.className = 'material-symbols-outlined align-middle text-[18px]';
+            itemIcon.setAttribute('aria-hidden','true');
+            itemIcon.textContent = 'folder';
+            itemBtn.appendChild(itemIcon);
+            itemBtn.appendChild(document.createTextNode(name));
             itemBtn.addEventListener('click', async ()=>{
               try{
                 const targetDir = await selected.parent.getDirectoryHandle(name);
