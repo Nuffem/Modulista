@@ -135,7 +135,7 @@ function startModelLoader(){
 
   const top = document.createElement('div');
   top.className = 'flex items-center gap-2 mb-2';
-  top.innerHTML = '<span class="material-symbols-outlined">smart_toy</span><div class="flex-1"><div class="text-sm font-semibold">Carregando modelo de IA</div><div class="text-xs text-slate-600 dark:text-slate-300 webllm-model-name">—</div></div>';
+  top.innerHTML = '<span class="material-symbols-outlined">smart_toy</span><div class="flex-1"><div class="text-sm font-semibold">Carregando modelo de IA</div><div class="text-xs text-slate-600 dark:text-slate-300 webllm-status-container"><div class="webllm-status-text">—</div><div class="webllm-model-name">—</div></div></div>';
   const progressOuter = document.createElement('div');
   progressOuter.className = 'w-full bg-slate-200 dark:bg-slate-600 rounded h-3 overflow-hidden';
   const progressInner = document.createElement('div');
@@ -149,10 +149,12 @@ function startModelLoader(){
   try{ container.innerHTML = ''; container.appendChild(card); }catch(_){ }
 
   window.__webllm_progress_element = progressInner;
-  window.__webllm_progress_label = top.querySelector('.webllm-model-name');
+  window.__webllm_progress_label = top.querySelector('.webllm-status-container');
 
   const modelName = 'Llama-3.2-3B-Instruct-q4f32_1-MLC';
   window.__webllm_model_name = modelName;
+  const _modelNameEl = top.querySelector('.webllm-model-name');
+  if(_modelNameEl) _modelNameEl.textContent = modelName;
 
   const url = 'https://esm.run/@mlc-ai/web-llm';
   window.webModelLoadPromise = (async ()=>{
@@ -170,7 +172,12 @@ function startModelLoader(){
               if(lbl){
                 const statusEl = lbl.querySelector('.webllm-status-text');
                 const modelEl = lbl.querySelector('.webllm-model-name');
-                if(statusEl) statusEl.textContent = 'Carregando modelo... ' + Math.round(pct) + '%';
+                if(statusEl){
+                  const parts = [ 'Carregando modelo... ' + Math.round(pct) + '%' ];
+                  if(p && (p.timeElapsed !== undefined && p.timeElapsed !== null)) parts.push('tempo: ' + String(p.timeElapsed));
+                  if(p && p.text) parts.push(String(p.text));
+                  statusEl.textContent = parts.join(' • ');
+                }
                 if(modelEl && modelName) modelEl.textContent = modelName;
               }
             }catch(_){ }
@@ -202,7 +209,6 @@ function startModelLoader(){
       }
 
       window.webModelReady = true;
-      try{ if(window.__webllm_progress_label) window.__webllm_progress_label.textContent = modelName; }catch(_){ }
       return { name: modelName };
     }catch(err){
       console.error('Falha ao carregar modelo web-llm', err);
