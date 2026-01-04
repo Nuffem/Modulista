@@ -84,17 +84,33 @@ export function appendCommandDetail(systemMsg, userMsg, temperature, max_tokens)
 	maxInput.readOnly = true;
 
 	const systemTextarea = document.createElement('textarea');
-	systemTextarea.className = 'whitespace-pre-wrap text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-auto';
+	systemTextarea.className = 'whitespace-pre-wrap text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700';
 	systemTextarea.rows = 3;
 	systemTextarea.readOnly = true;
+	systemTextarea.style.overflow = 'hidden';
+	systemTextarea.style.resize = 'vertical';
 
 	const userTextarea = document.createElement('textarea');
 	userTextarea.className = systemTextarea.className;
 	userTextarea.rows = 3;
 	userTextarea.readOnly = true;
+	userTextarea.style.overflow = 'hidden';
+	userTextarea.style.resize = 'vertical';
+
+	// helper para ajustar a altura do textarea ao conteúdo
+	const adjustTextareaHeight = (ta) => {
+		try{
+			ta.style.height = 'auto';
+			ta.style.height = (ta.scrollHeight || 0) + 'px';
+		}catch(_){ }
+	};
+	systemTextarea.addEventListener('input', ()=> adjustTextareaHeight(systemTextarea));
+	userTextarea.addEventListener('input', ()=> adjustTextareaHeight(userTextarea));
 
 	systemTextarea.value = systemMsg || '(sem mensagem)';
 	userTextarea.value = userMsg || '(sem mensagem)';
+
+	// não ajustar ainda — o elemento precisa estar no DOM para medir corretamente
 
 	form.appendChild(makeRow('temperature', tempInput));
 	form.appendChild(makeRow('max_tokens', maxInput));
@@ -104,6 +120,9 @@ export function appendCommandDetail(systemMsg, userMsg, temperature, max_tokens)
 	detailItem.appendChild(header);
 	detailItem.appendChild(form);
 	commands.appendChild(detailItem);
+
+	// ajustar agora que o elemento está no DOM
+	try{ adjustTextareaHeight(systemTextarea); adjustTextareaHeight(userTextarea); }catch(_){ }
 	return detailItem;
 }
 
