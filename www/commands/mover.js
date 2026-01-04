@@ -17,161 +17,180 @@ export async function moveSelected(){
 
   const form = document.createElement('div');
   form.id = 'move-form';
-  form.className = 'mt-2 flex items-center space-x-2';
+  form.className = 'mt-2 flex flex-col space-y-2';
 
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.placeholder = 'Destino (ex: /pasta/receber)';
-  input.className = 'border rounded p-1 flex-1 bg-white text-slate-900 placeholder-slate-400 border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:placeholder-slate-400 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400';
-
-  const confirmBtn = document.createElement('button');
-  confirmBtn.type = 'button';
-  confirmBtn.className = 'p-2 bg-green-600 hover:bg-green-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-green-400';
-  confirmBtn.setAttribute('title', 'Confirmar');
-  confirmBtn.setAttribute('aria-label', 'Confirmar');
-  confirmBtn.innerHTML = '<span class="material-symbols-outlined">check</span>';
-
-  
-
-  const suggestBtn = document.createElement('button');
-  suggestBtn.type = 'button';
-  suggestBtn.className = 'p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400';
-  suggestBtn.setAttribute('title', 'Sugerir com IA');
-  suggestBtn.setAttribute('aria-label', 'Sugerir com IA');
-  suggestBtn.innerHTML = '<span class="material-symbols-outlined">smart_toy</span>';
-
-  // Inicialmente desabilita o botão de sugestão até o modelo estar pronto
-  const enableSuggest = ()=>{
-    try{ suggestBtn.disabled = false; suggestBtn.classList.remove('opacity-50','cursor-not-allowed'); suggestBtn.removeAttribute('aria-disabled'); }catch(_){ }
+  const makePrimaryBtn = (text)=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'w-full text-left p-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400';
+    b.textContent = text;
+    return b;
   };
-  if(!window.webModelReady){
-    try{ suggestBtn.disabled = true; suggestBtn.classList.add('opacity-50','cursor-not-allowed'); suggestBtn.setAttribute('aria-disabled','true'); }catch(_){ }
-    if(window.webModelLoadPromise) window.webModelLoadPromise.then(enableSuggest).catch(()=>{});
-  }else{
-    enableSuggest();
-  }
 
-  const upBtn = document.createElement('button');
-  upBtn.type = 'button';
-  upBtn.className = 'p-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-400';
-  upBtn.setAttribute('title', 'Um nível acima');
-  upBtn.setAttribute('aria-label', 'Um nível acima');
-  upBtn.innerHTML = '<span class="material-symbols-outlined">arrow_upward</span>';
+  const btnUp = makePrimaryBtn('Um nível acima');
+  const btnExisting = makePrimaryBtn('Subpasta existente');
+  const btnNew = makePrimaryBtn('Nova subpasta');
 
-  form.appendChild(input);
-  form.appendChild(upBtn);
-  form.appendChild(suggestBtn);
-  form.appendChild(confirmBtn);
+  const contentArea = document.createElement('div');
+  contentArea.className = 'mt-2';
+
+  form.appendChild(btnUp);
+  form.appendChild(btnExisting);
+  form.appendChild(btnNew);
+  form.appendChild(contentArea);
 
   if(commands) commands.appendChild(form);
-  input.focus();
 
   const cleanup = ()=>{ try{ exitCommandDetailMode(); }catch(_){ const el = document.getElementById('move-form'); if(el) el.remove(); } };
 
-  // cancel button removed: user returns via voltar (back) button
-  input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') confirmBtn.click(); if(e.key === 'Escape') cleanup(); });
+  const performMove = async (selectedItem, targetDir)=>{
+    if(!selectedItem) throw new Error('Nenhum item selecionado');
+    if(selectedItem.kind === 'file'){
+      const oldHandle = selectedItem.handle;
+      const file = await oldHandle.getFile();
+      const newHandle = await targetDir.getFileHandle(selectedItem.name, {create:true});
+      const writable = await newHandle.createWritable();
+      await writable.write(await file.arrayBuffer());
+      await writable.close();
+      await selectedItem.parent.removeEntry(selectedItem.name);
+    } else {
+      const source = await selectedItem.parent.getDirectoryHandle(selectedItem.name);
+      const tgt = await targetDir.getDirectoryHandle(selectedItem.name, {create:true});
+      await copyDirectory(source, tgt);
+      await selectedItem.parent.removeEntry(selectedItem.name, {recursive: true});
+    }
+  };
 
-  upBtn.addEventListener('click', ()=>{
-    try{
-      const path = (selected && selected.path) ? selected.path : '/';
-      const parts = path.split('/').filter(Boolean);
-      if(parts.length <= 1){
-        input.value = '/';
-      } else {
-        const newParts = parts.slice(0, Math.max(0, parts.length - 2));
-        input.value = newParts.length ? ('/' + newParts.join('/')) : '/';
-      }
-      input.focus();
-    }catch(_){ input.value = '/'; }
-  });
+  // Voltar para o menu principal
+  const showMain = ()=>{
+    contentArea.innerHTML = '';
+    btnUp.style.display = '';
+    btnExisting.style.display = '';
+    btnNew.style.display = '';
+    btnExisting.disabled = false; btnExisting.classList.remove('opacity-50','cursor-not-allowed'); btnExisting.removeAttribute('aria-disabled');
+    btnNew.disabled = false; btnNew.classList.remove('opacity-50','cursor-not-allowed'); btnNew.removeAttribute('aria-disabled');
+  };
 
-  confirmBtn.addEventListener('click', async ()=>{
-    const destPath = (input.value || '').trim();
-    if(!destPath){ alert('Informe o destino.'); return; }
+  // Um nível acima: move direto para o nível acima do pai
+  btnUp.addEventListener('click', async ()=>{
     try{
       const root = getRootHandle();
       if(!root) return alert('Nenhuma pasta aberta.');
+      const path = (selected && selected.path) ? selected.path : '/';
+      const parts = path.split('/').filter(Boolean);
+      let destPath = '/';
+      if(parts.length > 1){
+        const newParts = parts.slice(0, Math.max(0, parts.length - 2));
+        destPath = newParts.length ? ('/' + newParts.join('/')) : '/';
+      }
       const targetDir = await getDirByPath(root, destPath);
       if(!targetDir) return alert('Pasta de destino não encontrada: ' + destPath);
       const okPerm = await ensureHandlePermission(targetDir, 'readwrite').catch(()=>false);
       if(!okPerm) return alert('Permissão negada para a pasta de destino.');
-
-      if(selected.kind === 'file'){
-        const oldHandle = selected.handle;
-        const file = await oldHandle.getFile();
-        const newHandle = await targetDir.getFileHandle(selected.name, {create:true});
-        const writable = await newHandle.createWritable();
-        await writable.write(await file.arrayBuffer());
-        await writable.close();
-        await selected.parent.removeEntry(selected.name);
-      } else {
-        const source = await selected.parent.getDirectoryHandle(selected.name);
-        const tgt = await targetDir.getDirectoryHandle(selected.name, {create:true});
-        await copyDirectory(source, tgt);
-        await selected.parent.removeEntry(selected.name, {recursive: true});
-      }
-
+      await performMove(selected, targetDir);
       setSelected(null);
       cleanup();
       return true;
-    }catch(e){
-      alert('Falha ao mover: ' + (e && e.message));
-      return false;
-    }
+    }catch(e){ alert('Falha ao mover: ' + (e && e.message)); return false; }
   });
 
-  // Manipulador de sugestão específico para o comando "mover"
-  suggestBtn.addEventListener('click', async ()=>{
-    if(suggestBtn.disabled) return; // botão inativo enquanto modelo não estiver pronto
-    const old = suggestBtn.innerHTML;
-    suggestBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
-    suggestBtn.disabled = true;
-    let progressCard;
+  // Subpasta existente: mostra lista de subpastas dentro do pai
+  btnExisting.addEventListener('click', async ()=>{
     try{
-      progressCard = createCommandProgress();
-    }catch(e){ console.error('Erro ao criar cartão de progresso:', e); }
+      // ocultar as outras opções e manter apenas este botão (desativado)
+      btnUp.style.display = 'none';
+      btnNew.style.display = 'none';
+      btnExisting.disabled = true; btnExisting.classList.add('opacity-50','cursor-not-allowed'); btnExisting.setAttribute('aria-disabled','true');
+      contentArea.innerHTML = '';
+      const back = document.createElement('button');
+      back.type = 'button';
+      back.className = 'p-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none';
+      back.textContent = 'Voltar';
+      contentArea.appendChild(back);
 
-    try{
-      let subfolders = '';
-      let fileContent = '';
-      let mimeType = '';
-      try{
-        if(selected && selected.parent){
-          const dirs = [];
-          for await (const [name, handle] of selected.parent.entries()){
-            try{ if(handle && handle.kind === 'directory') dirs.push(name); }catch(_){ }
-            if(dirs.length >= 500) break;
+      const list = document.createElement('div');
+      list.className = 'mt-2 space-y-1';
+      contentArea.appendChild(list);
+
+      back.addEventListener('click', ()=>{ showMain(); });
+
+      if(selected && selected.parent){
+        const dirs = [];
+        for await (const [name, handle] of selected.parent.entries()){
+          try{ if(handle && handle.kind === 'directory') dirs.push(name); }catch(_){ }
+          if(dirs.length >= 500) break;
+        }
+        if(dirs.length === 0){
+          const empty = document.createElement('div'); empty.className = 'text-sm text-slate-500'; empty.textContent = 'Nenhuma subpasta encontrada.'; list.appendChild(empty);
+        } else {
+          for(const name of dirs){
+            const itemBtn = document.createElement('button');
+            itemBtn.type = 'button';
+            itemBtn.className = 'w-full text-left p-2 bg-white dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600 focus:outline-none';
+            itemBtn.textContent = name;
+            itemBtn.addEventListener('click', async ()=>{
+              try{
+                const targetDir = await selected.parent.getDirectoryHandle(name);
+                const okPerm = await ensureHandlePermission(targetDir, 'readwrite').catch(()=>false);
+                if(!okPerm) return alert('Permissão negada para a pasta de destino.');
+                await performMove(selected, targetDir);
+                setSelected(null);
+                cleanup();
+                return true;
+              }catch(e){ alert('Falha ao mover: ' + (e && e.message)); }
+            });
+            list.appendChild(itemBtn);
           }
-          subfolders = dirs.join(', ');
         }
-      }catch(e){ subfolders = ''; }
+      }
+    }catch(e){ alert('Erro ao listar subpastas: ' + (e && e.message)); }
+  });
 
-      try{
-        if(selected && selected.kind === 'file' && selected.handle){
-          try{
-            const f = await selected.handle.getFile();
-            mimeType = f.type || '';
-            const allowedMimes = ['application/json','application/javascript','application/xml','text/html','text/markdown','text/plain','text/css'];
-            const shouldRead = mimeType ? (mimeType.startsWith('text/') || allowedMimes.includes(mimeType)) : true;
-            if(shouldRead){ fileContent = (await f.text()).slice(0, 20000); }
-          }catch(_){ fileContent = ''; mimeType = ''; }
-        }
-      }catch(_){ fileContent = ''; mimeType = ''; }
+  // Nova subpasta: mostra campo de nome + confirmar
+  btnNew.addEventListener('click', async ()=>{
+    try{
+      // ocultar as outras opções e manter apenas este botão (desativado)
+      btnUp.style.display = 'none';
+      btnExisting.style.display = 'none';
+      btnNew.disabled = true; btnNew.classList.add('opacity-50','cursor-not-allowed'); btnNew.setAttribute('aria-disabled','true');
+      contentArea.innerHTML = '';
+      const back = document.createElement('button');
+      back.type = 'button';
+      back.className = 'p-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none';
+      back.textContent = 'Voltar';
+      contentArea.appendChild(back);
 
-      const itemName = selected ? selected.name : '';
-      const snippetPart = fileContent ? `Conteúdo (trecho):\n${fileContent.slice(0,2000)}\n\n` : '';
-      const promptBody = `${itemName ? 'Nome do item: ' + itemName + '\n\n' : ''}${snippetPart}Sugira o nome de uma subpasta ou destino curto para mover este item. Retorne apenas o NOME da subpasta (sem caminho) ou o NOME de uma nova pasta a ser criada, sem explicações ou pontuação extra.`;
-      const subList = subfolders ? `Subpastas existentes: ${subfolders}\n\n` : '';
-      const systemMsg = `${subList}Você é um assistente que sugere destinos para mover itens dentro de uma pasta. Prefira sugerir o nome de uma subpasta existente (retorne apenas o NOME da subpasta, sem caminho). Se não houver subpasta adequada, proponha um NOME para criar uma nova pasta. Responda somente com o nome sugerido, sem explicações, sem pontuação extra.`;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Nome da nova subpasta';
+      input.className = 'mt-2 w-full border rounded p-1 bg-white text-slate-900 placeholder-slate-400 border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:placeholder-slate-400 dark:border-slate-600 focus:outline-none';
+      contentArea.appendChild(input);
 
-      const suggestion = await generateSuggestion(selected ? selected.kind : 'file', input ? input.value || '' : '', fileContent, mimeType, '', 'move', subfolders, systemMsg, promptBody);
-      if(suggestion && input) input.value = suggestion;
-    }catch(e){
-      alert('Erro ao gerar sugestão: ' + (e && e.message));
-    }finally{
-      suggestBtn.disabled = false;
-      suggestBtn.innerHTML = old;
-    }
+      const confirm = document.createElement('button');
+      confirm.type = 'button';
+      confirm.className = 'mt-2 p-2 bg-green-600 hover:bg-green-700 text-white rounded focus:outline-none';
+      confirm.textContent = 'Confirmar';
+      contentArea.appendChild(confirm);
+
+      back.addEventListener('click', ()=>{ showMain(); });
+
+      confirm.addEventListener('click', async ()=>{
+        const name = (input.value || '').trim();
+        if(!name){ alert('Informe o nome da nova subpasta.'); return; }
+        try{
+          if(!selected || !selected.parent) return alert('Nenhum item selecionado ou pasta pai inválida.');
+          const targetDir = await selected.parent.getDirectoryHandle(name, {create:true});
+          const okPerm = await ensureHandlePermission(targetDir, 'readwrite').catch(()=>false);
+          if(!okPerm) return alert('Permissão negada para a pasta de destino.');
+          await performMove(selected, targetDir);
+          setSelected(null);
+          cleanup();
+          return true;
+        }catch(e){ alert('Falha ao mover: ' + (e && e.message)); }
+      });
+
+      input.focus();
+    }catch(e){ alert('Erro ao criar nova subpasta: ' + (e && e.message)); }
   });
 
   return true;
