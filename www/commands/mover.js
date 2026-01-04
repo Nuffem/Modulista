@@ -44,6 +44,17 @@ export async function moveSelected(){
   suggestBtn.setAttribute('aria-label', 'Sugerir com IA');
   suggestBtn.innerHTML = '<span class="material-symbols-outlined">smart_toy</span>';
 
+  // Inicialmente desabilita o botão de sugestão até o modelo estar pronto
+  const enableSuggest = ()=>{
+    try{ suggestBtn.disabled = false; suggestBtn.classList.remove('opacity-50','cursor-not-allowed'); suggestBtn.removeAttribute('aria-disabled'); }catch(_){ }
+  };
+  if(!window.webModelReady){
+    try{ suggestBtn.disabled = true; suggestBtn.classList.add('opacity-50','cursor-not-allowed'); suggestBtn.setAttribute('aria-disabled','true'); }catch(_){ }
+    if(window.webModelLoadPromise) window.webModelLoadPromise.then(enableSuggest).catch(()=>{});
+  }else{
+    enableSuggest();
+  }
+
   const upBtn = document.createElement('button');
   upBtn.type = 'button';
   upBtn.className = 'p-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-400';
@@ -116,6 +127,7 @@ export async function moveSelected(){
 
   // Manipulador de sugestão específico para o comando "mover"
   suggestBtn.addEventListener('click', async ()=>{
+    if(suggestBtn.disabled) return; // botão inativo enquanto modelo não estiver pronto
     const old = suggestBtn.innerHTML;
     suggestBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
     suggestBtn.disabled = true;

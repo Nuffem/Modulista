@@ -52,18 +52,11 @@ if(closeModalCloseBtn){
 }
 
 renameBtn.addEventListener('click', async ()=>{
-  // aguarda modelo IA estar pronto antes de executar o comando
-  if(window.webModelLoadPromise && !window.webModelReady){
-    await window.webModelLoadPromise;
-  }
   const ok = await renameSelected();
   if(ok) await renderApp(location.hash.replace('#','') || '/');
 });
 
 moveBtn?.addEventListener('click', async ()=>{
-  if(window.webModelLoadPromise && !window.webModelReady){
-    await window.webModelLoadPromise;
-  }
   const ok = await moveSelected();
   if(ok) await renderApp(location.hash.replace('#','') || '/');
 });

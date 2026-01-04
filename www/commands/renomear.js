@@ -45,6 +45,17 @@ export async function renameSelected(){
   suggestBtn.setAttribute('aria-label', 'Sugerir com IA');
   suggestBtn.innerHTML = '<span class="material-symbols-outlined">smart_toy</span>';
 
+  // Inicialmente desabilita o botão de sugestão até o modelo estar pronto
+  const enableSuggest = ()=>{
+    try{ suggestBtn.disabled = false; suggestBtn.classList.remove('opacity-50','cursor-not-allowed'); suggestBtn.removeAttribute('aria-disabled'); }catch(_){ }
+  };
+  if(!window.webModelReady){
+    try{ suggestBtn.disabled = true; suggestBtn.classList.add('opacity-50','cursor-not-allowed'); suggestBtn.setAttribute('aria-disabled','true'); }catch(_){ }
+    if(window.webModelLoadPromise) window.webModelLoadPromise.then(enableSuggest).catch(()=>{});
+  }else{
+    enableSuggest();
+  }
+
   form.appendChild(input);
   form.appendChild(suggestBtn);
   form.appendChild(confirmBtn);
@@ -89,6 +100,7 @@ export async function renameSelected(){
 
   // Manipulador de sugestão específico para o comando "renomear"
   suggestBtn.addEventListener('click', async ()=>{
+    if(suggestBtn.disabled) return; // botão inativo enquanto modelo não estiver pronto
     const old = suggestBtn.innerHTML;
     suggestBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
     suggestBtn.disabled = true;
