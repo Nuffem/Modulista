@@ -119,9 +119,12 @@ export async function moveToExisting(){
               }
             }catch(_){ listingNames = dirs.slice(0,200).join(', '); }
 
-            const parentSubfolders = dirs.slice(0,200).join(', ');
-            const promptBody = `Tenho as seguintes subpastas disponíveis como destinos: ${parentSubfolders}. O item a ser movido se chama "${selected ? selected.name : ''}". Ordene essas subpastas do destino mais provável para o menos provável para receber este item. Retorne apenas a lista de nomes, separados por vírgula, sem explicações. Use exatamente os nomes fornecidos quando possível.`;
-            const systemMsg = 'Você é um assistente que, dado o nome do item e a lista de subpastas, ordena as subpastas do destino mais provável ao menos provável. Responda apenas com os nomes separados por vírgula.';
+            const parentSubfolders = dirs.slice(0,200);
+            const promptBody = JSON.stringify({
+              parentSubfolders,
+              itemName: selected ? selected.name : '',
+            });
+            const systemMsg = 'Você é um organizador de arquivos. O usuário fornecerá um nome de arquivo e uma lista de pastas. Sua tarefa é retornar as pastas que mais combinam com o arquivo, por ordem de relevância, em formato JSON. A resposta deve ser apenas um JSON contendo um array de strings (ex: ["Pasta A","Outra Pasta"]) e não deve incluir explicações ou texto adicional. Use exatamente os nomes fornecidos.';
             const messages = [
               { role: 'system', content: systemMsg },
               { role: 'user', content: promptBody }
