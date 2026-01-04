@@ -1,11 +1,11 @@
 import './picker.js';
 import './theme.js';
 import { setRootHandle, clearState, getSelected, getRootHandle, persistRootHandle, restoreRootHandle, deletePersistedRoot, ensureHandlePermission } from './state.js';
-import { openBtn, closeFolderBtn, renameBtn, moveBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn, closeFolderModal, closeModalOpenNewBtn, closeModalConfirmBtn, closeModalCloseBtn, modelLoadContainer } from './ui.js';
+import { openBtn, closeFolderBtn, renameBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn, closeFolderModal, closeModalOpenNewBtn, closeModalConfirmBtn, closeModalCloseBtn, modelLoadContainer } from './ui.js';
 import { setHash, renderByHash } from './picker.js';
 import { renderApp } from './tree.js';
-import { renameSelected, moveSelected, moveUpSelected } from './commands.js';
-import { moveUpBtn } from './ui.js';
+import { renameSelected, moveToExisting, moveToNew, moveUpSelected } from './commands.js';
+import { moveUpBtn, moveExistingBtn, moveNewBtn } from './ui.js';
 
 async function openFolder(){
   try{
@@ -51,13 +51,18 @@ if(closeModalCloseBtn){
   closeModalCloseBtn.addEventListener('click', ()=>{ if(closeFolderModal) closeFolderModal.classList.add('hidden'); });
 }
 
-renameBtn.addEventListener('click', async ()=>{
+renameBtn.addEventListener('click', async () =>{
   const ok = await renameSelected();
   if(ok) await renderApp(location.hash.replace('#','') || '/');
 });
 
-moveBtn?.addEventListener('click', async ()=>{
-  const ok = await moveSelected();
+moveExistingBtn?.addEventListener('click', async () =>{
+  const ok = await moveToExisting();
+  if(ok) await renderApp(location.hash.replace('#','') || '/');
+});
+
+moveNewBtn?.addEventListener('click', async () =>{
+  const ok = await moveToNew();
   if(ok) await renderApp(location.hash.replace('#','') || '/');
 });
 

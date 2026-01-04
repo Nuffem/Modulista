@@ -13,7 +13,8 @@ export const contentArea = document.getElementById('contentArea');
 export const contentTitle = document.getElementById('contentTitle');
 export const renameBtn = document.getElementById('renameBtn');
 export const commands = document.getElementById('commands');
-export const moveBtn = document.getElementById('moveBtn');
+export const moveExistingBtn = document.getElementById('moveExistingBtn');
+export const moveNewBtn = document.getElementById('moveNewBtn');
 export const moveUpBtn = document.getElementById('moveUpBtn');
 export const restoreModal = document.getElementById('restoreModal');
 export const restoreBtn = document.getElementById('restoreBtn');
@@ -296,6 +297,9 @@ export function exitCommandDetailMode(){
 	if(subHeader) subHeader.remove();
 	const subBack = document.getElementById('commands-back-btn-2');
 	if(subBack) subBack.remove();
-	const rf = document.getElementById('rename-form'); if(rf) rf.remove();
-	const mf = document.getElementById('move-form'); if(mf) mf.remove();
+	// remove known command-specific forms (rename/move variants)
+	['rename-form','move-form','move-existing-form','move-new-form'].forEach(id=>{
+		const el = document.getElementById(id);
+		if(el) el.remove();
+	});
 }
