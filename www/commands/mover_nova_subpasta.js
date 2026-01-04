@@ -96,6 +96,15 @@ export async function moveToNew(){
             const shouldRead = mimeType ? (mimeType.startsWith('text/') || allowedMimes.includes(mimeType)) : true;
             if(shouldRead){ fileContent = (await f.text()).slice(0, 20000); }
           }catch(_){ fileContent = ''; mimeType = ''; }
+        } else if(selected && selected.kind !== 'file' && selected.handle){
+          try{
+            const names = [];
+            for await (const [name, handle] of selected.handle.entries()){
+              names.push(name);
+              if(names.length >= 200) break;
+            }
+            listing = names.join(', ');
+          }catch(_){ listing = ''; }
         } else if(selected && selected.parent){
           try{
             const names = [];
@@ -107,8 +116,11 @@ export async function moveToNew(){
           }catch(_){ listing = ''; }
         }
 
-        const promptBody = `${fileContent ? 'Conteúdo do arquivo (trecho):\n' + fileContent.slice(0,2000) + '\n\n' : ''}Sugira um nome curto e descritivo para a nova subpasta que receberá ${selected && selected.kind === 'file' ? "o arquivo" : "a pasta"} com nome atual \"${selected ? selected.name : ''}\". Retorne apenas o nome sugerido, sem explicações.`;
-        const systemMsg = 'Você é um assistente que sugere nomes curtos para pastas. Responda apenas com o nome sugerido, sem pontuação extra.';
+        const promptBody = JSON.stringify({
+          itemName: selected ? selected.name : '',
+          itemContent: fileContent ? fileContent.slice(0,2000) : (listing || '')
+        });
+        const systemMsg = 'Você é um assistente que sugere nomes curtos para pastas. O usuário enviará um JSON com os campos itemName e itemContent; responda apenas com o nome sugerido, sem pontuação extra.';
 
         const messages = [
           { role: 'system', content: systemMsg },
