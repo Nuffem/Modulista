@@ -32,3 +32,4 @@ export async function getDirByPath(rootHandle, path){
 
 export { renameSelected } from './commands/renomear.js';
 export { moveSelected } from './commands/mover.js';
+export { moveUpSelected } from './commands/mover_um_nível_acima.js';

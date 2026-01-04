@@ -4,8 +4,8 @@ import { setRootHandle, clearState, getSelected, getRootHandle, persistRootHandl
 import { openBtn, closeFolderBtn, renameBtn, moveBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn, closeFolderModal, closeModalOpenNewBtn, closeModalConfirmBtn, closeModalCloseBtn, modelLoadContainer } from './ui.js';
 import { setHash, renderByHash } from './picker.js';
 import { renderApp } from './tree.js';
-import { renameSelected } from './commands.js';
-import { moveSelected } from './commands.js';
+import { renameSelected, moveSelected, moveUpSelected } from './commands.js';
+import { moveUpBtn } from './ui.js';
 
 async function openFolder(){
   try{
@@ -58,6 +58,11 @@ renameBtn.addEventListener('click', async ()=>{
 
 moveBtn?.addEventListener('click', async ()=>{
   const ok = await moveSelected();
+  if(ok) await renderApp(location.hash.replace('#','') || '/');
+});
+
+moveUpBtn?.addEventListener('click', async ()=>{
+  const ok = await moveUpSelected();
   if(ok) await renderApp(location.hash.replace('#','') || '/');
 });
 

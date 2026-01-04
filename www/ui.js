@@ -14,6 +14,7 @@ export const contentTitle = document.getElementById('contentTitle');
 export const renameBtn = document.getElementById('renameBtn');
 export const commands = document.getElementById('commands');
 export const moveBtn = document.getElementById('moveBtn');
+export const moveUpBtn = document.getElementById('moveUpBtn');
 export const restoreModal = document.getElementById('restoreModal');
 export const restoreBtn = document.getElementById('restoreBtn');
 export const openNewBtn = document.getElementById('openNewBtn');
