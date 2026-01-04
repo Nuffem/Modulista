@@ -218,3 +218,78 @@ export function createFileEntry(name, iconName){
 	fileDiv.appendChild(fBtn);
 	return { fileDiv, fBtn, fIcon };
 }
+
+// Mostrar formulário específico de comando: recolhe a lista de comandos e exibe botão de voltar
+export function enterCommandDetailMode(selectedBtn){
+	if(!commands) return;
+	let list = document.getElementById('commands-list');
+	if(!list){
+		list = document.createElement('div');
+		list.id = 'commands-list';
+		list.className = 'space-y-2';
+		while(commands.firstChild){
+			list.appendChild(commands.firstChild);
+		}
+		commands.appendChild(list);
+	}
+	list.style.display = 'none';
+
+	// remove any previous detail header
+	const prevHeader = document.getElementById('commands-detail-header');
+	if(prevHeader) prevHeader.remove();
+
+	const header = document.createElement('div');
+	header.id = 'commands-detail-header';
+	header.className = 'flex items-center gap-2 mb-2';
+
+	// small back icon button
+	let backBtn = document.getElementById('commands-back-btn');
+	if(!backBtn){
+		backBtn = document.createElement('button');
+		backBtn.id = 'commands-back-btn';
+		backBtn.type = 'button';
+		backBtn.className = 'p-2 rounded text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600';
+		backBtn.setAttribute('title','Voltar');
+		backBtn.innerHTML = '<span class="material-symbols-outlined">arrow_back</span>';
+		backBtn.addEventListener('click', ()=>{ exitCommandDetailMode(); });
+	}
+
+	// clone selected button and disable it for display
+	let clone = null;
+	if(selectedBtn && selectedBtn.cloneNode){
+		try{
+			clone = selectedBtn.cloneNode(true);
+			clone.id = 'commands-selected-clone';
+			clone.disabled = true;
+			clone.setAttribute('aria-disabled','true');
+			clone.classList.add('opacity-50','cursor-not-allowed');
+			// ensure clone doesn't submit forms or keep unexpected attributes
+			clone.type = 'button';
+		}catch(_){ clone = null; }
+	}
+
+	// layout: disabled clone (flex-1) and small back button to its left
+	const wrap = document.createElement('div');
+	wrap.className = 'w-full flex items-center gap-2';
+	wrap.appendChild(backBtn);
+	if(clone){
+		clone.classList.add('flex-1');
+		wrap.appendChild(clone);
+	}
+
+	header.appendChild(wrap);
+	commands.insertBefore(header, commands.firstChild);
+}
+
+// Reexibe a lista de comandos e remove qualquer formulário específico ativo
+export function exitCommandDetailMode(){
+	if(!commands) return;
+	const list = document.getElementById('commands-list');
+	if(list) list.style.display = '';
+	const header = document.getElementById('commands-detail-header');
+	if(header) header.remove();
+	const back = document.getElementById('commands-back-btn');
+	if(back) back.remove();
+	const rf = document.getElementById('rename-form'); if(rf) rf.remove();
+	const mf = document.getElementById('move-form'); if(mf) mf.remove();
+}

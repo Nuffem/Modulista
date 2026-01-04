@@ -1,4 +1,4 @@
-import { commands, createCommandProgress } from '../ui.js';
+import { commands, createCommandProgress, enterCommandDetailMode, exitCommandDetailMode, renameBtn } from '../ui.js';
 import { getSelected, setSelected } from '../state.js';
 import { generateSuggestion } from '../suggestions.js';
 import { copyDirectory } from '../commands.js';
@@ -13,6 +13,7 @@ export async function renameSelected(){
 
   const prev = document.getElementById('rename-form');
   if(prev) prev.remove();
+  try{ enterCommandDetailMode(renameBtn || document.getElementById('renameBtn')); }catch(_){ }
 
   const form = document.createElement('div');
   form.id = 'rename-form';
@@ -31,12 +32,7 @@ export async function renameSelected(){
   confirmBtn.setAttribute('aria-label', 'Confirmar');
   confirmBtn.innerHTML = '<span class="material-symbols-outlined">check</span>';
 
-  const cancelBtn = document.createElement('button');
-  cancelBtn.type = 'button';
-  cancelBtn.className = 'p-2 bg-gray-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-400';
-  cancelBtn.setAttribute('title', 'Cancelar');
-  cancelBtn.setAttribute('aria-label', 'Cancelar');
-  cancelBtn.innerHTML = '<span class="material-symbols-outlined">close</span>';
+  
 
   const suggestBtn = document.createElement('button');
   suggestBtn.type = 'button';
@@ -59,15 +55,14 @@ export async function renameSelected(){
   form.appendChild(input);
   form.appendChild(suggestBtn);
   form.appendChild(confirmBtn);
-  form.appendChild(cancelBtn);
 
   if(commands) commands.appendChild(form);
   input.focus();
   input.select();
 
-  const cleanup = ()=>{ const el = document.getElementById('rename-form'); if(el) el.remove(); };
+  const cleanup = ()=>{ try{ exitCommandDetailMode(); }catch(_){ const el = document.getElementById('rename-form'); if(el) el.remove(); } };
 
-  cancelBtn.addEventListener('click', ()=>{ cleanup(); });
+  // cancel button removed: user returns via voltar (back) button
 
   input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') confirmBtn.click(); if(e.key === 'Escape') cleanup(); });
 
