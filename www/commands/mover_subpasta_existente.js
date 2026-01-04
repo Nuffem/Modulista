@@ -124,17 +124,59 @@ export async function moveToExisting(){
               parentSubfolders,
               itemName: selected ? selected.name : '',
             });
-            const systemMsg = 'Você é um organizador de arquivos. O usuário fornecerá um nome de arquivo e uma lista de pastas. Sua tarefa é retornar as pastas que mais combinam com o arquivo, por ordem de relevância, em formato JSON. A resposta deve ser apenas um JSON contendo um array de strings (ex: ["Pasta A","Outra Pasta"]) e não deve incluir explicações ou texto adicional. Use exatamente os nomes fornecidos.';
+            let tarefa = "retornar as pastas que mais combinam com o arquivo";
+            if(parentSubfolders.length > 5) {
+              tarefa = "retornar apenas as 5 pastas que mais combinam com o arquivo";
+            }
+            const systemMsg = 'Você é um organizador de arquivos. O usuário fornecerá um nome de arquivo e uma lista de pastas. Sua tarefa é ' + tarefa + ', por ordem de relevância, em formato JSON. A resposta deve ser apenas um JSON contendo um array de strings (ex: ["Pasta A","Outra Pasta"]) e não deve incluir explicações ou texto adicional. Use exatamente os nomes fornecidos.';
             const messages = [
               { role: 'system', content: systemMsg },
               { role: 'user', content: promptBody }
             ];
             const suggestionText = await generateSuggestion(messages);
+            let parts = [];
             if(suggestionText){
-              // parsear resposta em array
-              const parts = suggestionText.split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
+              // Priorizar extração literal entre o primeiro '[' e o último ']' — isso pega
+              // arrays mesmo quando a IA inclui texto adicional ao redor.
+              try{
+                const firstBracket = suggestionText.indexOf('[');
+                const lastBracket = suggestionText.lastIndexOf(']');
+                if(firstBracket !== -1 && lastBracket > firstBracket){
+                  const arrText = suggestionText.slice(firstBracket, lastBracket + 1);
+                  const parsedArr = JSON.parse(arrText);
+                  if(Array.isArray(parsedArr)) parts = parsedArr;
+                }
+              }catch(_){ /* se falhar, tentamos outras abordagens abaixo */ }
+
+              if(parts.length === 0){
+                // tentar parsear a resposta completa como JSON (objeto ou array)
+                try{
+                  const parsed = JSON.parse(suggestionText);
+                  if(Array.isArray(parsed)){
+                    parts = parsed;
+                  } else if(parsed && typeof parsed === 'object'){
+                    if(Array.isArray(parsed.relevancia)) parts = parsed.relevancia;
+                    else {
+                      for(const k in parsed){ if(Array.isArray(parsed[k])){ parts = parsed[k]; break; } }
+                    }
+                  }
+                }catch(_){
+                  // fallback: tentar extrair conteúdo entre colchetes com regex
+                  const arrMatch = suggestionText.match(/\[([^\]]+)\]/);
+                  if(arrMatch){
+                    parts = arrMatch[1].split(',').map(s=>s.replace(/^['\"]|['\"]$/g,'').trim()).filter(Boolean);
+                  } else {
+                    // último recurso: split por vírgulas/linhas
+                    parts = suggestionText.split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
+                  }
+                }
+              }
+
+              // garantir strings e remover vazios
+              parts = parts.map(p=>String(p).trim()).filter(Boolean);
+
               // criar novo dropdown apenas se houver pelo menos 1 sugestão
-              if(parts.length){
+            if(parts.length){
                 const aiLabel = document.createElement('div');
                 aiLabel.className = 'text-xs text-slate-500 mt-2';
                 aiLabel.textContent = 'Sugestão da IA (mais provável → menos provável):';
@@ -151,8 +193,6 @@ export async function moveToExisting(){
                     const opt = document.createElement('option'); opt.value = match; opt.textContent = match; aiSelect.appendChild(opt); seen.add(match);
                   }
                 }
-                // adicionar quaisquer restantes que não apareceram na sugestão ao final, na ordem original
-                for(const name of dirs){ if(!seen.has(name)){ const opt = document.createElement('option'); opt.value = name; opt.textContent = name; aiSelect.appendChild(opt); } }
 
                 // ao escolher a sugestão da IA, sincronizar o select principal
                 aiSelect.addEventListener('change', ()=>{ if(aiSelect.value) select.value = aiSelect.value; select.dispatchEvent(new Event('change')); });
