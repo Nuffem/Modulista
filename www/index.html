@@ -38,8 +38,8 @@
           <h2 class="text-lg font-semibold">Modulista</h2>
         </div>
         <div>
-          <button id="closeFolderBtn" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700" title="Fechar pasta">
-            <span class="material-symbols-outlined text-slate-600 text-[20px]">close</span>
+          <button id="closeFolderBtn" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700" title="Gerenciar pasta">
+            <span class="material-symbols-outlined text-slate-600 text-[20px]">more_vert</span>
           </button>
         </div>
       </header>
@@ -86,6 +86,26 @@
       <div class="flex justify-end gap-2">
         <button id="openNewBtn" class="px-3 py-2 bg-slate-200 rounded hover:bg-slate-300">Abrir nova</button>
         <button id="restoreBtn" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Reabrir pasta anterior</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para gerenciar/fechar pasta (inclui carregamento do modelo IA) -->
+  <div id="closeFolderModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded shadow p-6 w-full max-w-md">
+      <div class="flex items-start justify-between mb-3">
+        <h4 class="text-lg font-semibold">Gerenciar pasta</h4>
+        <button id="closeModalCloseBtn" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">✕</button>
+      </div>
+      <p class="mb-4">Opções de pasta e status do modelo de IA.</p>
+
+      <div id="modelLoadCard" class="mb-4">
+        <!-- Conteúdo do card de carregamento do modelo será inserido via JS -->
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button id="closeModalOpenNewBtn" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Abrir outra</button>
+        <button id="closeModalConfirmBtn" class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700">Fechar pasta</button>
       </div>
     </div>
   </div>

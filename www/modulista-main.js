@@ -1,7 +1,7 @@
 import './picker.js';
 import './theme.js';
 import { setRootHandle, clearState, getSelected, getRootHandle, persistRootHandle, restoreRootHandle, deletePersistedRoot, ensureHandlePermission } from './state.js';
-import { openBtn, closeFolderBtn, renameBtn, moveBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn } from './ui.js';
+import { openBtn, closeFolderBtn, renameBtn, moveBtn, treeContainer, contentArea, contentTitle, restoreModal, restoreBtn, openNewBtn, closeFolderModal, closeModalOpenNewBtn, closeModalConfirmBtn, closeModalCloseBtn, modelLoadContainer } from './ui.js';
 import { setHash, renderByHash } from './picker.js';
 import { renderApp } from './tree.js';
 import { renameSelected } from './commands.js';
@@ -21,26 +21,57 @@ async function openFolder(){
 
 openBtn.addEventListener('click', openFolder);
 
-closeFolderBtn.addEventListener('click', async ()=>{
-  clearState();
-  await deletePersistedRoot();
-  setHash('/');
-  treeContainer.innerHTML = '';
-  contentArea.innerHTML = '';
-  contentTitle.textContent = 'Conteúdo';
+// abrir modal de gerenciamento da pasta (substitui o fechamento direto)
+closeFolderBtn.addEventListener('click', ()=>{
+  if(closeFolderModal) closeFolderModal.classList.remove('hidden');
 });
 
+// Conectar botões do modal: Abrir outra e Fechar pasta
+if(closeModalOpenNewBtn){
+  closeModalOpenNewBtn.addEventListener('click', async ()=>{
+    if(closeFolderModal) closeFolderModal.classList.add('hidden');
+    await deletePersistedRoot();
+    await openFolder();
+  });
+}
+
+if(closeModalConfirmBtn){
+  closeModalConfirmBtn.addEventListener('click', async ()=>{
+    if(closeFolderModal) closeFolderModal.classList.add('hidden');
+    clearState();
+    await deletePersistedRoot();
+    setHash('/');
+    treeContainer.innerHTML = '';
+    contentArea.innerHTML = '';
+    contentTitle.textContent = 'Conteúdo';
+  });
+}
+
+if(closeModalCloseBtn){
+  closeModalCloseBtn.addEventListener('click', ()=>{ if(closeFolderModal) closeFolderModal.classList.add('hidden'); });
+}
+
 renameBtn.addEventListener('click', async ()=>{
+  // aguarda modelo IA estar pronto antes de executar o comando
+  if(window.webModelLoadPromise && !window.webModelReady){
+    await window.webModelLoadPromise;
+  }
   const ok = await renameSelected();
   if(ok) await renderApp(location.hash.replace('#','') || '/');
 });
 
 moveBtn?.addEventListener('click', async ()=>{
+  if(window.webModelLoadPromise && !window.webModelReady){
+    await window.webModelLoadPromise;
+  }
   const ok = await moveSelected();
   if(ok) await renderApp(location.hash.replace('#','') || '/');
 });
 
 (async function init(){
+  // iniciar carregamento do modelo IA em background (começa com carregamento da página)
+  startModelLoader();
+
   const restored = await restoreRootHandle();
   if(restored){
     // check if we already have permission
@@ -55,7 +86,6 @@ moveBtn?.addEventListener('click', async ()=>{
     }
 
     // show modal to let user decide (requestPermission requires user activation)
-    // ensure main view is visible first (avoids picker remaining visible under modal)
     setHash('/');
     if(restoreModal){
       restoreModal.classList.remove('hidden');
@@ -92,6 +122,97 @@ moveBtn?.addEventListener('click', async ()=>{
   }
   renderByHash();
 })();
+
+// --- Modelo IA: carregamento em background ---
+function startModelLoader(){
+  if(window.webModelLoadPromise) return window.webModelLoadPromise;
+  window.webModelReady = false;
+  window.__webllm_model_name = '';
+
+  const container = modelLoadContainer || document.getElementById('modelLoadCard') || document.getElementById('commands') || document.body;
+  const card = document.createElement('div');
+  card.className = 'p-3 bg-slate-50 dark:bg-slate-800 rounded shadow';
+
+  const top = document.createElement('div');
+  top.className = 'flex items-center gap-2 mb-2';
+  top.innerHTML = '<span class="material-symbols-outlined">smart_toy</span><div class="flex-1"><div class="text-sm font-semibold">Carregando modelo de IA</div><div class="text-xs text-slate-600 dark:text-slate-300 webllm-model-name">—</div></div>';
+  const progressOuter = document.createElement('div');
+  progressOuter.className = 'w-full bg-slate-200 dark:bg-slate-600 rounded h-3 overflow-hidden';
+  const progressInner = document.createElement('div');
+  progressInner.className = 'bg-indigo-500 h-3';
+  progressInner.style.width = '0%';
+  progressInner.style.transition = 'width 200ms linear';
+  progressOuter.appendChild(progressInner);
+
+  card.appendChild(top);
+  card.appendChild(progressOuter);
+  try{ container.innerHTML = ''; container.appendChild(card); }catch(_){ }
+
+  window.__webllm_progress_element = progressInner;
+  window.__webllm_progress_label = top.querySelector('.webllm-model-name');
+
+  const modelName = 'Llama-3.2-3B-Instruct-q4f32_1-MLC';
+  window.__webllm_model_name = modelName;
+
+  const url = 'https://esm.run/@mlc-ai/web-llm';
+  window.webModelLoadPromise = (async ()=>{
+    try{
+      const mod = await import(/* @vite-ignore */ url);
+
+      const initProgressCallback = (p)=>{
+        try{
+          const prog = (p && typeof p.progress === 'number') ? Number(p.progress) : null;
+          if(window.__webllm_progress_element && prog !== null){
+            try{
+              const pct = Math.max(0, Math.min(1, prog)) * 100;
+              window.__webllm_progress_element.style.width = pct + '%';
+              const lbl = window.__webllm_progress_label;
+              if(lbl){
+                const statusEl = lbl.querySelector('.webllm-status-text');
+                const modelEl = lbl.querySelector('.webllm-model-name');
+                if(statusEl) statusEl.textContent = 'Carregando modelo... ' + Math.round(pct) + '%';
+                if(modelEl && modelName) modelEl.textContent = modelName;
+              }
+            }catch(_){ }
+          }
+        }catch(_){ }
+      };
+
+      if(!window._webllm_engine){
+        if(typeof mod.CreateMLCEngine === 'function'){
+          window._webllm_engine = await mod.CreateMLCEngine(modelName, { initProgressCallback });
+        }else if(typeof mod.MLCEngine === 'function'){
+          const engineInst = new mod.MLCEngine({ initProgressCallback });
+          await engineInst.reload(modelName);
+          window._webllm_engine = engineInst;
+        }else if(mod.default){
+          const d = mod.default;
+          if(typeof d.CreateMLCEngine === 'function'){
+            window._webllm_engine = await d.CreateMLCEngine(modelName, { initProgressCallback });
+          }else if(typeof d.MLCEngine === 'function'){
+            const engineInst = new d.MLCEngine({ initProgressCallback });
+            await engineInst.reload(modelName);
+            window._webllm_engine = engineInst;
+          }else{
+            throw new Error('API do web-llm incompatível');
+          }
+        }else{
+          throw new Error('API do web-llm não encontrada');
+        }
+      }
+
+      window.webModelReady = true;
+      try{ if(window.__webllm_progress_label) window.__webllm_progress_label.textContent = modelName; }catch(_){ }
+      return { name: modelName };
+    }catch(err){
+      console.error('Falha ao carregar modelo web-llm', err);
+      try{ if(window.__webllm_progress_label) window.__webllm_progress_label.textContent = 'Falha ao carregar modelo'; }catch(_){ }
+      throw err;
+    }
+  })();
+
+  return window.webModelLoadPromise;
+}
 
 // --- Splitter / column resize logic ---
 function setupSplitters(){
