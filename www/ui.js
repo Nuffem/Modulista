@@ -290,6 +290,11 @@ export function exitCommandDetailMode(){
 	if(header) header.remove();
 	const back = document.getElementById('commands-back-btn');
 	if(back) back.remove();
+	// remove optional secondary sub-header (used by nested command views)
+	const subHeader = document.getElementById('commands-detail-subheader');
+	if(subHeader) subHeader.remove();
+	const subBack = document.getElementById('commands-back-btn-2');
+	if(subBack) subBack.remove();
 	const rf = document.getElementById('rename-form'); if(rf) rf.remove();
 	const mf = document.getElementById('move-form'); if(mf) mf.remove();
 }

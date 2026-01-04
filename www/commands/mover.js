@@ -79,6 +79,45 @@ export async function moveSelected(){
     btnNew.disabled = false; btnNew.classList.remove('opacity-50','cursor-not-allowed'); btnNew.removeAttribute('aria-disabled');
   };
 
+  // cria um sub-header (segunda linha) com um botão de voltar em forma de seta
+  const createSubHeader = (selectedButton)=>{
+    // remove qualquer subheader anterior
+    const prev = document.getElementById('commands-detail-subheader'); if(prev) prev.remove();
+
+    const header = document.createElement('div');
+    header.id = 'commands-detail-subheader';
+    header.className = 'flex items-center gap-2 mb-2';
+
+    const backBtn2 = document.createElement('button');
+    backBtn2.id = 'commands-back-btn-2';
+    backBtn2.type = 'button';
+    backBtn2.className = 'p-2 rounded text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600';
+    backBtn2.setAttribute('title','Voltar');
+    backBtn2.innerHTML = '<span class="material-symbols-outlined">arrow_back</span>';
+    backBtn2.addEventListener('click', ()=>{ const sh = document.getElementById('commands-detail-subheader'); if(sh) sh.remove(); showMain(); });
+
+    let clone2 = null;
+    try{
+      clone2 = selectedButton.cloneNode(true);
+      clone2.id = 'commands-selected-clone-2';
+      clone2.disabled = true;
+      clone2.setAttribute('aria-disabled','true');
+      clone2.classList.add('opacity-50','cursor-not-allowed','flex-1');
+      clone2.type = 'button';
+    }catch(_){ clone2 = null; }
+
+    const wrap2 = document.createElement('div');
+    wrap2.className = 'w-full flex items-center gap-2';
+    wrap2.appendChild(backBtn2);
+    if(clone2) wrap2.appendChild(clone2);
+
+    header.appendChild(wrap2);
+
+    const mainHeader = document.getElementById('commands-detail-header');
+    if(mainHeader && mainHeader.parentNode) mainHeader.parentNode.insertBefore(header, mainHeader.nextSibling);
+    else if(commands) commands.insertBefore(header, commands.firstChild);
+  };
+
   // Um nível acima: move direto para o nível acima do pai
   btnUp.addEventListener('click', async ()=>{
     try{
@@ -105,22 +144,17 @@ export async function moveSelected(){
   // Subpasta existente: mostra lista de subpastas dentro do pai
   btnExisting.addEventListener('click', async ()=>{
     try{
-      // ocultar as outras opções e manter apenas este botão (desativado)
+      // cria sub-header com seta de voltar alinhada ao botão selecionado
+      createSubHeader(btnExisting);
+      // ocultar todas as opções do formulário; exibir apenas sub-header com clone
       btnUp.style.display = 'none';
       btnNew.style.display = 'none';
-      btnExisting.disabled = true; btnExisting.classList.add('opacity-50','cursor-not-allowed'); btnExisting.setAttribute('aria-disabled','true');
+      btnExisting.style.display = 'none';
       contentArea.innerHTML = '';
-      const back = document.createElement('button');
-      back.type = 'button';
-      back.className = 'p-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none';
-      back.textContent = 'Voltar';
-      contentArea.appendChild(back);
 
       const list = document.createElement('div');
       list.className = 'mt-2 space-y-1';
       contentArea.appendChild(list);
-
-      back.addEventListener('click', ()=>{ showMain(); });
 
       if(selected && selected.parent){
         const dirs = [];
@@ -162,16 +196,13 @@ export async function moveSelected(){
   // Nova subpasta: mostra campo de nome + confirmar
   btnNew.addEventListener('click', async ()=>{
     try{
-      // ocultar as outras opções e manter apenas este botão (desativado)
+      // cria sub-header com seta de voltar alinhada ao botão selecionado
+      createSubHeader(btnNew);
+      // ocultar todas as opções do formulário; exibir apenas sub-header com clone
       btnUp.style.display = 'none';
       btnExisting.style.display = 'none';
-      btnNew.disabled = true; btnNew.classList.add('opacity-50','cursor-not-allowed'); btnNew.setAttribute('aria-disabled','true');
+      btnNew.style.display = 'none';
       contentArea.innerHTML = '';
-      const back = document.createElement('button');
-      back.type = 'button';
-      back.className = 'p-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded border border-slate-200 dark:border-slate-600 focus:outline-none';
-      back.textContent = 'Voltar';
-      contentArea.appendChild(back);
 
       const input = document.createElement('input');
       input.type = 'text';
@@ -185,7 +216,7 @@ export async function moveSelected(){
       confirm.textContent = 'Confirmar';
       contentArea.appendChild(confirm);
 
-      back.addEventListener('click', ()=>{ showMain(); });
+      // a ação de voltar é tratada pelo sub-header criado por createSubHeader
 
       confirm.addEventListener('click', async ()=>{
         const name = (input.value || '').trim();
