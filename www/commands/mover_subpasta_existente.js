@@ -1,5 +1,6 @@
 import { commands, createCommandProgress, enterCommandDetailMode, exitCommandDetailMode } from '../ui.js';
 import { getSelected, setSelected, ensureHandlePermission } from '../state.js';
+import { generateSuggestion } from '../suggestions.js';
 import { copyDirectory } from '../commands.js';
 
 async function performMove(selectedItem, targetDir){
@@ -88,6 +89,80 @@ export async function moveToExisting(){
         container.appendChild(row);
 
         select.addEventListener('change', ()=>{ moveBtn.disabled = !select.value; });
+
+        // Se o modelo IA estiver pronto (ou terminar de carregar), solicitar sugestão de ordem
+        const trySuggestOrder = async ()=>{
+          let progressCard;
+          try{ progressCard = createCommandProgress(); }catch(_){ }
+          try{
+            // preparar contexto: lista de itens da pasta atual (se selecionado for pasta, listar seu conteúdo)
+            let listingNames = '';
+            try{
+              if(selected && selected.kind === 'directory' && selected.parent){
+                const dirHandle = await selected.parent.getDirectoryHandle(selected.name);
+                const names = [];
+                for await (const [n, h] of dirHandle.entries()){
+                  names.push(n);
+                  if(names.length >= 200) break;
+                }
+                listingNames = names.join(', ');
+              } else if(selected && selected.parent){
+                // selecionado é arquivo -> contexto é a pasta que contém o arquivo
+                const names = [];
+                for await (const [n, h] of selected.parent.entries()){
+                  names.push(n);
+                  if(names.length >= 200) break;
+                }
+                listingNames = names.join(', ');
+              } else {
+                listingNames = dirs.slice(0,200).join(', ');
+              }
+            }catch(_){ listingNames = dirs.slice(0,200).join(', '); }
+
+            const parentSubfolders = dirs.slice(0,200).join(', ');
+            const promptBody = `Tenho as seguintes subpastas disponíveis como destinos: ${parentSubfolders}. O item a ser movido se chama "${selected ? selected.name : ''}". Ordene essas subpastas do destino mais provável para o menos provável para receber este item. Retorne apenas a lista de nomes, separados por vírgula, sem explicações. Use exatamente os nomes fornecidos quando possível.`;
+            const systemMsg = 'Você é um assistente que, dado o nome do item e a lista de subpastas, ordena as subpastas do destino mais provável ao menos provável. Responda apenas com os nomes separados por vírgula.';
+            const suggestionText = await generateSuggestion(selected ? selected.kind : 'file', selected ? selected.name || '' : '', '', '', listingNames, 'order', dirs.join(','), systemMsg, promptBody);
+            if(suggestionText){
+              // parsear resposta em array
+              const parts = suggestionText.split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
+              // criar novo dropdown apenas se houver pelo menos 1 sugestão
+              if(parts.length){
+                const aiLabel = document.createElement('div');
+                aiLabel.className = 'text-xs text-slate-500 mt-2';
+                aiLabel.textContent = 'Sugestão da IA (mais provável → menos provável):';
+                const aiSelect = document.createElement('select');
+                aiSelect.className = 'w-full px-3 py-2 rounded border bg-white dark:bg-slate-800 mt-1';
+                const aiPlaceholder = document.createElement('option'); aiPlaceholder.value = ''; aiPlaceholder.textContent = '-- Selecionar a sugestão da IA --'; aiPlaceholder.selected = true; aiPlaceholder.disabled = true; aiSelect.appendChild(aiPlaceholder);
+                // inserir opções na ordem sugerida; filtrar nomes não existentes e evitar duplicatas
+                const seen = new Set();
+                for(const name of parts){
+                  if(!name) continue;
+                  // tentar corresponder ao nome exatamente; se não encontrado, tentar correspondência ignorando diacríticos/case
+                  const match = dirs.find(d => d === name) || dirs.find(d => d.toLowerCase() === name.toLowerCase());
+                  if(match && !seen.has(match)){
+                    const opt = document.createElement('option'); opt.value = match; opt.textContent = match; aiSelect.appendChild(opt); seen.add(match);
+                  }
+                }
+                // adicionar quaisquer restantes que não apareceram na sugestão ao final, na ordem original
+                for(const name of dirs){ if(!seen.has(name)){ const opt = document.createElement('option'); opt.value = name; opt.textContent = name; aiSelect.appendChild(opt); } }
+
+                // ao escolher a sugestão da IA, sincronizar o select principal
+                aiSelect.addEventListener('change', ()=>{ if(aiSelect.value) select.value = aiSelect.value; select.dispatchEvent(new Event('change')); });
+
+                // inserir o novo dropdown abaixo do existente
+                const suggestionRow = document.createElement('div'); suggestionRow.className = 'mt-2';
+                suggestionRow.appendChild(aiLabel);
+                suggestionRow.appendChild(aiSelect);
+                container.appendChild(suggestionRow);
+              }
+            }
+          }catch(_){ /* silencioso */ }
+          try{ progressCard && progressCard.remove && progressCard.remove(); }catch(_){ }
+        };
+
+        if(window.webModelReady){ trySuggestOrder().catch(()=>{}); }
+        else if(window.webModelLoadPromise){ window.webModelLoadPromise.then(()=>{ trySuggestOrder().catch(()=>{}); }).catch(()=>{}); }
 
         moveBtn.addEventListener('click', async ()=>{
           try{
