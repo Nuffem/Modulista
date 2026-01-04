@@ -1,5 +1,6 @@
 import { commands, createCommandProgress, enterCommandDetailMode, exitCommandDetailMode } from '../ui.js';
 import { getSelected, setSelected, ensureHandlePermission } from '../state.js';
+import { generateSuggestion } from '../suggestions.js';
 import { copyDirectory } from '../commands.js';
 
 async function performMove(selectedItem, targetDir){
@@ -77,6 +78,49 @@ export async function moveToNew(){
     input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') confirm.click(); });
 
     input.focus();
+
+    // Se o modelo IA estiver pronto (ou terminar de carregar), solicitar sugestão automática
+    const trySuggest = async ()=>{
+      let progressCard;
+      try{ progressCard = createCommandProgress(); }catch(_){ }
+      try{
+        let fileContent = '';
+        let mimeType = '';
+        let listing = '';
+        // Se selecionado for arquivo, ler trecho; se for pasta, listar itens da pasta pai para contexto
+        if(selected && selected.kind === 'file' && selected.handle){
+          try{
+            const f = await selected.handle.getFile();
+            mimeType = f.type || '';
+            const allowedMimes = ['application/json','application/javascript','application/xml','text/html','text/markdown','text/plain','text/css'];
+            const shouldRead = mimeType ? (mimeType.startsWith('text/') || allowedMimes.includes(mimeType)) : true;
+            if(shouldRead){ fileContent = (await f.text()).slice(0, 20000); }
+          }catch(_){ fileContent = ''; mimeType = ''; }
+        } else if(selected && selected.parent){
+          try{
+            const names = [];
+            for await (const [name, handle] of selected.parent.entries()){
+              names.push(name);
+              if(names.length >= 200) break;
+            }
+            listing = names.join(', ');
+          }catch(_){ listing = ''; }
+        }
+
+        const promptBody = `${fileContent ? 'Conteúdo do arquivo (trecho):\n' + fileContent.slice(0,2000) + '\n\n' : ''}Sugira um nome curto e descritivo para a nova subpasta que receberá ${selected && selected.kind === 'file' ? "o arquivo" : "a pasta"} com nome atual \"${selected ? selected.name : ''}\". Retorne apenas o nome sugerido, sem explicações.`;
+        const systemMsg = 'Você é um assistente que sugere nomes curtos para pastas. Responda apenas com o nome sugerido, sem pontuação extra.';
+
+        const suggestion = await generateSuggestion(selected ? selected.kind : 'file', selected ? selected.name || '' : '', fileContent, mimeType, listing, 'name', '', systemMsg, promptBody);
+        if(suggestion && input) input.value = suggestion;
+      }catch(_){ /* falha silenciosa */ }
+      try{ progressCard && progressCard.remove && progressCard.remove(); }catch(_){ }
+    };
+
+    if(window.webModelReady){
+      trySuggest().catch(()=>{});
+    } else if(window.webModelLoadPromise){
+      window.webModelLoadPromise.then(()=>{ trySuggest().catch(()=>{}); }).catch(()=>{});
+    }
   }catch(e){ alert('Erro ao criar nova subpasta: ' + (e && e.message)); }
 
   return true;
