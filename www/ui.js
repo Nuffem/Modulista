@@ -302,4 +302,48 @@ export function exitCommandDetailMode(){
 		const el = document.getElementById(id);
 		if(el) el.remove();
 	});
+
+	// Remover cards de IA (progresso/sugestões/resultado) ao clicar em voltar
+	try{
+		// sinalizar cancelamento cooperativo para qualquer geração em andamento
+		try{ window.__webllm_cancel_requested = true; }catch(_){ }
+		// tentar abortar/encerrar o engine se oferecer API para isso
+		try{
+			const eng = window._webllm_engine;
+			if(eng){
+				[ 'cancel', 'abort', 'stop', 'close', 'release', 'terminate', 'interrupt' ].forEach(fn=>{
+					try{ if(typeof eng[fn] === 'function') eng[fn](); }catch(_){ }
+				});
+			}
+		}catch(_){ }
+		if(commands){
+			const removeCardForElement = (el) => {
+				let node = el;
+				while(node && node.parentElement && node.parentElement !== commands){
+					node = node.parentElement;
+				}
+				if(node && node.parentElement === commands){
+					node.remove();
+				}else if(el && el.parentElement === commands){
+					el.remove();
+				}
+			};
+
+			const aiSelectors = ['.webllm-status-text', '.webllm-model-name'];
+			aiSelectors.forEach(sel=>{
+				Array.from(commands.querySelectorAll(sel)).forEach(el=> removeCardForElement(el));
+			});
+
+			// também remover cards que contenham os ícones usados em headers de resultado/detalhe
+			Array.from(commands.querySelectorAll('.material-symbols-outlined')).forEach(ic=>{
+				const txt = (ic.textContent || '').trim();
+				if(txt === 'smart_toy' || txt === 'description'){
+					removeCardForElement(ic);
+				}
+			});
+
+			// limpar referências globais de progresso, se existirem
+			try{ window.__webllm_progress_element = null; window.__webllm_progress_label = null; }catch(_){ }
+		}
+	}catch(_){ }
 }

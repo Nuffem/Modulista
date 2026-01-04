@@ -14,6 +14,9 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
   const promptBody = promptBodyOverride;
   const prompt = `${contentSnippet ? 'Conteúdo do arquivo (trecho):\n' + contentSnippet + '\n\n' : ''}${mimePart}${listingPart}${promptBody}`;
   try{
+    // registro de requisição atual para permitir cancelamento cooperativo
+    const reqId = (window.__webllm_request_counter = (window.__webllm_request_counter || 0) + 1);
+    try{ window.__webllm_cancel_requested = false; window.__webllm_current_request = reqId; }catch(_){ }
     const url = 'https://esm.run/@mlc-ai/web-llm';
     let mod;
     try{
@@ -88,8 +91,14 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
           appendCommandDetail(systemMsg, userMsg, temperature, max_tokens);
         }
     }catch(_){ }
+    // se um cancelamento foi solicitado antes de iniciar, abortar
+    if(window.__webllm_cancel_requested) return '';
 
+    // iniciar a chamada de completions; se a API suportar um signal ou método de cancelamento,
+    // tentaremos abortar a seguir a partir de exitCommandDetailMode
     const resp = await engine.chat.completions.create({ messages, temperature, max_tokens });
+    // se a requisição não for mais a atual, ignorar o resultado
+    if(window.__webllm_current_request !== reqId || window.__webllm_cancel_requested) return '';
     const text = resp?.choices?.[0]?.message?.content || '';
     try{
       if(commands){
