@@ -122,15 +122,28 @@ function startModelLoader(){
   window.webModelReady = false;
   window.__webllm_model_name = '';
 
+  const iaSetting = localStorage.getItem('modulista.iaEnabled');
+  const iaEnabled = iaSetting === null ? true : (iaSetting === 'true');
+
   const container = modelLoadContainer || document.getElementById('modelLoadCard') || document.getElementById('commands') || document.body;
   const card = document.createElement('div');
   card.className = 'p-3 bg-slate-50 dark:bg-slate-800 rounded shadow';
 
   const top = document.createElement('div');
   top.className = 'flex items-center gap-2 mb-2';
-  top.innerHTML = '<span class="material-symbols-outlined">smart_toy</span><div class="flex-1"><div class="text-sm font-semibold">Carregando modelo de IA</div><div class="text-xs text-slate-600 dark:text-slate-300 webllm-status-container"><div class="webllm-status-text">—</div><div class="webllm-model-name">—</div></div></div>';
+  if(!iaEnabled){
+    top.innerHTML = '<span class="material-symbols-outlined">smart_toy</span><div class="flex-1"><div class="text-sm font-semibold">Carregamento de IA desativado</div><div class="text-xs text-slate-600 dark:text-slate-300">Ative nas configurações para carregar o modelo.</div></div>';
+  }else{
+    top.innerHTML = '<span class="material-symbols-outlined">smart_toy</span><div class="flex-1"><div class="text-sm font-semibold">Carregando modelo de IA</div><div class="text-xs text-slate-600 dark:text-slate-300 webllm-status-container"><div class="webllm-status-text">—</div><div class="webllm-model-name">—</div></div></div>';
+  }
+
+  // toggle
+  const toggleWrap = document.createElement('div');
+  toggleWrap.className = 'mt-3';
+  toggleWrap.innerHTML = '<label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="ia-toggle" ' + (iaEnabled ? 'checked' : '') + '><span>Ativar carregamento IA</span></label>';
+
   const progressOuter = document.createElement('div');
-  progressOuter.className = 'w-full bg-slate-200 dark:bg-slate-600 rounded h-3 overflow-hidden';
+  progressOuter.className = 'w-full bg-slate-200 dark:bg-slate-600 rounded h-3 overflow-hidden mt-3';
   const progressInner = document.createElement('div');
   progressInner.className = 'bg-indigo-500 h-3';
   progressInner.style.width = '0%';
@@ -138,11 +151,28 @@ function startModelLoader(){
   progressOuter.appendChild(progressInner);
 
   card.appendChild(top);
-  card.appendChild(progressOuter);
+  card.appendChild(toggleWrap);
+  if(iaEnabled) card.appendChild(progressOuter);
   try{ container.innerHTML = ''; container.appendChild(card); }catch(_){ }
 
   window.__webllm_progress_element = progressInner;
   window.__webllm_progress_label = top.querySelector('.webllm-status-container');
+
+  const iaCheckbox = card.querySelector('.ia-toggle');
+  iaCheckbox && iaCheckbox.addEventListener('change', (e)=>{
+    const on = !!e.target.checked;
+    localStorage.setItem('modulista.iaEnabled', on ? 'true' : 'false');
+    if(on){
+      // user enabled IA -> start loader
+      startModelLoader();
+    }else{
+      // user disabled IA -> mark flag (cannot reliably abort dynamic import)
+      try{ window.__webllm_progress_label && (window.__webllm_progress_label.textContent = 'Carregamento desativado'); }catch(_){ }
+      window.__webllm_disabled = true;
+    }
+  });
+
+  if(!iaEnabled) return;
 
   const modelName = 'Llama-3.2-3B-Instruct-q4f32_1-MLC';
   window.__webllm_model_name = modelName;
