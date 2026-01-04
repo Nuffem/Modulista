@@ -135,8 +135,8 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
           try{
             const systemMsg = messages.find(m => m.role === 'system')?.content || '(sem mensagem)';
             const userMsg = messages.find(m => m.role === 'user')?.content || '(sem mensagem)';
-            systemTextarea.value = systemMsg.length > 800 ? systemMsg.slice(0,800) + '\n... (truncado)' : systemMsg;
-            userTextarea.value = userMsg.length > 800 ? userMsg.slice(0,800) + '\n... (truncado)' : userMsg;
+            systemTextarea.value = systemMsg;
+            userTextarea.value = userMsg;
           }catch(_){
             systemTextarea.value = '(não pôde serializar)';
             userTextarea.value = '(não pôde serializar)';
@@ -165,7 +165,7 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
         const body = document.createElement('div');
         body.className = 'whitespace-pre-wrap text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-auto';
         body.style.maxHeight = '6rem';
-        body.textContent = (text || '').length > 800 ? (text || '').slice(0,800) + '\n... (truncado)' : (text || '');
+        body.textContent = (text || '');
         resultItem.appendChild(header);
         resultItem.appendChild(body);
         commands.appendChild(resultItem);
