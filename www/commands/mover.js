@@ -1,6 +1,6 @@
-import { commands } from '../ui.js';
+import { commands, createCommandProgress } from '../ui.js';
 import { getSelected, setSelected, ensureHandlePermission, getRootHandle } from '../state.js';
-import { attachSuggestHandler } from '../suggestions.js';
+import { generateSuggestion } from '../suggestions.js';
 import { copyDirectory, getDirByPath } from '../commands.js';
 
 export async function moveSelected(){
@@ -114,7 +114,59 @@ export async function moveSelected(){
     }
   });
 
-  attachSuggestHandler(suggestBtn, selected, input, 'move');
+  // Manipulador de sugestão específico para o comando "mover"
+  suggestBtn.addEventListener('click', async ()=>{
+    const old = suggestBtn.innerHTML;
+    suggestBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
+    suggestBtn.disabled = true;
+    let progressCard;
+    try{
+      progressCard = createCommandProgress();
+    }catch(e){ console.error('Erro ao criar cartão de progresso:', e); }
+
+    try{
+      let subfolders = '';
+      let fileContent = '';
+      let mimeType = '';
+      try{
+        if(selected && selected.parent){
+          const dirs = [];
+          for await (const [name, handle] of selected.parent.entries()){
+            try{ if(handle && handle.kind === 'directory') dirs.push(name); }catch(_){ }
+            if(dirs.length >= 500) break;
+          }
+          subfolders = dirs.join(', ');
+        }
+      }catch(e){ subfolders = ''; }
+
+      try{
+        if(selected && selected.kind === 'file' && selected.handle){
+          try{
+            const f = await selected.handle.getFile();
+            mimeType = f.type || '';
+            const allowedMimes = ['application/json','application/javascript','application/xml','text/html','text/markdown','text/plain','text/css'];
+            const shouldRead = mimeType ? (mimeType.startsWith('text/') || allowedMimes.includes(mimeType)) : true;
+            if(shouldRead){ fileContent = (await f.text()).slice(0, 20000); }
+          }catch(_){ fileContent = ''; mimeType = ''; }
+        }
+      }catch(_){ fileContent = ''; mimeType = ''; }
+
+      const itemName = selected ? selected.name : '';
+      const snippetPart = fileContent ? `Conteúdo (trecho):\n${fileContent.slice(0,2000)}\n\n` : '';
+      const promptBody = `${itemName ? 'Nome do item: ' + itemName + '\n\n' : ''}${snippetPart}Sugira o nome de uma subpasta ou destino curto para mover este item. Retorne apenas o NOME da subpasta (sem caminho) ou o NOME de uma nova pasta a ser criada, sem explicações ou pontuação extra.`;
+      const subList = subfolders ? `Subpastas existentes: ${subfolders}\n\n` : '';
+      const systemMsg = `${subList}Você é um assistente que sugere destinos para mover itens dentro de uma pasta. Prefira sugerir o nome de uma subpasta existente (retorne apenas o NOME da subpasta, sem caminho). Se não houver subpasta adequada, proponha um NOME para criar uma nova pasta. Responda somente com o nome sugerido, sem explicações, sem pontuação extra.`;
+
+      const suggestion = await generateSuggestion(selected ? selected.kind : 'file', input ? input.value || '' : '', fileContent, mimeType, '', 'move', subfolders, systemMsg, promptBody);
+      if(suggestion && input) input.value = suggestion;
+    }catch(e){
+      alert('Erro ao gerar sugestão: ' + (e && e.message));
+    }finally{
+      suggestBtn.disabled = false;
+      suggestBtn.innerHTML = old;
+      if(progressCard && progressCard.remove) progressCard.remove();
+    }
+  });
 
   return true;
 }

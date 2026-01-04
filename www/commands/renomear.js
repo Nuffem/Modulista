@@ -1,6 +1,6 @@
-import { commands } from '../ui.js';
+import { commands, createCommandProgress } from '../ui.js';
 import { getSelected, setSelected } from '../state.js';
-import { attachSuggestHandler } from '../suggestions.js';
+import { generateSuggestion } from '../suggestions.js';
 import { copyDirectory } from '../commands.js';
 
 export async function renameSelected(){
@@ -87,6 +87,56 @@ export async function renameSelected(){
     }
   });
 
-  attachSuggestHandler(suggestBtn, selected, input, 'name');
+  // Manipulador de sugestão específico para o comando "renomear"
+  suggestBtn.addEventListener('click', async ()=>{
+    const old = suggestBtn.innerHTML;
+    suggestBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
+    suggestBtn.disabled = true;
+    let progressCard;
+    try{ progressCard = createCommandProgress(); }catch(e){ console.error('Erro ao criar cartão de progresso:', e); }
+
+    try{
+      let fileContent = '';
+      let mimeType = '';
+      let listing = '';
+      if(selected && selected.kind === 'file' && selected.handle){
+        try{
+          const f = await selected.handle.getFile();
+          mimeType = f.type || '';
+          const allowedMimes = ['application/json','application/javascript','application/xml','text/html','text/markdown','text/plain','text/css'];
+          const shouldRead = mimeType ? (mimeType.startsWith('text/') || allowedMimes.includes(mimeType)) : true;
+          if(shouldRead){
+            fileContent = (await f.text()).slice(0, 20000);
+          }
+        }catch(e){
+          fileContent = '';
+          mimeType = '';
+        }
+      } else if(selected && selected.handle){
+        try{
+          const names = [];
+          for await (const [name, handle] of selected.handle.entries()){
+            names.push(name);
+            if(names.length >= 200) break;
+          }
+          listing = names.join(', ');
+        }catch(e){
+          listing = '';
+        }
+      }
+
+      const promptBody = `${fileContent ? 'Conteúdo do arquivo (trecho):\n' + fileContent.slice(0,2000) + '\n\n' : ''}Sugira um nome curto e descritivo para ${selected && selected.kind === 'file' ? 'o arquivo' : 'a pasta'} com nome atual "${selected ? selected.name : ''}". Retorne apenas o nome sugerido, sem explicações.`;
+      const systemMsg = 'Você é um assistente que sugere nomes curtos para arquivos e pastas. Responda apenas com o nome sugerido, sem pontuação extra.';
+
+      const suggestion = await generateSuggestion(selected ? selected.kind : 'file', input ? input.value || '' : '', fileContent, mimeType, listing, 'name', '', systemMsg, promptBody);
+      if(suggestion && input) input.value = suggestion;
+    }catch(e){
+      alert('Erro ao gerar sugestão: ' + (e && e.message));
+    }finally{
+      suggestBtn.disabled = false;
+      suggestBtn.innerHTML = old;
+      if(progressCard && progressCard.remove) progressCard.remove();
+    }
+  });
   return true;
 }
