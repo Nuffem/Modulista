@@ -122,7 +122,11 @@ export async function moveToExisting(){
             const parentSubfolders = dirs.slice(0,200).join(', ');
             const promptBody = `Tenho as seguintes subpastas disponíveis como destinos: ${parentSubfolders}. O item a ser movido se chama "${selected ? selected.name : ''}". Ordene essas subpastas do destino mais provável para o menos provável para receber este item. Retorne apenas a lista de nomes, separados por vírgula, sem explicações. Use exatamente os nomes fornecidos quando possível.`;
             const systemMsg = 'Você é um assistente que, dado o nome do item e a lista de subpastas, ordena as subpastas do destino mais provável ao menos provável. Responda apenas com os nomes separados por vírgula.';
-            const suggestionText = await generateSuggestion(selected ? selected.kind : 'file', selected ? selected.name || '' : '', '', '', listingNames, 'order', dirs.join(','), systemMsg, promptBody);
+            const messages = [
+              { role: 'system', content: systemMsg },
+              { role: 'user', content: promptBody }
+            ];
+            const suggestionText = await generateSuggestion(messages);
             if(suggestionText){
               // parsear resposta em array
               const parts = suggestionText.split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);

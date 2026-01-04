@@ -135,7 +135,11 @@ export async function renameSelected(){
       const promptBody = `${fileContent ? 'Conteúdo do arquivo (trecho):\n' + fileContent.slice(0,2000) + '\n\n' : ''}Sugira um nome curto e descritivo para ${selected && selected.kind === 'file' ? 'o arquivo' : 'a pasta'} com nome atual "${selected ? selected.name : ''}". Retorne apenas o nome sugerido, sem explicações.`;
       const systemMsg = 'Você é um assistente que sugere nomes curtos para arquivos e pastas. Responda apenas com o nome sugerido, sem pontuação extra.';
 
-      const suggestion = await generateSuggestion(selected ? selected.kind : 'file', input ? input.value || '' : '', fileContent, mimeType, listing, 'name', '', systemMsg, promptBody);
+      const messages = [
+        { role: 'system', content: systemMsg },
+        { role: 'user', content: promptBody }
+      ];
+      const suggestion = await generateSuggestion(messages);
       if(suggestion && input) input.value = suggestion;
     }catch(e){
       alert('Erro ao gerar sugestão: ' + (e && e.message));

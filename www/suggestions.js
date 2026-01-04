@@ -1,18 +1,11 @@
 import { commands, appendCommandDetail, appendCommandResult } from './ui.js';
 
 // Módulo responsável por gerar sugestões usando WebLLM
-export async function generateSuggestion(kind, current, content = '', mime = '', listing = '', mode = 'name', subfolders = '', systemMsgOverride = null, promptBodyOverride = null){
-  // Limitar o conteúdo incluído no prompt para evitar payloads enormes
-  const contentSnippet = (content || '').slice(0, 4000);
-  const listingSnippet = (listing || '').slice(0, 2000);
-  const mimePart = mime ? `Tipo MIME: ${mime}\n` : '';
-  const listingPart = listingSnippet ? `Conteúdo da pasta (nomes): ${listingSnippet}\n\n` : '';
-  // `systemMsgOverride` e `promptBodyOverride` devem ser obrigatórios e fornecidos
-  if(typeof systemMsgOverride !== 'string' || typeof promptBodyOverride !== 'string'){
-    throw new Error('generateSuggestion: systemMsg and promptBody are required');
+export async function generateSuggestion(messages){
+  // `messages` deve ser um array pronto para o modelo: [{role:'system',content:''},{role:'user',content:''},...]
+  if(!Array.isArray(messages) || messages.length === 0){
+    throw new Error('generateSuggestion: messages (array) is required');
   }
-  const promptBody = promptBodyOverride;
-  const prompt = `${contentSnippet ? 'Conteúdo do arquivo (trecho):\n' + contentSnippet + '\n\n' : ''}${mimePart}${listingPart}${promptBody}`;
   try{
     // registro de requisição atual para permitir cancelamento cooperativo
     const reqId = (window.__webllm_request_counter = (window.__webllm_request_counter || 0) + 1);
@@ -75,21 +68,16 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
     }
 
     const engine = window._webllm_engine;
-    const systemMsg = systemMsgOverride;
-
-    const messages = [
-      { role: 'system', content: systemMsg },
-      { role: 'user', content: prompt }
-    ];
+    // usar a lista de mensagens fornecida pelo chamador
 
     const temperature = 0.2;
     const max_tokens = 64;
     try{
-        if(commands){
-          const systemMsg = messages.find(m => m.role === 'system')?.content || '(sem mensagem)';
-          const userMsg = messages.find(m => m.role === 'user')?.content || '(sem mensagem)';
-          appendCommandDetail(systemMsg, userMsg, temperature, max_tokens);
-        }
+      if(commands){
+        const systemMsg = messages.find(m => m.role === 'system')?.content || '(sem mensagem)';
+        const userMsg = messages.find(m => m.role === 'user')?.content || '(sem mensagem)';
+        appendCommandDetail(systemMsg, userMsg, temperature, max_tokens);
+      }
     }catch(_){ }
     // se um cancelamento foi solicitado antes de iniciar, abortar
     if(window.__webllm_cancel_requested) return '';
@@ -109,12 +97,15 @@ export async function generateSuggestion(kind, current, content = '', mime = '',
   }catch(e){
     console.error('generateSuggestion: erro usando webllm', e);
     try{
-      let base = (current || '').replace(/\.[^/.]+$/, '');
+      // fallback: tentar extrair um texto útil da primeira mensagem do usuário
+      let base = '';
+      try{ base = (messages.find(m => m.role === 'user')?.content || messages[0]?.content || '').toString(); }catch(_){ base = ''; }
+      base = (base || '').replace(/\.[^/.]+$/, '');
       base = base.replace(/[_-]+/g, ' ').trim();
-      if(!base) base = kind === 'file' ? 'arquivo' : 'pasta';
+      if(!base) base = 'item';
       return (base + (base.toLowerCase().includes('novo') ? '' : ' novo')).slice(0, 120);
     }catch(_){
-      return current || '';
+      return '';
     }
   }
 }
