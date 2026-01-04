@@ -45,7 +45,7 @@ moveBtn?.addEventListener('click', async ()=>{
   if(restored){
     // check if we already have permission
     let q = null;
-    try{ q = await (typeof restored.queryPermission === 'function' ? restored.queryPermission({ mode: 'readwrite' }) : 'granted'); }catch(e){ q = null; }
+    try{ q = await (typeof restored.queryPermission === 'function' ? restored.queryPermission({ mode: 'read' }) : 'granted'); }catch(e){ q = null; }
     if(q === 'granted'){
       setRootHandle(restored);
       setHash('/');
@@ -65,7 +65,7 @@ moveBtn?.addEventListener('click', async ()=>{
 
     const onRestore = async ()=>{
       cleanup();
-      const ok = await ensureHandlePermission(restored, 'readwrite').catch(()=>false);
+      const ok = await ensureHandlePermission(restored, 'read').catch(()=>false);
       if(ok){
         setRootHandle(restored);
         setHash('/');
