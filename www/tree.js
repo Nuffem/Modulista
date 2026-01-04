@@ -1,4 +1,4 @@
-import { treeContainer } from './ui.js';
+import { treeContainer, createTreeNodeElements, createFileEntry } from './ui.js';
 import { getRootHandle, setSelected, getSelected, isExpanded, toggleExpanded, setExpanded } from './state.js';
 import { showSelectedDirectory, showSelectedFile } from './content.js';
 import { setHash } from './picker.js';
@@ -14,18 +14,8 @@ export async function renderApp(selectPath = '/'){
 }
 
 export async function buildAndRender(dirHandle, container, displayName, path, selectPath = '/', parentHandle = null){
-  const node = document.createElement('div');
+  const { node, row, toggleBtn, toggleIcon, btn, icon, childrenCont } = createTreeNodeElements(displayName, isExpanded(path));
 
-  const row = document.createElement('div');
-  row.className = 'flex items-center';
-
-  // Toggle button (chevron)
-  const toggleBtn = document.createElement('button');
-  toggleBtn.className = 'p-0 mr-1 text-[18px]';
-  const toggleIcon = document.createElement('span');
-  toggleIcon.className = 'material-symbols-outlined';
-  toggleIcon.textContent = isExpanded(path) ? 'expand_more' : 'chevron_right';
-  toggleBtn.appendChild(toggleIcon);
   toggleBtn.addEventListener('click', async (e)=>{
     e.stopPropagation();
     const expanded = isExpanded(path);
@@ -48,14 +38,6 @@ export async function buildAndRender(dirHandle, container, displayName, path, se
     }
   });
 
-  // Folder icon + name button
-  const btn = document.createElement('button');
-  btn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
-  const icon = document.createElement('span');
-  icon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
-  icon.textContent = 'folder';
-  btn.appendChild(icon);
-  btn.appendChild(document.createTextNode(displayName));
   btn.addEventListener('click', async ()=>{
     const nodePath = path === '/' ? '/' : (path.startsWith('/') ? path : ('/' + path));
     setSelected({handle: dirHandle, name: displayName, parent: parentHandle, kind: 'directory', path: nodePath});
@@ -63,14 +45,6 @@ export async function buildAndRender(dirHandle, container, displayName, path, se
     setHash(nodePath);
     await showSelectedDirectory(dirHandle, displayName, nodePath);
   });
-
-  row.appendChild(toggleBtn);
-  row.appendChild(btn);
-  node.appendChild(row);
-
-  const childrenCont = document.createElement('div');
-  childrenCont.className = 'ml-3 mt-1 space-y-1';
-  childrenCont.style.display = isExpanded(path) ? 'block' : 'none';
 
   // If the directory is already expanded in state, populate now
   if(isExpanded(path)){
@@ -119,15 +93,7 @@ async function populateChildren(dirHandle, childrenCont, parentPath, selectPath 
       const childPath = parentPath === '/' ? ('/' + name) : (`${parentPath}/${name}`);
       await buildAndRender(handle, childrenCont, name, childPath, selectPath, dirHandle);
     } else {
-      const fileDiv = document.createElement('div');
-      const fBtn = document.createElement('button');
-      fBtn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
-      const fIcon = document.createElement('span');
-      fIcon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
-      fIcon.setAttribute('aria-hidden','true');
-      fIcon.textContent = getIconForFile(name);
-      fBtn.appendChild(fIcon);
-      fBtn.appendChild(document.createTextNode(name));
+      const { fileDiv, fBtn } = createFileEntry(name, getIconForFile(name));
       fBtn.addEventListener('click', async ()=>{
         const filePath = parentPath === '/' ? ('/' + name) : (`${parentPath}/${name}`);
         const nodePath = filePath.startsWith('/') ? filePath : ('/' + filePath);
@@ -145,7 +111,6 @@ async function populateChildren(dirHandle, childrenCont, parentPath, selectPath 
         markSelected(fBtn);
         await showSelectedFile(handle, name, nodePath);
       }
-      fileDiv.appendChild(fBtn);
       childrenCont.appendChild(fileDiv);
     }
   }

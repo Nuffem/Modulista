@@ -1,4 +1,4 @@
-import { contentArea, contentTitle, commands } from './ui.js';
+import { contentArea, contentTitle, commands, createListContainer, createMetaElement, createEntryRow, createObjectPreview } from './ui.js';
 import { getSelected, setSelected } from './state.js';
 import { setHash } from './picker.js';
 import { getIconForFile } from './icons.js';
@@ -20,8 +20,7 @@ function formatDate(ms){
 export async function showSelectedDirectory(handle, name, path = ''){
   contentTitle.textContent = name;
   contentArea.innerHTML = '';
-  const list = document.createElement('div');
-  list.className = 'space-y-1';
+  const list = createListContainer();
   // coletar entradas, ordenar (pastas primeiro, depois arquivos), ambas alfabeticamente
   const entries = [];
   for await (const [entryName, entryHandle] of handle.entries()){
@@ -48,30 +47,12 @@ export async function showSelectedDirectory(handle, name, path = ''){
       totalSize = 0;
     }
   }
-  const meta = document.createElement('div');
-  meta.className = 'text-xs text-gray-500 mb-2';
-  meta.textContent = `${dirCount} pastas • ${fileEntries.length} arquivos • ${formatBytes(totalSize)}`;
+  const meta = createMetaElement(`${dirCount} pastas • ${fileEntries.length} arquivos • ${formatBytes(totalSize)}`);
   contentArea.appendChild(meta);
 
   for (const [entryName, entryHandle] of entries){
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'flex items-center justify-between p-2 border rounded w-full text-left';
-
-    const leftBtn = document.createElement('div');
-    leftBtn.className = 'flex items-center w-full';
-
-    const icon = document.createElement('span');
-    icon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
-    icon.setAttribute('aria-hidden','true');
-    if(entryHandle.kind === 'directory'){
-      icon.textContent = 'folder';
-    } else {
-      icon.textContent = getIconForFile(entryName);
-    }
-
-    leftBtn.appendChild(icon);
-    leftBtn.appendChild(document.createTextNode(entryName));
+    const iconName = entryHandle.kind === 'directory' ? 'folder' : getIconForFile(entryName);
+    const row = createEntryRow(entryName, iconName);
 
     // tornar a linha inteira clicável
     row.addEventListener('click', async (e)=>{
@@ -86,7 +67,6 @@ export async function showSelectedDirectory(handle, name, path = ''){
       }
     });
 
-    row.appendChild(leftBtn);
     list.appendChild(row);
   }
   contentArea.appendChild(list);
@@ -97,28 +77,11 @@ export async function showSelectedFile(handle, name, path = ''){
   contentArea.innerHTML = '';
   try{
     const file = await handle.getFile();
-    const meta = document.createElement('div');
-    meta.className = 'text-xs text-gray-500 mb-2';
     const mime = file.type || 'application/octet-stream';
-    meta.textContent = `${mime} • ${formatBytes(file.size)} • ${formatDate(file.lastModified)}`;
+    const meta = createMetaElement(`${mime} • ${formatBytes(file.size)} • ${formatDate(file.lastModified)}`);
     contentArea.appendChild(meta);
-
-    // Sempre usar <object> para embutir o conteúdo, passando o MIME type
     const url = URL.createObjectURL(file);
-    const wrap = document.createElement('div');
-    wrap.className = 'w-full';
-    const obj = document.createElement('object');
-    obj.data = url;
-    obj.type = mime;
-    obj.className = 'w-full h-[80vh] border rounded';
-    obj.innerHTML = 'Não é possível exibir o conteúdo. <a href="' + url + '" target="_blank" rel="noopener">Abrir em nova aba</a>.';
-    // tentar liberar o blob URL quando possível
-    obj.addEventListener && obj.addEventListener('load', ()=> URL.revokeObjectURL(url));
-    obj.addEventListener && obj.addEventListener('error', ()=> {
-      URL.revokeObjectURL(url);
-      contentArea.textContent = 'Não foi possível exibir o arquivo.';
-    });
-    wrap.appendChild(obj);
+    const wrap = createObjectPreview(url, mime);
     contentArea.appendChild(wrap);
   }catch(e){
     contentArea.textContent = 'Não foi possível ler o arquivo.';

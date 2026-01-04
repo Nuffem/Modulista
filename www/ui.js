@@ -116,3 +116,100 @@ export function appendCommandResult(text){
 	commands.appendChild(resultItem);
 	return resultItem;
 }
+
+// Helpers de criação de elementos UI usados por outros módulos
+export function createListContainer(){
+	const list = document.createElement('div');
+	list.className = 'space-y-1';
+	return list;
+}
+
+export function createMetaElement(text){
+	const meta = document.createElement('div');
+	meta.className = 'text-xs text-gray-500 mb-2';
+	meta.textContent = text || '';
+	return meta;
+}
+
+export function createEntryRow(label, iconName){
+	const row = document.createElement('button');
+	row.type = 'button';
+	row.className = 'flex items-center justify-between p-2 border rounded w-full text-left';
+
+	const leftBtn = document.createElement('div');
+	leftBtn.className = 'flex items-center w-full';
+
+	const icon = document.createElement('span');
+	icon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
+	icon.setAttribute('aria-hidden','true');
+	icon.textContent = iconName || '';
+
+	leftBtn.appendChild(icon);
+	leftBtn.appendChild(document.createTextNode(label || ''));
+	row.appendChild(leftBtn);
+	return row;
+}
+
+export function createObjectPreview(url, mime){
+	const wrap = document.createElement('div');
+	wrap.className = 'w-full';
+	const obj = document.createElement('object');
+	obj.data = url;
+	obj.type = mime;
+	obj.className = 'w-full h-[80vh] border rounded';
+	obj.innerHTML = 'Não é possível exibir o conteúdo. <a href="' + url + '" target="_blank" rel="noopener">Abrir em nova aba</a>.';
+	obj.addEventListener && obj.addEventListener('load', ()=> URL.revokeObjectURL(url));
+	obj.addEventListener && obj.addEventListener('error', ()=> {
+		URL.revokeObjectURL(url);
+		wrap.textContent = 'Não foi possível exibir o arquivo.';
+	});
+	wrap.appendChild(obj);
+	return wrap;
+}
+
+export function createTreeNodeElements(displayName, expanded){
+	const node = document.createElement('div');
+
+	const row = document.createElement('div');
+	row.className = 'flex items-center';
+
+	const toggleBtn = document.createElement('button');
+	toggleBtn.className = 'p-0 mr-1 text-[18px]';
+	const toggleIcon = document.createElement('span');
+	toggleIcon.className = 'material-symbols-outlined';
+	toggleIcon.textContent = expanded ? 'expand_more' : 'chevron_right';
+	toggleBtn.appendChild(toggleIcon);
+
+	const btn = document.createElement('button');
+	btn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
+	const icon = document.createElement('span');
+	icon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
+	icon.textContent = 'folder';
+	btn.appendChild(icon);
+	btn.appendChild(document.createTextNode(displayName || ''));
+
+	row.appendChild(toggleBtn);
+	row.appendChild(btn);
+	node.appendChild(row);
+
+	const childrenCont = document.createElement('div');
+	childrenCont.className = 'ml-3 mt-1 space-y-1';
+	childrenCont.style.display = expanded ? 'block' : 'none';
+
+	node.appendChild(childrenCont);
+	return { node, row, toggleBtn, toggleIcon, btn, icon, childrenCont };
+}
+
+export function createFileEntry(name, iconName){
+	const fileDiv = document.createElement('div');
+	const fBtn = document.createElement('button');
+	fBtn.className = 'w-full flex items-center text-left py-1 px-2 rounded hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-slate-100';
+	const fIcon = document.createElement('span');
+	fIcon.className = 'material-symbols-outlined align-middle mr-2 text-[18px]';
+	fIcon.setAttribute('aria-hidden','true');
+	fIcon.textContent = iconName || '';
+	fBtn.appendChild(fIcon);
+	fBtn.appendChild(document.createTextNode(name || ''));
+	fileDiv.appendChild(fBtn);
+	return { fileDiv, fBtn, fIcon };
+}
