@@ -41,17 +41,23 @@ export async function moveToNew(){
 
   try{
     contentArea.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'mt-2 flex items-center space-x-2';
+
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = 'Nome da nova subpasta';
-    input.className = 'mt-2 w-full border rounded p-1 bg-white text-slate-900 placeholder-slate-400 border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:placeholder-slate-400 dark:border-slate-600 focus:outline-none';
-    contentArea.appendChild(input);
+    input.className = 'flex-1 border rounded p-1 bg-white text-slate-900 placeholder-slate-400 border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:placeholder-slate-400 dark:border-slate-600 focus:outline-none';
+    row.appendChild(input);
 
     const confirm = document.createElement('button');
     confirm.type = 'button';
-    confirm.className = 'mt-2 p-2 bg-green-600 hover:bg-green-700 text-white rounded focus:outline-none';
-    confirm.textContent = 'Confirmar';
-    contentArea.appendChild(confirm);
+    confirm.className = 'p-2 bg-green-600 hover:bg-green-700 text-white rounded focus:outline-none';
+    confirm.setAttribute('aria-label', 'Confirmar');
+    confirm.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+    row.appendChild(confirm);
+
+    contentArea.appendChild(row);
 
     confirm.addEventListener('click', async ()=>{
       const name = (input.value || '').trim();
@@ -67,6 +73,8 @@ export async function moveToNew(){
         return true;
       }catch(e){ alert('Falha ao mover: ' + (e && e.message)); }
     });
+
+    input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') confirm.click(); });
 
     input.focus();
   }catch(e){ alert('Erro ao criar nova subpasta: ' + (e && e.message)); }
