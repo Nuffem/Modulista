@@ -15,6 +15,7 @@ type alias Model =
     , pendingFolderName : Maybe String
     , customNameInput : String
     , isLoading : Bool
+    , databaseName : Maybe String
     }
 
 type Msg
@@ -25,3 +26,7 @@ type Msg
     | CustomNameChanged String
     | ConfirmSelection
     | FolderContentReceived { path : List String, files : List FileEntry, rootName : String, rootRealName : String }
+    | OpenDatabase
+    | CreateDatabase
+    | Logout
+    | DatabaseOpened { name : String }

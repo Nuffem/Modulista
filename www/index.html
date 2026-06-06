@@ -47,6 +47,33 @@
     // Map: name -> FileSystemDirectoryHandle
     let rootHandles = {};
     let pendingHandle = null;
+    let databaseHandle = null;
+
+    app.ports.requestDatabaseOpen.subscribe(async () => {
+      try {
+        const [handle] = await window.showOpenFilePicker();
+        databaseHandle = handle;
+        app.ports.databaseOpened.send({ name: handle.name });
+      } catch (err) {
+        console.error("Error opening database:", err);
+      }
+    });
+
+    app.ports.requestDatabaseCreate.subscribe(async () => {
+      try {
+        const handle = await window.showSaveFilePicker();
+        databaseHandle = handle;
+        app.ports.databaseOpened.send({ name: handle.name });
+      } catch (err) {
+        console.error("Error creating database:", err);
+      }
+    });
+
+    app.ports.requestLogout.subscribe(() => {
+      databaseHandle = null;
+      rootHandles = {};
+      history.pushState(null, "", "#/");
+    });
 
     app.ports.requestFolderSelect.subscribe(async () => {
       try {

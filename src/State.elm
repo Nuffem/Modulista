@@ -22,8 +22,12 @@ init _ url key =
       , pendingFolderName = Nothing
       , customNameInput = ""
       , isLoading = False
+      , databaseName = Nothing
       }
-    , navigateToPath path
+    , if List.isEmpty path then
+        Cmd.none
+      else
+        navigateToPath path
     )
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -42,13 +46,13 @@ update msg model =
                 path = parsePath url
             in
             if List.isEmpty path then
-                 ( { model | url = url, currentPath = [], files = model.roots, isLoading = False }
-                 , Cmd.none
-                 )
+                ( { model | url = url, currentPath = [], files = model.roots, isLoading = False }
+                , Cmd.none
+                )
             else
-                 ( { model | url = url, currentPath = path, isLoading = True }
-                 , navigateToPath path
-                 )
+                ( { model | url = url, currentPath = path, isLoading = True }
+                , navigateToPath path
+                )
 
         RequestFolderSelect ->
             ( { model | isLoading = True }
@@ -56,13 +60,27 @@ update msg model =
             )
 
         FolderPicked { name } ->
-             ( { model | pendingFolderName = Just name, customNameInput = name, isLoading = False }, Cmd.none )
+            ( { model | pendingFolderName = Just name, customNameInput = name, isLoading = False }, Cmd.none )
 
         CustomNameChanged newName ->
             ( { model | customNameInput = newName }, Cmd.none )
 
         ConfirmSelection ->
-             ( { model | isLoading = True }, confirmFolder model.customNameInput )
+            ( { model | isLoading = True }, confirmFolder model.customNameInput )
+
+        OpenDatabase ->
+            ( { model | isLoading = True }, requestDatabaseOpen () )
+
+        CreateDatabase ->
+            ( { model | isLoading = True }, requestDatabaseCreate () )
+
+        Logout ->
+            ( { model | databaseName = Nothing, roots = [], files = [], currentPath = [] }
+            , requestLogout ()
+            )
+
+        DatabaseOpened { name } ->
+            ( { model | databaseName = Just name, isLoading = False }, Cmd.none )
 
         FolderContentReceived data ->
             let
@@ -105,4 +123,5 @@ subscriptions _ =
     Sub.batch
         [ folderContentReceived FolderContentReceived
         , folderPicked FolderPicked
+        , databaseOpened DatabaseOpened
         ]
